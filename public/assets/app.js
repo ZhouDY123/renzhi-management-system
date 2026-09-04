@@ -522,6 +522,10 @@ function initQualityDetails() {
   if (query.get('page') !== 'talent') return;
   const host = document.querySelector('.review-detail .dimensions');
   if (!host) return;
+  document.querySelectorAll('.score-summary .score-bar').forEach(bar => {
+    const label = bar.querySelector('span')?.childNodes[0]?.textContent?.trim();
+    if (label === '基本条件' || label === '基本素质') bar.hidden = true;
+  });
   const id = query.get('id');
   fetch(`?page=talent&action=quality_details${id ? `&id=${encodeURIComponent(id)}` : ''}`, { credentials: 'same-origin' })
     .then(response => response.ok ? response.json() : Promise.reject())
