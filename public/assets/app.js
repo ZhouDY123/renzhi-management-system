@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
+  initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -135,6 +135,17 @@ function initInterviewRegistrationActions() {
     if (!operation) { operation = document.createElement('input'); operation.type = 'hidden'; operation.name = 'op'; form.append(operation); }
     form.querySelectorAll('button[name="op"]').forEach(button => button.addEventListener('click', () => { operation.value = button.value; }));
     form.addEventListener('submit', event => { if (!operation.value) { event.preventDefault(); operation.value = 'change_post'; form.requestSubmit(); } });
+  });
+}
+
+function initInterviewRegistrationStatuses() {
+  document.querySelectorAll('form[action*="action=interview_pre_update"]').forEach(form => {
+    const row = form.closest('tr');
+    if (row?.querySelector('.badge')?.textContent.trim() === '已答题') form.remove();
+  });
+  document.querySelectorAll('.table-wrap tr').forEach(row => {
+    if (row.querySelector('.badge')?.textContent.trim() !== '已答题') return;
+    const cell = row.cells?.[5]; if (cell && !cell.querySelector('form')) cell.textContent = '测评已完成';
   });
 }
 
