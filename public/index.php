@@ -114,7 +114,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $code=(string)($_POST['dim_code']??'');if($code==='')throw new RuntimeException('未找到要启用的评分维度');$_POST['op']='publish';$action=str_starts_with($code,'custom_')?'standard_custom_group_save':'standard_group_save';
   }
   if($action==='standard_dimension_disable'){
-   $code=(string)($_POST['dim_code']??'');if($code==='')throw new RuntimeException('未找到要禁用的评分维度');$pdo->prepare("UPDATE scoring_standard SET status='draft' WHERE dim_code=? AND status='published'")->execute([$code]);audit('standard_dimension_disable','dim:'.$code);flash('该维度已禁用，当前状态为待启用');redirect('/index.php?page=standards');
+   $code=(string)($_POST['dim_code']??'');if($code==='')throw new RuntimeException('未找到要停用的评分维度');$pdo->prepare("UPDATE scoring_standard SET status='draft' WHERE dim_code=? AND status='published'")->execute([$code]);audit('standard_dimension_disable','dim:'.$code);flash('该维度已停用，当前状态为待启用');redirect('/index.php?page=standards');
   }
   if(in_array($action,['standard_custom_group_save','standard_group_save'],true)&&(string)($_POST['op']??'save')!=='publish'){
    $code=(string)($_POST['dim_code']??'');if($code!=='')$pdo->prepare("UPDATE scoring_standard SET status='draft' WHERE dim_code=? AND status='published'")->execute([$code]);
