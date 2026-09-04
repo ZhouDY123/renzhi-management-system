@@ -182,7 +182,7 @@ function initInterviewSessionControls() {
     .then(rows => candidateForms.forEach(form => {
       const select = form.querySelector('select[name="answer_id"]'); if (!select) return;
       select.replaceChildren();
-      if (!rows.length) { const option = new Option('暂无已完成测评的候选人', ''); option.disabled = true; option.selected = true; select.append(option); return; }
+      if (!rows.length) { const option = new Option('暂无已答题且已推荐面试的候选人', ''); option.disabled = true; option.selected = true; select.append(option); return; }
       rows.forEach(row => select.append(new Option(`${row.name} · ${row.post_name}`, row.id)));
     })).catch(() => {});
 }
