@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
+  initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -243,6 +243,13 @@ function initTalentResumePreview() {
   }); });
 }
 
+function initTalentEditLinks() {
+  document.querySelectorAll('.talent-card .resume-preview').forEach(link => {
+    const id = new URL(link.href).searchParams.get('resume_id'); if (!id || link.parentElement?.querySelector('.talent-edit')) return;
+    const edit = document.createElement('a'); edit.className = 'talent-edit'; edit.href = `?page=talent_pool&edit=${encodeURIComponent(id)}`; edit.textContent = '编辑档案'; link.insertAdjacentElement('afterend', edit);
+  });
+}
+
 function showTalentResume(resume) {
   const score = value => Number(value || 0).toFixed(1);
   const age = resume.birth_date ? Math.max(0, new Date().getFullYear() - Number(String(resume.birth_date).slice(0, 4))) : '—';
@@ -253,7 +260,7 @@ function showTalentResume(resume) {
   const makeFacts = (target, items) => items.forEach(([label, value]) => { const item = document.createElement('div'); const name = document.createElement('span'); const detail = document.createElement('b'); name.textContent = label; detail.textContent = value || '—'; item.append(name, detail); overlay.querySelector(target).append(item); });
   makeFacts('.resume-score-grid', [['基本条件', `${score(resume.eval_score)} / 50`], ['基本素质', `${score(resume.suzhi_score)} / 25`], ['专业能力', `${score(resume.postq_score)} / 25`]]);
   makeFacts('.resume-facts.basic', [['性别', resume.gender], ['年龄', age === '—' ? age : `${age} 岁`], ['出生日期', resume.birth_date], ['健康状况', resume.health], ['政治面貌', resume.politics]]);
-  makeFacts('.resume-facts.career', [['学历', resume.edu], ['院校层次', resume.school_tier], ['所学专业', resume.major], ['职称', resume.title], ['工作年限', resume.work_years === null || resume.work_years === undefined ? '—' : `${resume.work_years} 年`], ['从事专业年限', resume.prof_years === null || resume.prof_years === undefined ? '—' : `${resume.prof_years} 年`]]);
+  makeFacts('.resume-facts.career', [['学历', resume.edu], ['院校层次', resume.school_tier], ['所学专业', resume.major], ['意向职位', resume.intent_post_name], ['职称', resume.title], ['工作年限', resume.work_years === null || resume.work_years === undefined ? '—' : `${resume.work_years} 年`], ['从事专业年限', resume.prof_years === null || resume.prof_years === undefined ? '—' : `${resume.prof_years} 年`]]);
   makeFacts('.resume-facts.ability', [['集团公司工作年限', resume.group_co_years === null || resume.group_co_years === undefined ? '—' : `${resume.group_co_years} 年`], ['上市公司工作年限', resume.listed_co_years === null || resume.listed_co_years === undefined ? '—' : `${resume.listed_co_years} 年`], ['非上市公司工作年限', resume.private_co_years === null || resume.private_co_years === undefined ? '—' : `${resume.private_co_years} 年`], ['工作背景', resume.work_bg], ['计算机能力', resume.computer_skill], ['外语能力', resume.language]]);
   document.body.append(overlay);
   const close = () => { closeDialog(overlay); setTimeout(() => overlay.remove(), 180); };
