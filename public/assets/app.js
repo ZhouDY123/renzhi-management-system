@@ -142,10 +142,7 @@ function initInterviewSessionControls() {
     if (select) select.setAttribute('aria-label', '选择场次状态');
     if (button) { button.textContent = '更新状态'; button.title = '保存所选的场次状态'; }
   });
-  document.querySelectorAll('.session-state form[action*="action=session_rotate"] button').forEach(button => {
-    button.textContent = '更新评分二维码';
-    button.title = '生成新二维码，旧二维码将失效';
-  });
+  document.querySelectorAll('.session-state form[action*="action=session_rotate"]').forEach(form => form.remove());
 }
 
 function initStandardRuleDefaults() {
