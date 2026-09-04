@@ -159,6 +159,11 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   if($action==='assign_interviewer'){
    $pdo->prepare('INSERT INTO session_interviewer(session_id,user_id,weight,is_lead) VALUES(?,?,?,?)')->execute([(int)$_POST['session_id'],(int)$_POST['user_id'],max(.1,(float)$_POST['weight']),isset($_POST['is_lead'])?1:0]);audit('interviewer_assign','session:'.$_POST['session_id'],['user_id'=>(int)$_POST['user_id']]);flash('面试官已加入场次');redirect('/index.php?page=interviews');
   }
+  if($action==='assign_candidate_v2'){
+   $registrationId=(int)($_POST['registration_id']??$_POST['answer_id']??0);$sid=(int)$_POST['session_id'];$st=$pdo->prepare("SELECT ip.candidate_id,ip.post_id,c.name,c.mobile,c.edu,c.major FROM interview_pre_register ip JOIN interview_session s ON s.post_id=ip.post_id JOIN candidate c ON c.id=ip.candidate_id WHERE ip.id=? AND ip.status IN ('registered','answered') AND s.id=?");$st->execute([$registrationId,$sid]);$registration=$st->fetch();if(!$registration)throw new RuntimeException('人才未完成测评，或与当前场次岗位不一致');
+   $st=$pdo->prepare('SELECT id FROM answer WHERE candidate_id=? AND post_id=? ORDER BY id DESC LIMIT 1');$st->execute([$registration['candidate_id'],$registration['post_id']]);$aid=(int)$st->fetchColumn();if(!$aid)throw new RuntimeException('该人才尚未提交在线测评答卷，不能安排面试');
+   $pdo->prepare('INSERT INTO interview_candidate(session_id,candidate_id,answer_id,seq) VALUES(?,?,?,?)')->execute([$sid,$registration['candidate_id'],$aid,(int)$_POST['seq']]);$pdo->prepare("UPDATE interview_pre_register SET status='scheduled' WHERE id=?")->execute([$registrationId]);$pdo->prepare("UPDATE result SET review_status='interview' WHERE answer_id=? AND review_status='first_pass'")->execute([$aid]);audit('candidate_assign','session:'.$sid,['registration_id'=>$registrationId]);flash('候选人已加入面试');redirect('/index.php?page=interviews');
+  }
   if($action==='assign_candidate'){
    $registrationId=(int)($_POST['registration_id']??$_POST['answer_id']??0);$sid=(int)$_POST['session_id'];$st=$pdo->prepare('SELECT ip.candidate_id,ip.post_id,c.name,c.mobile,c.edu,c.major FROM interview_pre_register ip JOIN interview_session s ON s.post_id=ip.post_id JOIN candidate c ON c.id=ip.candidate_id WHERE ip.id=? AND ip.status=\'registered\' AND s.id=?');$st->execute([$registrationId,$sid]);$registration=$st->fetch();if(!$registration)throw new RuntimeException('人才未完成面试预登记，或与当前场次岗位不一致');
    $st=$pdo->prepare('SELECT id FROM answer WHERE candidate_id=?');$st->execute([$registration['candidate_id']]);$aid=(int)$st->fetchColumn();if(!$aid){$snapshot=json_encode(['name'=>$registration['name'],'mobile'=>$registration['mobile'],'edu'=>$registration['edu'],'major'=>$registration['major']],JSON_UNESCAPED_UNICODE);$pdo->prepare('INSERT INTO answer(candidate_id,post_id,candidate_snapshot,idempotency_key) VALUES(?,?,?,?)')->execute([$registration['candidate_id'],$registration['post_id'],$snapshot,token(12)]);$aid=(int)$pdo->lastInsertId();}
@@ -184,6 +189,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  }catch(Throwable $e){ if($pdo->inTransaction())$pdo->rollBack(); $msg=$e instanceof RuntimeException?$e->getMessage():(str_contains($e->getMessage(),'candidate_pre_register.mobile')?'该手机号已登记其他岗位，一个人只能应聘一个岗位':'保存失败：数据可能重复、状态已变化或内容不完整'); flash($msg,'error'); redirect('/index.php?page='.$page); }
 }
 
+if($page==='interviews'&&$action==='eligible_candidates'){$rows=$pdo->query("SELECT ip.id,c.name,p.name post_name FROM interview_pre_register ip JOIN candidate c ON c.id=ip.candidate_id JOIN post p ON p.id=ip.post_id WHERE ip.status IN ('registered','answered') ORDER BY ip.id DESC")->fetchAll();header('Content-Type: application/json; charset=UTF-8');echo json_encode($rows,JSON_UNESCAPED_UNICODE);exit;}
 if(render_talent_workflow($page,$pdo)||render_grouped_standards_page($page,$pdo)){exit;}
 
 if($page==='dashboard'){

@@ -174,6 +174,17 @@ function initInterviewSessionControls() {
     if (button) { button.textContent = '更新状态'; button.title = '保存所选的场次状态'; }
   });
   document.querySelectorAll('.session-state form[action*="action=session_rotate"]').forEach(form => form.remove());
+  const candidateForms = [...document.querySelectorAll('.assign-row form[action*="action=assign_candidate"]')];
+  if (!candidateForms.length) return;
+  candidateForms.forEach(form => form.action = '?page=interviews&action=assign_candidate_v2');
+  fetch('?page=interviews&action=eligible_candidates', {credentials:'same-origin'})
+    .then(response => response.ok ? response.json() : [])
+    .then(rows => candidateForms.forEach(form => {
+      const select = form.querySelector('select[name="answer_id"]'); if (!select) return;
+      select.replaceChildren();
+      if (!rows.length) { const option = new Option('暂无已完成测评的候选人', ''); option.disabled = true; option.selected = true; select.append(option); return; }
+      rows.forEach(row => select.append(new Option(`${row.name} · ${row.post_name}`, row.id)));
+    })).catch(() => {});
 }
 
 function initTalentResumePreview() {
