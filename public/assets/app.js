@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initReviewActions(); initInterviewSessionControls(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
+  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -143,6 +143,38 @@ function initInterviewSessionControls() {
     if (button) { button.textContent = '更新状态'; button.title = '保存所选的场次状态'; }
   });
   document.querySelectorAll('.session-state form[action*="action=session_rotate"]').forEach(form => form.remove());
+}
+
+function initTalentResumePreview() {
+  document.querySelectorAll('.talent-card>a[href*="page=talent"]').forEach(link => { link.textContent = '简历预览'; link.addEventListener('click', async event => {
+    event.preventDefault();
+    const resultId = new URL(link.href).searchParams.get('id');
+    if (!resultId) return;
+    try {
+      const response = await fetch(`?page=talent_pool&resume_id=${encodeURIComponent(resultId)}`, {credentials:'same-origin'});
+      if (!response.ok) throw new Error();
+      const resume = await response.json(); if (resume.error) throw new Error();
+      showTalentResume(resume);
+    } catch { location.href = link.href; }
+  }); });
+}
+
+function showTalentResume(resume) {
+  const score = value => Number(value || 0).toFixed(1);
+  const age = resume.birth_date ? Math.max(0, new Date().getFullYear() - Number(String(resume.birth_date).slice(0, 4))) : '—';
+  const overlay = document.createElement('div'); overlay.className = 'modal-overlay resume-overlay'; overlay.setAttribute('aria-hidden', 'true');
+  overlay.innerHTML = '<section class="modal-dialog resume-dialog" role="dialog" aria-modal="true" aria-labelledby="resume-title"><div class="modal-top"><div><small>人才简历</small><h2 id="resume-title"></h2></div><button type="button" class="modal-close" data-dialog-close aria-label="关闭预览">×</button></div><div class="resume-body"><header class="resume-hero"><i></i><div><b></b><span></span><small></small></div><strong><em></em><small>综合评分</small></strong></header><section class="resume-score-grid"></section><section class="resume-section"><h3>基本资料</h3><div class="resume-facts basic"></div></section><section class="resume-section"><h3>教育与职业</h3><div class="resume-facts career"></div></section><section class="resume-section"><h3>履历与能力</h3><div class="resume-facts ability"></div></section></div></section>';
+  const text = (selector, value) => { overlay.querySelector(selector).textContent = value || '—'; };
+  text('#resume-title', `${resume.name || '人才'}的简历`); text('.resume-hero i', String(resume.name || '人').slice(0, 1)); text('.resume-hero b', resume.name); text('.resume-hero span', `应聘岗位：${resume.post_name || '—'}`); text('.resume-hero small', resume.mobile ? `${String(resume.mobile).slice(0, 3)} **** ${String(resume.mobile).slice(-4)}` : '—'); text('.resume-hero strong em', score(resume.total_score));
+  const makeFacts = (target, items) => items.forEach(([label, value]) => { const item = document.createElement('div'); const name = document.createElement('span'); const detail = document.createElement('b'); name.textContent = label; detail.textContent = value || '—'; item.append(name, detail); overlay.querySelector(target).append(item); });
+  makeFacts('.resume-score-grid', [['基本条件', `${score(resume.eval_score)} / 50`], ['基本素质', `${score(resume.suzhi_score)} / 25`], ['专业能力', `${score(resume.postq_score)} / 25`]]);
+  makeFacts('.resume-facts.basic', [['性别', resume.gender], ['年龄', age === '—' ? age : `${age} 岁`], ['出生日期', resume.birth_date], ['健康状况', resume.health], ['政治面貌', resume.politics]]);
+  makeFacts('.resume-facts.career', [['学历', resume.edu], ['院校层次', resume.school_tier], ['所学专业', resume.major], ['职称', resume.title], ['工作年限', resume.work_years === null || resume.work_years === undefined ? '—' : `${resume.work_years} 年`], ['从事专业年限', resume.prof_years === null || resume.prof_years === undefined ? '—' : `${resume.prof_years} 年`]]);
+  makeFacts('.resume-facts.ability', [['集团公司工作年限', resume.group_co_years === null || resume.group_co_years === undefined ? '—' : `${resume.group_co_years} 年`], ['上市公司工作年限', resume.listed_co_years === null || resume.listed_co_years === undefined ? '—' : `${resume.listed_co_years} 年`], ['非上市公司工作年限', resume.private_co_years === null || resume.private_co_years === undefined ? '—' : `${resume.private_co_years} 年`], ['工作背景', resume.work_bg], ['计算机能力', resume.computer_skill], ['外语能力', resume.language]]);
+  document.body.append(overlay);
+  const close = () => { closeDialog(overlay); setTimeout(() => overlay.remove(), 180); };
+  overlay.querySelector('[data-dialog-close]').addEventListener('click', close); overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+  openDialog(overlay, overlay.querySelector('[data-dialog-close]'));
 }
 
 function initStandardRuleDefaults() {
