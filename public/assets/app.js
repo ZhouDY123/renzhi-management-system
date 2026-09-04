@@ -322,7 +322,9 @@ function initQuestionEditorOptions() {
   document.querySelectorAll('form.question-editor').forEach(form => {
     const field = form.querySelector('textarea[name="options"]');
     const label = field?.closest('label') || [...form.querySelectorAll('label')].find(item => item.textContent.includes('选项（'));
-    if (!field || !label) return;
+    const answerField = form.querySelector('input[name="answer"]');
+    const answerLabel = answerField?.closest('label');
+    if (!field || !label || !answerField || !answerLabel) return;
     field.classList.add('options-storage');
     const textNode = [...label.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
     if (textNode) textNode.textContent = '选项（单选题、多选题必填）';
@@ -333,11 +335,44 @@ function initQuestionEditorOptions() {
       try { const value = JSON.parse(field.value); if (Array.isArray(value)) return value.map(item => String(item)); } catch (_) {}
       return field.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
     };
+    const answerValues = () => answerField.value.split(/[|,，]/).map(value => value.trim()).filter(Boolean);
+    const renderAnswerPicker = options => {
+      answerLabel.querySelector('.question-answer-picker')?.remove();
+      const type = form.querySelector('[name="q_type"]')?.value;
+      const title = [...answerLabel.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+      if (type === 'short') {
+        if (title) title.textContent = '简答评分要点';
+        answerField.classList.remove('answer-storage'); answerField.required = true;
+        return;
+      }
+      if (title) title.textContent = type === 'multi' ? '正确答案（可勾选多个选项）' : '正确答案（请选择一个选项）';
+      answerField.classList.add('answer-storage'); answerField.required = false;
+      const picker = document.createElement('div'); picker.className = `question-answer-picker ${type === 'multi' ? 'is-multi' : 'is-single'}`;
+      if (!options.length) { const hint = document.createElement('small'); hint.textContent = '请先新增至少一个选项。'; picker.append(hint); answerLabel.append(picker); return; }
+      const selected = answerValues();
+      const syncAnswer = () => {
+        if (type === 'multi') answerField.value = [...picker.querySelectorAll('input:checked')].map(input => input.value).join('|');
+        else answerField.value = picker.querySelector('select')?.value || '';
+      };
+      if (type === 'multi') {
+        options.forEach((option, index) => {
+          const choice = document.createElement('label'); choice.className = 'question-answer-choice';
+          const input = document.createElement('input'); input.type = 'checkbox'; input.value = option; input.checked = selected.includes(option);
+          const text = document.createElement('span'); text.textContent = `选项 ${String.fromCharCode(65 + index)}：${option}`;
+          input.addEventListener('change', syncAnswer); choice.append(input, text); picker.append(choice);
+        });
+      } else {
+        const select = document.createElement('select'); const empty = document.createElement('option'); empty.value = ''; empty.textContent = '请选择正确答案'; select.append(empty);
+        options.forEach((option, index) => { const item = document.createElement('option'); item.value = option; item.textContent = `选项 ${String.fromCharCode(65 + index)}：${option}`; item.selected = selected[0] === option; select.append(item); });
+        select.addEventListener('change', syncAnswer); picker.append(select);
+      }
+      answerLabel.append(picker); syncAnswer();
+    };
     const build = () => {
       label.querySelector('.question-options-editor')?.remove();
       const editor = document.createElement('div'); editor.className = 'question-options-editor';
       const list = document.createElement('div'); list.className = 'question-options-list';
-      const sync = () => { field.value = JSON.stringify([...list.querySelectorAll('input')].map(input => input.value.trim()).filter(Boolean)); };
+      const sync = () => { const options = [...list.querySelectorAll('input')].map(input => input.value.trim()).filter(Boolean); field.value = JSON.stringify(options); renderAnswerPicker(options); };
       const row = value => {
         const item = document.createElement('div'); item.className = 'question-option-row';
         const input = document.createElement('input'); input.type = 'text'; input.placeholder = '请输入选项内容'; input.value = value || '';
@@ -350,12 +385,14 @@ function initQuestionEditorOptions() {
       (parseOptions().length ? parseOptions() : ['']).forEach(row);
       editor.append(list, add); label.append(editor); sync();
       const type = form.querySelector('[name="q_type"]');
-      const toggle = () => { editor.hidden = type?.value === 'short'; };
-      type?.addEventListener('change', toggle); toggle();
+      const toggle = () => { editor.hidden = type?.value === 'short'; renderAnswerPicker([...list.querySelectorAll('input')].map(input => input.value.trim()).filter(Boolean)); };
+      if (type && !type.dataset.answerPickerBound) { type.dataset.answerPickerBound = '1'; type.addEventListener('change', () => form.dispatchEvent(new CustomEvent('refreshQuestionOptionsEditor'))); }
+      toggle();
     };
     build();
     form.addEventListener('restoreQuestionOptionsEditor', () => { if (!label.querySelector('.question-options-editor')) build(); });
     form.addEventListener('resetQuestionOptionsEditor', build);
+    form.addEventListener('refreshQuestionOptionsEditor', build);
   });
 }
 
