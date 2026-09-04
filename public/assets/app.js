@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination();
+  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -515,4 +515,31 @@ function initTablePagination() {
     const render=()=>{const start=(page-1)*size;rows.forEach((row,i)=>row.hidden=i<start||i>=start+size);nav.querySelector('span').textContent=`第 ${start+1}–${Math.min(start+size,rows.length)} 条，共 ${rows.length} 条`;nav.querySelector('b').textContent=`${page} / ${pages}`;nav.querySelector('[data-prev]').disabled=page===1;nav.querySelector('[data-next]').disabled=page===pages;};
     nav.querySelector('[data-prev]').addEventListener('click',()=>{page--;render();table.scrollIntoView({behavior:'smooth',block:'start'});});nav.querySelector('[data-next]').addEventListener('click',()=>{page++;render();table.scrollIntoView({behavior:'smooth',block:'start'});});render();
   });
+}
+
+function initQualityDetails() {
+  const query = new URLSearchParams(location.search);
+  if (query.get('page') !== 'talent') return;
+  const host = document.querySelector('.review-detail .dimensions');
+  if (!host) return;
+  const id = query.get('id');
+  fetch(`?page=talent&action=quality_details${id ? `&id=${encodeURIComponent(id)}` : ''}`, { credentials: 'same-origin' })
+    .then(response => response.ok ? response.json() : Promise.reject())
+    .then(data => {
+      if (!Array.isArray(data.items) || data.items.length === 0) return;
+      const section = document.createElement('section'); section.className = 'dimensions quality-details';
+      section.innerHTML = '<h3>基本素质答题明细</h3><div></div>';
+      const grid = section.querySelector('div');
+      data.items.forEach(item => {
+        const card = document.createElement('span');
+        card.innerHTML = `<b>${escapeHtml(item.stem_snapshot)}</b><small>作答：${escapeHtml(item.answer || '未作答')}</small><em>原始 ${Number(item.score).toFixed(1)} / ${Number(item.max_score).toFixed(1)}　→　折算 ${Number(item.converted).toFixed(1)} / 25</em>`;
+        grid.append(card);
+      });
+      host.insertAdjacentElement('afterend', section);
+    })
+    .catch(() => {});
+}
+
+function escapeHtml(value) {
+  const node = document.createElement('span'); node.textContent = String(value ?? ''); return node.innerHTML;
 }
