@@ -325,7 +325,9 @@ function initPublishedPapers() {
   const head = document.createElement('div'); head.className = 'panel-head';
   const title = document.createElement('div'); title.innerHTML = '<h2>已发布试卷</h2><small>查看各岗位正在使用的题卷及历史版本。</small>';
   const filter = document.createElement('select'); filter.setAttribute('aria-label', '按岗位筛选已发布试卷');
-  head.append(title, filter); const list = document.createElement('div'); list.className = 'published-paper-list'; panel.append(head, list); host.append(panel);
+  head.append(title, filter); const list = document.createElement('div'); list.className = 'published-paper-list'; panel.append(head, list);
+  const stack = document.createElement('div'); stack.className = 'question-publish-stack';
+  host.parentElement?.insertBefore(stack, host); stack.append(host, panel);
   const typeLabel = {base:'基本素质题', post:'岗位专业题'};
   fetch('?page=questions&action=paper_list', {credentials:'same-origin'})
     .then(response => response.ok ? response.json() : Promise.reject())
