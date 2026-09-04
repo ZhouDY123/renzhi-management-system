@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
+  initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -147,6 +147,30 @@ function initInterviewRegistrationStatuses() {
     if (row.querySelector('.badge')?.textContent.trim() !== '已答题') return;
     const cell = row.cells?.[5]; if (cell && !cell.querySelector('form')) cell.textContent = '测评已完成';
   });
+}
+
+function initAssessmentBulkRegistration() {
+  const form = document.querySelector('form[action*="action=interview_pre_save"]');
+  const select = form?.querySelector('select[name="candidate_id"]');
+  if (!form || !select || select.dataset.bulkReady === '1') return;
+  select.dataset.bulkReady = '1';
+  const options = [...select.options].filter(option => option.value);
+  const selectedId = String(select.dataset.selected || select.value || '');
+  const label = select.closest('label');
+  [...(label?.childNodes || [])].filter(node => node.nodeType === Node.TEXT_NODE).forEach(node => node.remove());
+  const title = document.createElement('span'); title.className = 'bulk-candidate-title'; title.textContent = '选择人才（可多选）';
+  const hint = document.createElement('small'); hint.className = 'bulk-candidate-hint'; hint.textContent = '勾选后将为所有人员登记同一个测评岗位';
+  const list = document.createElement('div'); list.className = 'bulk-candidate-list';
+  if (!options.length) list.innerHTML = '<span class="bulk-candidate-empty">暂无可登记人才</span>';
+  options.forEach(option => {
+    const item = document.createElement('label'); item.className = 'bulk-candidate-item';
+    const input = document.createElement('input'); input.type = 'checkbox'; input.name = 'candidate_ids[]'; input.value = option.value; input.checked = option.value === selectedId;
+    const text = document.createElement('span'); text.textContent = option.textContent;
+    item.append(input, text); list.append(item);
+  });
+  select.name = 'candidate_id_fallback'; select.required = false; select.hidden = true;
+  label?.prepend(title); label?.append(hint, list);
+  const button = form.querySelector('button.btn.primary'); if (button) button.textContent = '确认批量测评登记';
 }
 
 function initReviewActions() {
