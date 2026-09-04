@@ -18,6 +18,19 @@ function db(): PDO {
     return $pdo;
 }
 
+function public_base_url(): string {
+    $configured = rtrim((string)getenv('RENZHI_PUBLIC_BASE_URL'), '/');
+    if ($configured !== '') return $configured;
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+    if ($host === '' || preg_match('/^(127\.0\.0\.1|localhost)(:\d+)?$/i', $host)) {
+        $address = gethostbyname(gethostname());
+        $port = (string)parse_url('http://'.($host ?: '127.0.0.1:8080'), PHP_URL_PORT);
+        $host = $address !== gethostname() ? $address.($port !== '' ? ':'.$port : '') : '127.0.0.1:8080';
+    }
+    return $scheme.'://'.$host;
+}
+
 function migrate(): void {
     $pdo = db();
     $pdo->exec(file_get_contents(ROOT_PATH . '/migrations/001_init.sql'));
