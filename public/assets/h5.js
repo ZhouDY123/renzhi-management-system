@@ -1,4 +1,6 @@
 (() => {
+  document.querySelectorAll('.h5-form .checkline').forEach(field => field.remove());
+
   const query = new URLSearchParams(window.location.search);
   const token = query.get('t');
   if (!token) return;
