@@ -36,6 +36,13 @@ if($action==='import_template'&&$page==='preregister'){header('Content-Type: tex
 if($page==='questions'&&$action==='question_publish')$action='question_publish_v2';
 // 题目选项允许 HR 按“一行一个选项”填写，服务端统一转换为存储用的 JSON。
 if($page==='questions'&&$action==='question_save'&&isset($_POST['options'])){$raw=trim((string)$_POST['options']);$decoded=json_decode($raw,true);if(!is_array($decoded)&&$raw!==''){$decoded=array_values(array_filter(array_map('trim',preg_split('/\R+/u',$raw)),fn($item)=>$item!==''));$_POST['options']=json_encode($decoded,JSON_UNESCAPED_UNICODE);}}
+if($page==='questions'&&$action==='paper_list'){
+ header('Content-Type: application/json; charset=UTF-8');
+ $sets=$pdo->query('SELECT qs.id,qs.post_id,qs.version,qs.status,qs.published_at,p.name post_name FROM question_set qs JOIN post p ON p.id=qs.post_id ORDER BY p.id,qs.version DESC')->fetchAll();
+ $itemSt=$pdo->prepare('SELECT question_type,q_type,stem_snapshot,score_snapshot,sort FROM question_set_item WHERE question_set_id=? ORDER BY sort,id');
+ foreach($sets as &$set){$itemSt->execute([(int)$set['id']]);$set['items']=$itemSt->fetchAll();}unset($set);
+ echo json_encode(['papers'=>$sets],JSON_UNESCAPED_UNICODE);exit;
+}
 // 已发布题卷保存了题目快照；允许 HR 删除题库原题，不影响历史版本和既有答卷。
 if($_SERVER['REQUEST_METHOD']==='POST'&&$page==='questions'&&$action==='question_delete'){
  check_csrf();$id=(int)($_POST['id']??0);if(!$id){flash('未找到要删除的岗位专业题','error');redirect('/index.php?page=questions');}

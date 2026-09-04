@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination();
+  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initPublishedPapers(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -316,6 +316,46 @@ function initQuestionPaperBuilder() {
     }));
     sync();
   });
+}
+
+function initPublishedPapers() {
+  const host = document.querySelector('.question-publish-panel');
+  if (!host) return;
+  const panel = document.createElement('section'); panel.className = 'published-papers panel';
+  const head = document.createElement('div'); head.className = 'panel-head';
+  const title = document.createElement('div'); title.innerHTML = '<h2>已发布试卷</h2><small>查看各岗位正在使用的题卷及历史版本。</small>';
+  const filter = document.createElement('select'); filter.setAttribute('aria-label', '按岗位筛选已发布试卷');
+  head.append(title, filter); const list = document.createElement('div'); list.className = 'published-paper-list'; panel.append(head, list); host.append(panel);
+  const typeLabel = {base:'基本素质题', post:'岗位专业题'};
+  fetch('?page=questions&action=paper_list', {credentials:'same-origin'})
+    .then(response => response.ok ? response.json() : Promise.reject())
+    .then(data => {
+      const papers = Array.isArray(data.papers) ? data.papers : [];
+      const posts = [...new Map(papers.map(paper => [String(paper.post_id), paper.post_name])).entries()];
+      filter.append(new Option('全部岗位', ''));
+      posts.forEach(([id, name]) => filter.append(new Option(name, id)));
+      const render = () => {
+        list.replaceChildren(); const visible = papers.filter(paper => !filter.value || String(paper.post_id) === filter.value);
+        if (!visible.length) { const empty = document.createElement('p'); empty.className = 'paper-empty'; empty.textContent = '暂无已发布试卷。发布后将在这里保留版本记录。'; list.append(empty); return; }
+        visible.forEach(paper => {
+          const card = document.createElement('article'); card.className = `published-paper-card ${paper.status === 'published' ? 'is-current' : ''}`;
+          const top = document.createElement('div'); top.className = 'published-paper-top';
+          const name = document.createElement('div'); const heading = document.createElement('b'); heading.textContent = `${paper.post_name} · V${paper.version}`;
+          const time = document.createElement('small'); time.textContent = paper.published_at ? `发布时间：${paper.published_at}` : '未记录发布时间'; name.append(heading, time);
+          const state = document.createElement('span'); state.className = 'paper-state'; state.textContent = paper.status === 'published' ? '当前使用' : '历史版本'; top.append(name, state);
+          const items = Array.isArray(paper.items) ? paper.items : [];
+          const summary = document.createElement('p'); summary.className = 'paper-summary';
+          const base = items.filter(item => item.question_type === 'base').length, post = items.filter(item => item.question_type === 'post').length;
+          summary.textContent = `基本条件按启用规则自动评分；基本素质 ${base} 道，岗位专业题 ${post} 道。`;
+          const details = document.createElement('details'); const detailsTitle = document.createElement('summary'); detailsTitle.textContent = `查看题目清单（${items.length} 道）`; details.append(detailsTitle);
+          const questions = document.createElement('ol'); questions.className = 'published-paper-items';
+          items.forEach(item => { const row = document.createElement('li'); const stem = document.createElement('b'); stem.textContent = item.stem_snapshot || '未命名题目'; const meta = document.createElement('small'); meta.textContent = `${typeLabel[item.question_type] || '题目'} · ${item.q_type === 'single' ? '单选题' : item.q_type === 'multi' ? '多选题' : '简答题'} · ${item.score_snapshot ?? 0} 分`; row.append(stem, meta); questions.append(row); });
+          details.append(questions); card.append(top, summary, details); list.append(card);
+        });
+      };
+      filter.addEventListener('change', render); render();
+    })
+    .catch(() => { const message = document.createElement('p'); message.className = 'paper-empty'; message.textContent = '试卷记录加载失败，请刷新后重试。'; list.append(message); });
 }
 
 function initQuestionEditorOptions() {
