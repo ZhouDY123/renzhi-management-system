@@ -1,7 +1,7 @@
 (() => {
   const brandIcon = document.querySelector('.h5-brand i'), brandName = document.querySelector('.h5-brand b');
   if (brandIcon) brandIcon.textContent = '3Q';
-  if (brandName) brandName.textContent = '三奇';
+  if (brandName) brandName.textContent = '任职管理系统';
   document.querySelectorAll('.h5-form .checkline').forEach(field => field.remove());
   {
     const workYearLabels = {
