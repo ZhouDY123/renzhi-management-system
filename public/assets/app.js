@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initPublishedPapers(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination();
+  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -316,6 +316,24 @@ function initQuestionPaperBuilder() {
     }));
     sync();
   });
+}
+
+function initQuestionArchiveLink() {
+  if (!document.querySelector('[data-question-paper-builder]')) return;
+  const head = document.querySelector('.page-head'); if (!head) return;
+  let actions = head.querySelector('.page-actions');
+  if (!actions) { actions = document.createElement('div'); actions.className = 'page-actions'; head.append(actions); }
+  if (actions.querySelector('[data-paper-archive-link]')) return;
+  const link = document.createElement('a'); link.className = 'btn secondary'; link.href = '?page=paper_archive'; link.dataset.paperArchiveLink = '1'; link.textContent = '查看题卷档案'; actions.append(link);
+}
+
+function initPaperArchive() {
+  const root = document.querySelector('.paper-archive-layout'); if (!root) return;
+  const selects = [...root.querySelectorAll('[data-paper-select]')], records = [...root.querySelectorAll('[data-paper-record]')];
+  selects.forEach(button => button.addEventListener('click', () => {
+    const id = button.dataset.paperSelect; selects.forEach(item => item.classList.toggle('is-active', item === button));
+    records.forEach(record => { record.hidden = record.dataset.paperRecord !== id; });
+  }));
 }
 
 function initPublishedPapers() {
