@@ -50,6 +50,11 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&$page==='questions'&&$action==='question
 }
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();
+ // 浏览器在隐藏或移除评分档位时，可能不会提交对应的分值字段；保留该档位原分值，避免整个维度无法保存。
+ if(in_array($action,['standard_group_save','standard_custom_group_save','standard_dimension_publish'],true)){
+  $ruleIds=array_values((array)($_POST['rule_id']??[]));$tierValues=array_values((array)($_POST['tier_value']??[]));
+  if($ruleIds){$currentScore=$pdo->prepare('SELECT tier_value FROM scoring_standard WHERE id=?');foreach($ruleIds as $i=>$ruleId){if(!array_key_exists($i,$tierValues)){$currentScore->execute([(int)$ruleId]);$tierValues[$i]=(string)($currentScore->fetchColumn()??0);}}$_POST['rule_id']=$ruleIds;$_POST['tier_value']=array_slice($tierValues,0,count($ruleIds));}
+ }
  try{
   if($action==='post_save'){
    $id=(int)($_POST['id']??0); $data=[trim($_POST['name']),trim($_POST['company']),$_POST['status'],trim($_POST['duty'])];
