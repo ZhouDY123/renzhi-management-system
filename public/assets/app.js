@@ -522,28 +522,9 @@ function initQualityDetails() {
   if (query.get('page') !== 'talent') return;
   const host = document.querySelector('.review-detail .dimensions');
   if (!host) return;
+  host.hidden = true;
   document.querySelectorAll('.score-summary .score-bar').forEach(bar => {
     const label = bar.querySelector('span')?.childNodes[0]?.textContent?.trim();
     if (label === '基本条件' || label === '基本素质') bar.hidden = true;
   });
-  const id = query.get('id');
-  fetch(`?page=talent&action=quality_details${id ? `&id=${encodeURIComponent(id)}` : ''}`, { credentials: 'same-origin' })
-    .then(response => response.ok ? response.json() : Promise.reject())
-    .then(data => {
-      if (!Array.isArray(data.items) || data.items.length === 0) return;
-      const section = document.createElement('section'); section.className = 'dimensions quality-details';
-      section.innerHTML = '<h3>基本素质答题明细</h3><div></div>';
-      const grid = section.querySelector('div');
-      data.items.forEach(item => {
-        const card = document.createElement('span');
-        card.innerHTML = `<b>${escapeHtml(item.stem_snapshot)}</b><small>作答：${escapeHtml(item.answer || '未作答')}</small><em>原始 ${Number(item.score).toFixed(1)} / ${Number(item.max_score).toFixed(1)}　→　折算 ${Number(item.converted).toFixed(1)} / 25</em>`;
-        grid.append(card);
-      });
-      host.insertAdjacentElement('afterend', section);
-    })
-    .catch(() => {});
-}
-
-function escapeHtml(value) {
-  const node = document.createElement('span'); node.textContent = String(value ?? ''); return node.innerHTML;
 }
