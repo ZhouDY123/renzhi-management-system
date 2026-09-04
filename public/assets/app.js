@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
+  initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -47,6 +47,26 @@ function initSearchFields() {
     const sync = () => { clear.hidden = !input.value; };
     clear.addEventListener('click', () => { input.value = ''; sync(); input.focus(); if (form.classList.contains('filter-bar')) form.requestSubmit(); });
     input.addEventListener('input', sync); input.insertAdjacentElement('afterend', clear); sync();
+  });
+}
+
+function initSidebarGroups() {
+  const nav = document.querySelector('.sidebar nav'); if (!nav) return;
+  [...nav.querySelectorAll(':scope > label')].forEach((label, index) => {
+    const group = document.createElement('section'); group.className = 'nav-group';
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'nav-group-toggle';
+    button.innerHTML = `<span>${label.textContent}</span><i aria-hidden="true">⌄</i>`;
+    label.replaceWith(group); group.append(button);
+    let item = group.nextElementSibling;
+    while (item?.matches('a')) { const next = item.nextElementSibling; group.append(item); item = next; }
+    const key = `sidebar-group-${index}`;
+    const stored = sessionStorage.getItem(key);
+    const open = stored === null ? (index === 0 || !!group.querySelector('a.active')) : stored === 'open';
+    group.classList.toggle('is-collapsed', !open); button.setAttribute('aria-expanded', String(open));
+    button.addEventListener('click', () => {
+      const collapsed = group.classList.toggle('is-collapsed');
+      button.setAttribute('aria-expanded', String(!collapsed)); sessionStorage.setItem(key, collapsed ? 'closed' : 'open');
+    });
   });
 }
 
