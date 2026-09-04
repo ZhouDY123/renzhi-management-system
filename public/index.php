@@ -36,6 +36,11 @@ if($action==='import_template'&&$page==='preregister'){header('Content-Type: tex
 if($page==='questions'&&$action==='question_publish')$action='question_publish_v2';
 // 题目选项允许 HR 按“一行一个选项”填写，服务端统一转换为存储用的 JSON。
 if($page==='questions'&&$action==='question_save'&&isset($_POST['options'])){$raw=trim((string)$_POST['options']);$decoded=json_decode($raw,true);if(!is_array($decoded)&&$raw!==''){$decoded=array_values(array_filter(array_map('trim',preg_split('/\R+/u',$raw)),fn($item)=>$item!==''));$_POST['options']=json_encode($decoded,JSON_UNESCAPED_UNICODE);}}
+// 已发布题卷保存了题目快照；允许 HR 删除题库原题，不影响历史版本和既有答卷。
+if($_SERVER['REQUEST_METHOD']==='POST'&&$page==='questions'&&$action==='question_delete'){
+ check_csrf();$id=(int)($_POST['id']??0);if(!$id){flash('未找到要删除的岗位专业题','error');redirect('/index.php?page=questions');}
+ $pdo->prepare('DELETE FROM question_post WHERE id=?')->execute([$id]);audit('question_delete','post_question:'.$id);flash('岗位专业题已删除；已发布题卷和历史答卷不受影响');redirect('/index.php?page=questions');
+}
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();
  try{
