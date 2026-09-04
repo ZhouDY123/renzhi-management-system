@@ -76,6 +76,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   }
   if($action==='interview_pre_save'){
    $candidateId=(int)($_POST['candidate_id']??0);$postId=(int)($_POST['post_id']??0);$exists=$pdo->prepare('SELECT 1 FROM candidate WHERE id=?');$exists->execute([$candidateId]);if(!$exists->fetchColumn())throw new RuntimeException('请选择人才库中的人才');
+   $completed=$pdo->prepare("SELECT 1 FROM result r JOIN answer a ON a.id=r.answer_id WHERE a.candidate_id=? AND r.review_status='final_pass' LIMIT 1");$completed->execute([$candidateId]);if($completed->fetchColumn())throw new RuntimeException('该人才已面试通过，不能再次进行测评登记');
    $pdo->prepare('INSERT INTO interview_pre_register(candidate_id,post_id,created_by) VALUES(?,?,?)')->execute([$candidateId,$postId,admin_user()['id']]);audit('interview_pre_register','candidate:'.$candidateId,['post_id'=>$postId]);flash('测评登记已完成，可通知人才进行面试前在线测评');redirect('/index.php?page=preregister');
   }
   if($action==='interview_pre_update'){
