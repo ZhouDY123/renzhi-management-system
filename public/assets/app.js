@@ -233,10 +233,12 @@ function initQuestionPaperBuilder() {
     const pickList = form.querySelector('.question-pick-list');
     const libraryList = document.querySelector('.question-library .question-list');
     const actionsByQuestionId = new Map();
+    const inactiveRows = [];
     libraryList?.querySelectorAll('.question').forEach(row => {
       const id = row.querySelector('input[name="id"]')?.value;
       const actions = row.querySelector('.question-actions');
       if (id && actions) actionsByQuestionId.set(id, actions.cloneNode(true));
+      if (row.textContent.includes('已停用')) inactiveRows.push(row.cloneNode(true));
     });
     if (!select) return;
     if (!form.id) form.id = 'question-paper-publish-form';
@@ -258,6 +260,15 @@ function initQuestionPaperBuilder() {
         const id = item.querySelector('input[name="professional_ids[]"]')?.value;
         const actions = id ? actionsByQuestionId.get(id) : null;
         if (actions) item.append(actions);
+      });
+      inactiveRows.forEach(row => {
+        const meta = row.querySelector('small')?.textContent.trim() || '';
+        const post = [...select.options].find(option => meta.startsWith(`${option.textContent.trim()} ·`));
+        if (!post) return;
+        row.classList.add('question-pick', 'is-inactive');
+        row.dataset.questionPost = post.value;
+        row.setAttribute('aria-label', '已停用的岗位专业题，可编辑、启用或删除');
+        pickList.append(row);
       });
       libraryList.replaceChildren(pickHead, tools, pickList);
       select.closest('.question-post-select')?.after(basket);
@@ -285,7 +296,7 @@ function initQuestionPaperBuilder() {
         const shown = match && (!keyword || text.includes(keyword)) && (!typeValue || questionType === typeValue);
         item.hidden = !shown;
         if (checkbox) checkbox.disabled = !match;
-        if (match) { available += 1; if (shown) visible += 1; if (checkbox?.checked) selected += 1; }
+        if (match && checkbox) { available += 1; if (shown) visible += 1; if (checkbox.checked) selected += 1; }
       });
       if (count) count.textContent = available ? `已选 ${selected} / ${available} 道专业题` : '该岗位暂未启用专业题';
       if (summary) { const number = document.createElement('b'); number.textContent = String(selected); summary.replaceChildren(number, document.createTextNode(' 道已选专业题')); }
