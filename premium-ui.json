@@ -1,0 +1,15 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["public", "app"],
+  "locale": "zh-CN",
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": ["Select/Listbox", "Date", "Form", "Scrollbar", "Toast", "CRUD"],
+  "ownership": {
+    "Select/Listbox": "native",
+    "Date": "native",
+    "Form": "shared PHP markup and app.js controller",
+    "Scrollbar": "public/assets/extra.css",
+    "Toast": "server flash and app live region",
+    "CRUD": "public/index.php route handlers"
+  }
+}
