@@ -1,5 +1,16 @@
 (() => {
   document.querySelectorAll('.h5-form .checkline').forEach(field => field.remove());
+  {
+    const workYearLabels = {
+      group_co_years: '集团公司工作年限',
+      listed_co_years: '上市公司工作年限',
+      private_co_years: '非上市公司工作年限'
+    };
+    Object.entries(workYearLabels).forEach(([field, text]) => {
+      const label = document.querySelector(`.h5-form input[name="${field}"]`)?.closest('label');
+      if (label?.firstChild?.nodeType === Node.TEXT_NODE) label.firstChild.nodeValue = text;
+    });
+  }
 
   const query = new URLSearchParams(window.location.search);
   const token = query.get('t');
