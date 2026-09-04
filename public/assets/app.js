@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
+  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initReviewActions(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -115,6 +115,23 @@ function initInterviewRegistrationActions() {
     if (!operation) { operation = document.createElement('input'); operation.type = 'hidden'; operation.name = 'op'; form.append(operation); }
     form.querySelectorAll('button[name="op"]').forEach(button => button.addEventListener('click', () => { operation.value = button.value; }));
     form.addEventListener('submit', event => { if (!operation.value) { event.preventDefault(); operation.value = 'change_post'; form.requestSubmit(); } });
+  });
+}
+
+function initReviewActions() {
+  document.querySelectorAll('form.review-form').forEach(form => {
+    let operation = form.querySelector('input.review-operation');
+    if (!operation) {
+      operation = document.createElement('input');
+      operation.type = 'hidden'; operation.name = 'op'; operation.className = 'review-operation';
+      form.append(operation);
+    }
+    form.querySelectorAll('button[name="op"]').forEach(button => button.addEventListener('click', () => {
+      operation.value = button.value;
+    }));
+    form.addEventListener('submit', event => {
+      if (!operation.value && event.submitter?.name === 'op') operation.value = event.submitter.value;
+    });
   });
 }
 
