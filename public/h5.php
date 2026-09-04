@@ -3,7 +3,7 @@ require __DIR__.'/../app/bootstrap.php'; require ROOT_PATH.'/app/template.php';r
 $pdo=db(); $m=$_GET['m']??'apply'; $t=$_GET['t']??''; $step=$_GET['step']??''; $error='';
 
 if($m==='condition_options'){
- $codes=['health'=>'health','edu'=>'edu','school'=>'school_tier','politics'=>'politics','computer'=>'computer_skill','language'=>'language'];$out=[];$version=(int)$pdo->query("SELECT COALESCE(MAX(version),0) FROM scoring_standard WHERE status='published'")->fetchColumn();
+ $codes=['health'=>'health','edu'=>'edu','school'=>'school_tier','major'=>'major','politics'=>'politics','computer'=>'computer_skill','language'=>'language'];$out=[];$version=(int)$pdo->query("SELECT COALESCE(MAX(version),0) FROM scoring_standard WHERE status='published'")->fetchColumn();
  if($version){$st=$pdo->prepare("SELECT dim_code,match_type,match_rule FROM scoring_standard WHERE version=? AND status='published' AND category!='basic_quality' ORDER BY sort,id");$st->execute([$version]);foreach($st as $rule){$field=$codes[$rule['dim_code']]??null;if(!$field||!in_array($rule['match_type'],['eq','in'],true))continue;$match=json_decode($rule['match_rule'],true);$values=$rule['match_type']==='in'?($match['values']??[]):[$match['value']??''];foreach($values as $value){$value=trim((string)$value);if($value!==''&&!in_array($value,$out[$field]??[],true))$out[$field][]=$value;}}}
  header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store');echo json_encode($out,JSON_UNESCAPED_UNICODE);exit;
 }
