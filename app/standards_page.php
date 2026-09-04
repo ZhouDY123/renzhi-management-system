@@ -5,18 +5,18 @@ function render_grouped_standards_page(string $page, PDO $pdo): bool {
     if ($page !== 'standards') return false;
     admin_header('评分标准','standards');
     $rows=$pdo->query('SELECT * FROM scoring_standard WHERE status!="retired" ORDER BY category,dim_code,sort,id')->fetchAll();
-    $conditionGroups=[];$suzhiGroups=[];
+    $conditionGroups=[];$suzhiGroups=[];$initialSection=$_SESSION['standards_active_section']??'conditions';unset($_SESSION['standards_active_section']);
     foreach($rows as $row){$target=$row['category']==='basic_quality'?'suzhiGroups':'conditionGroups';${$target}[$row['dim_code']][]=$row;}
     page_head('职位管理 / 评分体系','基本条件与基本素质','两类通用评分维度均可独立维护档位、分值和启用状态。'); ?>
     <section class="grouped-standards">
-      <div class="standard-section-switch" role="tablist" aria-label="评分内容切换"><button type="button" class="btn is-active" role="tab" aria-selected="true" data-standard-show="conditions">基本条件测评</button><button type="button" class="btn" role="tab" aria-selected="false" data-standard-show="suzhi">基本素质测评</button></div>
-      <div id="standard-conditions" class="standard-tab-panel" data-standard-panel="conditions">
+      <div class="standard-section-switch" role="tablist" aria-label="评分内容切换"><button type="button" class="btn <?=$initialSection==='conditions'?'is-active':''?>" role="tab" aria-selected="<?=$initialSection==='conditions'?'true':'false'?>" data-standard-show="conditions">基本条件测评</button><button type="button" class="btn <?=$initialSection==='suzhi'?'is-active':''?>" role="tab" aria-selected="<?=$initialSection==='suzhi'?'true':'false'?>" data-standard-show="suzhi">基本素质测评</button></div>
+      <div id="standard-conditions" class="standard-tab-panel" data-standard-panel="conditions" <?=$initialSection==='suzhi'?'hidden':''?>>
         <article class="panel grouped-standard-intro"><div><b>一、基本条件自动评分</b><p>年龄、健康状况、学历、工作经历等客观信息；应聘者填写或选择后按规则自动评分。</p></div></article>
         <?=render_standard_dimension_search('conditions','搜索基本条件维度，例如：年龄、学历') ?>
         <?=render_standard_dimension_form('conditions')?>
         <?=render_standard_dimension_cards($conditionGroups)?>
       </div>
-      <div id="standard-suzhi" class="standard-tab-panel" data-standard-panel="suzhi" hidden>
+      <div id="standard-suzhi" class="standard-tab-panel" data-standard-panel="suzhi" <?=$initialSection==='conditions'?'hidden':''?>>
         <article class="panel grouped-standard-intro suzhi-intro"><div><b>二、基本素质测评</b><p>沟通协作、逻辑分析、责任意识、学习适应等通用维度；与基本条件采用同样的评分档位管理方式。</p></div></article>
         <?=render_standard_dimension_search('suzhi','搜索基本素质维度，例如：沟通、责任') ?>
         <?=render_standard_dimension_cards($suzhiGroups)?>

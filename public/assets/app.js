@@ -178,7 +178,7 @@ function initStandardTabs() {
     const form = document.querySelector('form[action*="standard_dimension_create"]');
     if (form) { form.querySelector('[name="standard_scope"]')?.setAttribute('value', target); const type=form.querySelector('[data-dimension-type]'); if(type){const isSuzhi=target==='suzhi';if(isSuzhi)type.value='answer';type.disabled=isSuzhi;type.dispatchEvent(new Event('change'));} const title = form.querySelector('.form-title h2'); if (title) title.textContent = `新增${target === 'suzhi' ? '基本素质' : '基本条件'}维度`; form.closest('.modal-dialog')?.querySelector('.modal-top h2') && (form.closest('.modal-dialog').querySelector('.modal-top h2').textContent = `新增${target === 'suzhi' ? '基本素质' : '基本条件'}维度`); }
   }));
-  const initialSection = new URLSearchParams(location.search).get('section');
+  const initialSection = new URLSearchParams(location.search).get('section') || tabs.find(tab => tab.classList.contains('is-active'))?.dataset.standardShow;
   if (initialSection === 'suzhi') tabs.find(tab => tab.dataset.standardShow === 'suzhi')?.click();
 }
 
