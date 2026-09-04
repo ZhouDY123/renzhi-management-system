@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initReviewActions(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
+  initSearchFields(); initPasswordToggles(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initReviewActions(); initInterviewSessionControls(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -132,6 +132,19 @@ function initReviewActions() {
     form.addEventListener('submit', event => {
       if (!operation.value && event.submitter?.name === 'op') operation.value = event.submitter.value;
     });
+  });
+}
+
+function initInterviewSessionControls() {
+  document.querySelectorAll('.session-state form[action*="action=session_status"]').forEach(form => {
+    const select = form.querySelector('select[name="status"]');
+    const button = form.querySelector('button');
+    if (select) select.setAttribute('aria-label', '选择场次状态');
+    if (button) { button.textContent = '更新状态'; button.title = '保存所选的场次状态'; }
+  });
+  document.querySelectorAll('.session-state form[action*="action=session_rotate"] button').forEach(button => {
+    button.textContent = '更新评分二维码';
+    button.title = '生成新二维码，旧二维码将失效';
   });
 }
 
