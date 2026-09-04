@@ -523,8 +523,4 @@ function initQualityDetails() {
   const host = document.querySelector('.review-detail .dimensions');
   if (!host) return;
   host.hidden = true;
-  document.querySelectorAll('.score-summary .score-bar').forEach(bar => {
-    const label = bar.querySelector('span')?.childNodes[0]?.textContent?.trim();
-    if (label === '基本条件' || label === '基本素质') bar.hidden = true;
-  });
 }
