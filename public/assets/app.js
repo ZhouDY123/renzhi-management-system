@@ -146,12 +146,12 @@ function initInterviewSessionControls() {
 }
 
 function initTalentResumePreview() {
-  document.querySelectorAll('.talent-card>a[href*="page=talent"]').forEach(link => { link.textContent = '简历预览'; link.addEventListener('click', async event => {
+  document.querySelectorAll('.talent-card .resume-preview').forEach(link => { link.textContent = '简历预览'; link.addEventListener('click', async event => {
     event.preventDefault();
-    const resultId = new URL(link.href).searchParams.get('id');
-    if (!resultId) return;
+    const candidateId = new URL(link.href).searchParams.get('resume_id');
+    if (!candidateId) return;
     try {
-      const response = await fetch(`?page=talent_pool&resume_id=${encodeURIComponent(resultId)}`, {credentials:'same-origin'});
+      const response = await fetch(`?page=talent_pool&resume_id=${encodeURIComponent(candidateId)}`, {credentials:'same-origin'});
       if (!response.ok) throw new Error();
       const resume = await response.json(); if (resume.error) throw new Error();
       showTalentResume(resume);
