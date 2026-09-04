@@ -1,6 +1,10 @@
 (() => {
   const brandIcon = document.querySelector('.h5-brand i'), brandName = document.querySelector('.h5-brand b');
-  if (brandIcon) brandIcon.textContent = '3Q';
+  if (brandIcon) {
+    const logo = document.createElement('img');
+    logo.className = 'h5-wordmark'; logo.src = '/assets/sanqi-logo-alpha.png'; logo.alt = '3Q 三奇';
+    brandIcon.replaceWith(logo);
+  }
   if (brandName) brandName.textContent = '任职管理系统';
   document.querySelectorAll('.h5-form .checkline').forEach(field => field.remove());
   {
