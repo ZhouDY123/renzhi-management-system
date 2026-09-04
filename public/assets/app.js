@@ -321,7 +321,7 @@ function initQuestionPaperBuilder() {
 function initPublishedPapers() {
   const host = document.querySelector('.question-publish-panel');
   if (!host) return;
-  const panel = document.createElement('section'); panel.className = 'published-papers panel';
+  const panel = document.createElement('section'); panel.className = 'published-papers';
   const head = document.createElement('div'); head.className = 'panel-head';
   const title = document.createElement('div'); title.innerHTML = '<h2>已发布试卷</h2><small>查看各岗位正在使用的题卷及历史版本。</small>';
   const filter = document.createElement('select'); filter.setAttribute('aria-label', '按岗位筛选已发布试卷');
