@@ -223,6 +223,7 @@ function initStandardDimensionCreate() {
 }
 
 function initQuestionPaperBuilder() {
+  document.querySelector('.question-library .panel-head small')?.remove();
   document.querySelectorAll('[data-question-paper-builder]').forEach(form => {
     form.action = '?page=questions&action=question_publish_v2';
     const select = form.querySelector('[data-question-post-select]');
@@ -231,6 +232,12 @@ function initQuestionPaperBuilder() {
     const pickHead = form.querySelector('.question-pick-head');
     const pickList = form.querySelector('.question-pick-list');
     const libraryList = document.querySelector('.question-library .question-list');
+    const actionsByQuestionId = new Map();
+    libraryList?.querySelectorAll('.question').forEach(row => {
+      const id = row.querySelector('input[name="id"]')?.value;
+      const actions = row.querySelector('.question-actions');
+      if (id && actions) actionsByQuestionId.set(id, actions.cloneNode(true));
+    });
     if (!select) return;
     if (!form.id) form.id = 'question-paper-publish-form';
     const tools = document.createElement('div'); tools.className = 'question-picker-tools';
@@ -247,6 +254,11 @@ function initQuestionPaperBuilder() {
     if (libraryList && pickHead && pickList) {
       pickerRoot = libraryList;
       pickList.querySelectorAll('input').forEach(input => input.setAttribute('form', form.id));
+      pickList.querySelectorAll('.question-pick').forEach(item => {
+        const id = item.querySelector('input[name="professional_ids[]"]')?.value;
+        const actions = id ? actionsByQuestionId.get(id) : null;
+        if (actions) item.append(actions);
+      });
       libraryList.replaceChildren(pickHead, tools, pickList);
       select.closest('.question-post-select')?.after(basket);
     } else if (pickHead) { pickHead.after(tools); tools.after(basket); }
@@ -288,7 +300,7 @@ function initQuestionPaperBuilder() {
     clearSelected.addEventListener('click', () => { pickerRoot.querySelectorAll('[data-question-post]').forEach(item => { if (item.dataset.questionPost === select.value) { const checkbox = item.querySelector('input[type="checkbox"]'); if (checkbox) checkbox.checked = false; } }); sync(); });
     pickerRoot.querySelectorAll('.question-pick').forEach(item => item.addEventListener('click', event => {
       const checkbox = item.querySelector('input[type="checkbox"]');
-      if (!checkbox || checkbox.disabled || event.target === checkbox) return;
+      if (!checkbox || checkbox.disabled || event.target === checkbox || event.target.closest('a,button,form')) return;
       event.preventDefault(); checkbox.checked = !checkbox.checked; checkbox.dispatchEvent(new Event('change', {bubbles:true}));
     }));
     sync();
