@@ -154,22 +154,31 @@ function initAssessmentBulkRegistration() {
   const select = form?.querySelector('select[name="candidate_id"]');
   if (!form || !select || select.dataset.bulkReady === '1') return;
   select.dataset.bulkReady = '1';
-  const options = [...select.options].filter(option => option.value);
   const selectedId = String(select.dataset.selected || select.value || '');
   const label = select.closest('label');
   [...(label?.childNodes || [])].filter(node => node.nodeType === Node.TEXT_NODE).forEach(node => node.remove());
   const title = document.createElement('span'); title.className = 'bulk-candidate-title'; title.textContent = '选择人才（可多选）';
-  const hint = document.createElement('small'); hint.className = 'bulk-candidate-hint'; hint.textContent = '勾选后将为所有人员登记同一个测评岗位';
+  const hint = document.createElement('small'); hint.className = 'bulk-candidate-hint'; hint.textContent = '可搜索人才；勾选后将为所有人员登记同一个测评岗位';
+  const toolbar = document.createElement('div'); toolbar.className = 'bulk-candidate-tools';
+  const search = document.createElement('input'); search.type = 'search'; search.placeholder = '搜索姓名、手机号或专业'; search.setAttribute('aria-label', '搜索人才');
+  const selectPage = document.createElement('button'); selectPage.type = 'button'; selectPage.className = 'table-action'; selectPage.textContent = '全选当前结果';
+  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'table-action'; clear.textContent = '清空选择';
+  toolbar.append(search, selectPage, clear);
   const list = document.createElement('div'); list.className = 'bulk-candidate-list';
-  if (!options.length) list.innerHTML = '<span class="bulk-candidate-empty">暂无可登记人才</span>';
-  options.forEach(option => {
-    const item = document.createElement('label'); item.className = 'bulk-candidate-item';
-    const input = document.createElement('input'); input.type = 'checkbox'; input.name = 'candidate_ids[]'; input.value = option.value; input.checked = option.value === selectedId;
-    const text = document.createElement('span'); text.textContent = option.textContent;
-    item.append(input, text); list.append(item);
-  });
+  const footer = document.createElement('div'); footer.className = 'bulk-candidate-footer';
+  const summary = document.createElement('small'); const more = document.createElement('button'); more.type = 'button'; more.className = 'table-action'; more.textContent = '加载更多'; more.hidden = true; footer.append(summary, more);
+  const chosen = new Map(); if (selectedId) { const option = [...select.options].find(item => item.value === selectedId); if (option) chosen.set(selectedId, option.textContent); }
+  let page = 1, hasMore = false, timer;
+  const syncSummary = () => { summary.textContent = `已选择 ${chosen.size} 人`; };
+  const render = items => { list.replaceChildren(); if (!items.length) { list.innerHTML = '<span class="bulk-candidate-empty">未找到可登记人才</span>'; return; } items.forEach(person => { const item = document.createElement('label'); item.className = 'bulk-candidate-item'; const input = document.createElement('input'); input.type = 'checkbox'; input.value = String(person.id); input.checked = chosen.has(String(person.id)); const text = document.createElement('span'); text.textContent = `${person.name} · ${person.mobile.slice(0, 3)}****${person.mobile.slice(-4)} · ${person.major || '专业待补充'}`; input.addEventListener('change', () => { if (input.checked) chosen.set(input.value, text.textContent); else chosen.delete(input.value); syncSummary(); }); item.append(input, text); list.append(item); }); };
+  const load = (next = false) => { if (!next) page = 1; const params = new URLSearchParams({q: search.value.trim(), p: String(page)}); fetch(`?page=preregister&action=assessment_candidates&${params}`, {credentials: 'same-origin'}).then(response => response.ok ? response.json() : {items: [], has_more: false}).then(data => { const previous = next ? [...list.children] : []; render(data.items || []); if (next) list.prepend(...previous); hasMore = !!data.has_more; more.hidden = !hasMore; syncSummary(); }).catch(() => { list.innerHTML = '<span class="bulk-candidate-empty">人才列表加载失败，请刷新后重试</span>'; }); };
+  selectPage.addEventListener('click', () => { list.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = true; const text = input.parentElement?.querySelector('span')?.textContent || ''; chosen.set(input.value, text); }); syncSummary(); });
+  clear.addEventListener('click', () => { chosen.clear(); list.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = false; }); syncSummary(); });
+  search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => load(false), 180); });
+  more.addEventListener('click', () => { if (!hasMore) return; page += 1; load(true); });
+  form.addEventListener('submit', () => { form.querySelectorAll('input[name="candidate_ids[]"]').forEach(input => input.remove()); chosen.forEach((text, id) => { const input = document.createElement('input'); input.type = 'hidden'; input.name = 'candidate_ids[]'; input.value = id; form.append(input); }); });
   select.name = 'candidate_id_fallback'; select.required = false; select.hidden = true;
-  label?.prepend(title); label?.append(hint, list);
+  label?.prepend(title); label?.append(hint, toolbar, list, footer); load(false);
   const button = form.querySelector('button.btn.primary'); if (button) button.textContent = '确认批量测评登记';
 }
 
