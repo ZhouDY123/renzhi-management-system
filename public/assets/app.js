@@ -286,6 +286,18 @@ function initInterviewSessionControls() {
     if (button) { button.textContent = '更新状态'; button.title = '保存所选的场次状态'; }
   });
   document.querySelectorAll('.session-state form[action*="action=session_rotate"]').forEach(form => form.remove());
+  fetch('?page=interviews&action=session_progress', {credentials: 'same-origin'})
+    .then(response => response.ok ? response.json() : [])
+    .then(rows => rows.forEach(progress => {
+      const input = document.querySelector(`.session-state form[action*="action=session_status"] input[name="id"][value="${progress.id}"]`);
+      const host = input?.closest('.session-state'); if (!host) return;
+      const expected = Number(progress.interviewer_count) * Number(progress.candidate_count);
+      const complete = expected > 0 && Number(progress.completed_count) >= expected;
+      const status = document.createElement('small'); status.className = `session-progress${complete ? ' is-complete' : ''}`;
+      status.textContent = expected ? (complete ? `评分已全部完成（${progress.completed_count} / ${expected}）` : `评分进度：${progress.completed_count} / ${expected}`) : '请先分配面试官和候选人';
+      host.prepend(status);
+    }))
+    .catch(() => {});
   const candidateForms = [...document.querySelectorAll('.assign-row form[action*="action=assign_candidate"]')];
   if (!candidateForms.length) return;
   candidateForms.forEach(form => form.action = '?page=interviews&action=assign_candidate_v2');
