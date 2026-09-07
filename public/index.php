@@ -18,7 +18,7 @@ $access=[
  'admin'=>['dashboard','posts','standards','questions','paper_archive','preregister','manual','talent','talent_pool','interviews','interview_results','users','settings','logs','qrcode'],
  'hr'=>['dashboard','posts','standards','questions','paper_archive','preregister','manual','talent','talent_pool','interviews','interview_results','users','qrcode'],
  'leader'=>['dashboard','talent','talent_pool','interview_results'],
- 'interviewer'=>[]
+ 'interviewer'=>['dashboard']
 ];
 if(!in_array($page,$access[$role]??[],true)){http_response_code(403);?><!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>无访问权限 · 任职管理</title><link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/extra.css"></head><body class="login-page"><aside class="login-visual" aria-label="任职管理系统介绍"><div class="login-grid" aria-hidden="true"></div><div class="login-brand"><img class="login-wordmark" src="/assets/sanqi-logo.png" alt="三奇"></div></aside><main class="login-main"><section class="login-card" aria-labelledby="forbidden-title"><div class="login-card-head"><small>访问受限</small><h1 id="forbidden-title">您暂无此页面权限</h1><p>如需访问该功能，请联系系统管理员调整账号角色。</p></div><a class="btn primary login-submit" href="/index.php">返回工作台</a></section></main></body></html><?php exit;}
 
