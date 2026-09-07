@@ -1,12 +1,45 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions();
+  initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
 });
 
 function initLoginFields() {
   const form = document.querySelector('form.login-card');
   if (!form) return;
   ['username', 'password'].forEach(name => { const field = form.elements[name]; if (field) field.value = ''; });
+}
+
+function initAuditLog() {
+  if (new URLSearchParams(location.search).get('page') !== 'logs') return;
+  const table = document.querySelector('.table-wrap table');
+  if (!table) return;
+  const actionLabels = {user_update:'编辑用户', user_delete:'删除用户', interviewer_assign:'分配面试官', candidate_assign:'分配候选人', interview_session_create:'创建面试场次', interview_score_reset:'重置面试评分', review_first:'人才初审', review_final:'人才终审'};
+  const roleLabels = {admin:'系统管理员', hr:'人力资源审核员', leader:'分管领导', interviewer:'面试官'};
+  const outcomeLabels = {first_pass:'初审通过', first_reject:'初审不通过', final_pass:'终审录用', final_reject:'终审不录用'};
+  const targetLabels = {user:'用户账号', result:'测评结果', session:'面试场次', score:'面试评分', detail:'答题明细', registration:'测评登记'};
+  const headers = table.tHead?.rows[0]?.cells;
+  if (headers) { if (headers[3]) headers[3].textContent = '关联记录'; if (headers[4]) headers[4].textContent = '操作说明'; }
+  const labelTarget = value => { const [type, id] = String(value || '').split(':'); return targetLabels[type] && id ? `${targetLabels[type]} #${id}` : (value || '—'); };
+  const labelDetail = value => {
+    if (!value || value === '[]' || value === '{}') return '无附加信息';
+    try {
+      const detail = JSON.parse(value); const parts = [];
+      if (detail.role) parts.push(`角色调整为${roleLabels[detail.role] || detail.role}`);
+      if (detail.password_changed) parts.push('已重置密码');
+      if (detail.op) parts.push(`审核结论：${outcomeLabels[detail.op] || detail.op}`);
+      if (detail.registration_id) parts.push(`来源测评登记 #${detail.registration_id}`);
+      if (detail.user_id) parts.push(`关联用户 #${detail.user_id}`);
+      if (detail.post_id) parts.push(`关联岗位 #${detail.post_id}`);
+      if (detail.score !== undefined) parts.push(`评分：${detail.score}`);
+      return parts.join('；') || '已记录操作详情';
+    } catch (_) { return value; }
+  };
+  [...table.tBodies[0].rows].forEach(row => {
+    if (row.cells.length < 6) return;
+    const action = row.cells[2].textContent.trim(); row.cells[2].textContent = actionLabels[action] || action;
+    row.cells[3].textContent = labelTarget(row.cells[3].textContent.trim());
+    row.cells[4].textContent = labelDetail(row.cells[4].textContent.trim());
+  });
 }
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
