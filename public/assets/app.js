@@ -150,6 +150,8 @@ function initInterviewRegistrationStatuses() {
 }
 
 function initUserAccountActions() {
+  const editForm = document.querySelector('form[action*="action=user_update"]');
+  if (editForm && !editForm.querySelector('input[name="password"]')) { const label = document.createElement('label'); label.textContent = '新密码（留空则不修改）'; const input = document.createElement('input'); input.name = 'password'; input.type = 'password'; input.minLength = 8; input.autocomplete = 'new-password'; input.placeholder = '至少 8 位'; label.append(input); editForm.querySelector('button')?.before(label); }
   const table = document.querySelector('form[action*="action=user_toggle"]')?.closest('table'); if (!table) return;
   table.querySelectorAll('tbody tr').forEach(row => {
     const toggle = row.querySelector('form[action*="action=user_toggle"]'); if (!toggle) return;
