@@ -150,17 +150,21 @@ function initInterviewRegistrationStatuses() {
 }
 
 function initUserAccountActions() {
-  const editForm = document.querySelector('form[action*="action=user_update"]');
-  if (editForm && !editForm.querySelector('input[name="password"]')) { const label = document.createElement('label'); label.textContent = '新密码（留空则不修改）'; const input = document.createElement('input'); input.name = 'password'; input.type = 'password'; input.minLength = 8; input.autocomplete = 'new-password'; input.placeholder = '至少 8 位'; label.append(input); editForm.querySelector('button')?.before(label); }
-  const table = document.querySelector('form[action*="action=user_toggle"]')?.closest('table'); if (!table) return;
-  table.querySelectorAll('tbody tr').forEach(row => {
-    const toggle = row.querySelector('form[action*="action=user_toggle"]'); if (!toggle) return;
-    const cell = toggle.closest('td'); const username = row.cells?.[1]?.textContent.trim(); const csrf = toggle.querySelector('input[name="csrf"]')?.value;
-    if (!cell || !username || !csrf) return;
-    const edit = document.createElement('a'); edit.className = 'table-action'; edit.href = `?page=users&edit_user=${encodeURIComponent(username)}`; edit.textContent = '编辑'; cell.prepend(edit);
-    const remove = document.createElement('form'); remove.method = 'post'; remove.action = '?page=users&action=user_delete'; remove.dataset.confirmMessage = `确认删除账号“${username}”？此操作无法恢复。`;
-    remove.innerHTML = `<input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="id" value="${toggle.querySelector('input[name="id"]')?.value || ''}"><button class="table-action danger-text">删除</button>`; remove.addEventListener('submit', event => { if (remove.dataset.confirmed === '1') return; event.preventDefault(); showConfirm({title: '删除账号', description: remove.dataset.confirmMessage, actionLabel: '删除', onConfirm: () => { remove.dataset.confirmed = '1'; remove.requestSubmit(); }}); }); cell.append(remove);
-  });
+  const open = modal => { if (!modal) return; modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false'); document.body.classList.add('modal-open'); modal.querySelector('input:not([type="hidden"])')?.focus(); };
+  const close = modal => { if (!modal) return; modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); if (!document.querySelector('.modal-overlay.open')) document.body.classList.remove('modal-open'); };
+  document.querySelectorAll('[data-user-modal-open]').forEach(button => button.addEventListener('click', () => open(document.querySelector(`#user-${button.dataset.userModalOpen}-modal`))));
+  document.querySelectorAll('[data-user-modal-close]').forEach(button => button.addEventListener('click', () => close(button.closest('.user-modal'))));
+  document.querySelectorAll('.user-modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) close(modal); }));
+  const editModal = document.querySelector('#user-edit-modal'); const editForm = editModal?.querySelector('form[action*="action=user_update"]');
+  document.querySelectorAll('[data-user-edit]').forEach(button => button.addEventListener('click', () => {
+    if (!editForm) return;
+    try {
+      const user = JSON.parse(button.dataset.userEdit || '{}');
+      ['id', 'real_name', 'username', 'mobile', 'role'].forEach(name => { const field = editForm.elements[name]; if (field) field.value = user[name] ?? ''; });
+      if (editForm.elements.password) editForm.elements.password.value = '';
+      open(editModal);
+    } catch (_) { window.location.reload(); }
+  }));
 }
 
 function initAssessmentBulkRegistration() {
