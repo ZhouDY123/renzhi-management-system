@@ -52,6 +52,18 @@ function upgrade_schema(PDO $pdo): void {
         'interview_score_draft'=>['detail_json TEXT', 'total_score REAL', 'strengths TEXT', 'risks TEXT', 'development TEXT', 'recommendation TEXT', 'salary_range TEXT', 'available_date TEXT']
     ];
     foreach($columns as $table=>$defs){$existing=array_column($pdo->query('PRAGMA table_info('.$table.')')->fetchAll(),'name');foreach($defs as $def){$name=strtok($def,' ');if(!in_array($name,$existing,true))$pdo->exec('ALTER TABLE '.$table.' ADD COLUMN '.$def);}}
+    // 同一人才可有多次测评答卷；保留历史答卷，不能再以 candidate_id 唯一限制。
+    $answerSql=(string)$pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='answer'")->fetchColumn();
+    if($answerSql!==''&&str_contains($answerSql,'candidate_id INTEGER NOT NULL UNIQUE')){
+        $foreignKeys=(int)$pdo->query('PRAGMA foreign_keys')->fetchColumn();
+        $pdo->exec('PRAGMA foreign_keys=OFF');
+        try{
+            $newAnswerSql=preg_replace('/CREATE TABLE answer\\s*\\(/i','CREATE TABLE answer_rebuild (',$answerSql,1);
+            $newAnswerSql=str_replace('candidate_id INTEGER NOT NULL UNIQUE','candidate_id INTEGER NOT NULL',$newAnswerSql);
+            $columns=array_column($pdo->query('PRAGMA table_info(answer)')->fetchAll(),'name');$names=implode(',',array_map(fn($name)=>'"'.$name.'"',$columns));
+            $pdo->beginTransaction();$pdo->exec($newAnswerSql);$pdo->exec('INSERT INTO answer_rebuild('.$names.') SELECT '.$names.' FROM answer');$pdo->exec('DROP TABLE answer');$pdo->exec('ALTER TABLE answer_rebuild RENAME TO answer');$pdo->commit();
+        }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}finally{if($foreignKeys)$pdo->exec('PRAGMA foreign_keys=ON');}
+    }
     // 测评登记按批次保留，同一人才可重新测评；历史记录不覆盖。
     $registrationSql=(string)$pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='interview_pre_register'")->fetchColumn();
     if($registrationSql!==''&&str_contains($registrationSql,'candidate_id INTEGER NOT NULL UNIQUE')){
