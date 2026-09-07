@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails();
+  initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions();
 });
 
 const focusables = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -146,6 +146,18 @@ function initInterviewRegistrationStatuses() {
   document.querySelectorAll('.table-wrap tr').forEach(row => {
     if (row.querySelector('.badge')?.textContent.trim() !== '已答题') return;
     const cell = row.cells?.[5]; if (cell && !cell.querySelector('form')) cell.textContent = '测评已完成';
+  });
+}
+
+function initUserAccountActions() {
+  const table = document.querySelector('form[action*="action=user_toggle"]')?.closest('table'); if (!table) return;
+  table.querySelectorAll('tbody tr').forEach(row => {
+    const toggle = row.querySelector('form[action*="action=user_toggle"]'); if (!toggle) return;
+    const cell = toggle.closest('td'); const username = row.cells?.[1]?.textContent.trim(); const csrf = toggle.querySelector('input[name="csrf"]')?.value;
+    if (!cell || !username || !csrf) return;
+    const edit = document.createElement('a'); edit.className = 'table-action'; edit.href = `?page=users&edit_user=${encodeURIComponent(username)}`; edit.textContent = '编辑'; cell.prepend(edit);
+    const remove = document.createElement('form'); remove.method = 'post'; remove.action = '?page=users&action=user_delete'; remove.dataset.confirmMessage = `确认删除账号“${username}”？此操作无法恢复。`;
+    remove.innerHTML = `<input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="id" value="${toggle.querySelector('input[name="id"]')?.value || ''}"><button class="table-action danger-text">删除</button>`; remove.addEventListener('submit', event => { if (remove.dataset.confirmed === '1') return; event.preventDefault(); showConfirm({title: '删除账号', description: remove.dataset.confirmMessage, actionLabel: '删除', onConfirm: () => { remove.dataset.confirmed = '1'; remove.requestSubmit(); }}); }); cell.append(remove);
   });
 }
 
