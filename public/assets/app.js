@@ -1,7 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
+  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
 });
+
+function initFullMobileNumbers() {
+  const mobiles = Array.isArray(window.__displayMobiles) ? window.__displayMobiles.map(String) : [];
+  if (!mobiles.length) return;
+  const resolve = (prefix, suffix) => mobiles.find(mobile => mobile.startsWith(prefix) && mobile.endsWith(suffix)) || '';
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = []; let node;
+  while ((node = walker.nextNode())) nodes.push(node);
+  nodes.forEach(textNode => {
+    const value = textNode.nodeValue;
+    if (!/\d{3}\s*\*{4}\s*\d{4}/.test(value)) return;
+    textNode.nodeValue = value.replace(/(\d{3})\s*\*{4}\s*(\d{4})/g, (matched, prefix, suffix) => resolve(prefix, suffix) || matched);
+  });
+}
 
 function initLoginFields() {
   const form = document.querySelector('form.login-card');
@@ -248,7 +262,7 @@ function initAssessmentBulkRegistration() {
   let page = 1, hasMore = false, timer, scope = 'match';
   const syncScope = () => { matchScope.classList.toggle('is-active', scope === 'match'); allScope.classList.toggle('is-active', scope === 'all'); };
   const syncSummary = () => { summary.textContent = `已选择 ${chosen.size} 人${scope === 'match' ? ' · 仅意向职位匹配' : ' · 显示全部人员'}`; };
-  const render = items => { list.replaceChildren(); if (!items.length) { list.innerHTML = '<span class="bulk-candidate-empty">未找到可登记人才</span>'; return; } items.forEach(person => { const item = document.createElement('label'); item.className = 'bulk-candidate-item'; const input = document.createElement('input'); input.type = 'checkbox'; input.value = String(person.id); input.checked = chosen.has(String(person.id)); const text = document.createElement('span'); text.textContent = `${person.name} · ${person.mobile.slice(0, 3)}****${person.mobile.slice(-4)} · ${person.major || '专业待补充'}`; input.addEventListener('change', () => { if (input.checked) chosen.set(input.value, text.textContent); else chosen.delete(input.value); syncSummary(); }); item.append(input, text); list.append(item); }); };
+  const render = items => { list.replaceChildren(); if (!items.length) { list.innerHTML = '<span class="bulk-candidate-empty">未找到可登记人才</span>'; return; } items.forEach(person => { const item = document.createElement('label'); item.className = 'bulk-candidate-item'; const input = document.createElement('input'); input.type = 'checkbox'; input.value = String(person.id); input.checked = chosen.has(String(person.id)); const text = document.createElement('span'); text.textContent = `${person.name} · ${person.mobile} · ${person.major || '专业待补充'}`; input.addEventListener('change', () => { if (input.checked) chosen.set(input.value, text.textContent); else chosen.delete(input.value); syncSummary(); }); item.append(input, text); list.append(item); }); };
   const load = (next = false) => { if (!next) page = 1; const params = new URLSearchParams({q: search.value.trim(), p: String(page), post_id: String(postSelect?.value || ''), scope}); fetch(`?page=preregister&action=assessment_candidates&${params}`, {credentials: 'same-origin'}).then(response => response.ok ? response.json() : {items: [], has_more: false}).then(data => { const previous = next ? [...list.children] : []; render(data.items || []); if (next) list.prepend(...previous); hasMore = !!data.has_more; more.hidden = !hasMore; syncScope(); syncSummary(); }).catch(() => { list.innerHTML = '<span class="bulk-candidate-empty">人才列表加载失败，请刷新后重试</span>'; }); };
   selectPage.addEventListener('click', () => { list.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = true; const text = input.parentElement?.querySelector('span')?.textContent || ''; chosen.set(input.value, text); }); syncSummary(); });
   clear.addEventListener('click', () => { chosen.clear(); list.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = false; }); syncSummary(); });

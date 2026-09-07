@@ -1,4 +1,11 @@
 (() => {
+  const mobiles = Array.isArray(window.__displayMobiles) ? window.__displayMobiles.map(String) : [];
+  if (mobiles.length) {
+    const resolve = (prefix, suffix) => mobiles.find(mobile => mobile.startsWith(prefix) && mobile.endsWith(suffix)) || '';
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes = []; let node;
+    while ((node = walker.nextNode())) nodes.push(node);
+    nodes.forEach(textNode => { const value = textNode.nodeValue; if (/\d{3}\s*\*{4}\s*\d{4}/.test(value)) textNode.nodeValue = value.replace(/(\d{3})\s*\*{4}\s*(\d{4})/g, (matched, prefix, suffix) => resolve(prefix, suffix) || matched); });
+  }
   const brandIcon = document.querySelector('.h5-brand i'), brandName = document.querySelector('.h5-brand b');
   if (brandIcon) {
     const logo = document.createElement('img');
