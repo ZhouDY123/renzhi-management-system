@@ -156,6 +156,11 @@ function initInterviewRegistrationStatuses() {
 }
 
 function initUserAccountActions() {
+  const currentName = document.querySelector('.account b')?.textContent?.trim();
+  document.querySelectorAll('.user-table-panel tbody tr').forEach(row => {
+    const marker = row.querySelector('.muted');
+    if (marker?.textContent.trim() === '当前账号' && currentName && row.cells?.[0]?.textContent.trim() !== currentName) marker.textContent = '仅系统管理员可管理';
+  });
   const open = modal => { if (!modal) return; modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false'); document.body.classList.add('modal-open'); modal.querySelector('input:not([type="hidden"])')?.focus(); };
   const close = modal => { if (!modal) return; modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); if (!document.querySelector('.modal-overlay.open')) document.body.classList.remove('modal-open'); };
   document.querySelectorAll('[data-user-modal-open]').forEach(button => button.addEventListener('click', () => open(document.querySelector(`#user-${button.dataset.userModalOpen}-modal`))));
