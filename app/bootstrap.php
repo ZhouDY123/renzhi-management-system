@@ -125,13 +125,15 @@ function rate_limit_check(string $scope,string $identity,int $max=10,int $window
 function rate_limit_clear(string $scope,string $identity): void { db()->prepare('DELETE FROM rate_limit WHERE limit_key=?')->execute([hash('sha256',$scope.'|'.$identity)]); }
 
 function ensure_interview_completion_trigger(): void {
-    db()->exec("CREATE TRIGGER IF NOT EXISTS interview_score_auto_complete AFTER INSERT ON interview_score BEGIN
+    $pdo = db();
+    $pdo->exec("CREATE TRIGGER IF NOT EXISTS interview_score_auto_complete AFTER INSERT ON interview_score BEGIN
         UPDATE interview_session SET status='done'
         WHERE id=NEW.session_id AND status IN ('pending','scoring')
           AND (SELECT COUNT(*) FROM session_interviewer WHERE session_id=NEW.session_id)>0
           AND (SELECT COUNT(*) FROM interview_candidate WHERE session_id=NEW.session_id)>0
           AND (SELECT COUNT(*) FROM interview_score WHERE session_id=NEW.session_id)>=(SELECT COUNT(*) FROM session_interviewer WHERE session_id=NEW.session_id)*(SELECT COUNT(*) FROM interview_candidate WHERE session_id=NEW.session_id);
     END");
+    $pdo->exec("UPDATE interview_session SET status='done' WHERE status IN ('pending','scoring') AND (SELECT COUNT(*) FROM session_interviewer WHERE session_id=interview_session.id)>0 AND (SELECT COUNT(*) FROM interview_candidate WHERE session_id=interview_session.id)>0 AND (SELECT COUNT(*) FROM interview_score WHERE session_id=interview_session.id)>=(SELECT COUNT(*) FROM session_interviewer WHERE session_id=interview_session.id)*(SELECT COUNT(*) FROM interview_candidate WHERE session_id=interview_session.id)");
 }
 
 migrate();
