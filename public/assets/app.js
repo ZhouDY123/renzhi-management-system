@@ -800,12 +800,14 @@ function initPostDuplicateConfirmation() {
   const labels = { recruiting:'招聘中', reserve:'储备中', stop:'已停止' };
   form.addEventListener('submit', async event => {
     if (form.dataset.sameNameChecked === '1' || form.querySelector('[name="id"]')?.value) return;
-    const name = form.querySelector('[name="name"]')?.value.trim(); if (!name) return;
+    const name = form.querySelector('[name="name"]')?.value.trim();
+    const company = form.querySelector('[name="company"]')?.value.trim();
+    if (!name || !company) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     let matches = [];
     try {
-      const response = await fetch(`?page=posts&action=post_name_lookup&name=${encodeURIComponent(name)}`, {credentials:'same-origin'});
+      const response = await fetch(`?page=posts&action=post_name_lookup&name=${encodeURIComponent(name)}&company=${encodeURIComponent(company)}`, {credentials:'same-origin'});
       const data = response.ok ? await response.json() : {posts:[]};
       matches = Array.isArray(data.posts) ? data.posts : [];
     } catch (_) {
@@ -814,7 +816,7 @@ function initPostDuplicateConfirmation() {
     }
     if (!matches.length) { form.dataset.sameNameChecked = '1'; form.requestSubmit(); return; }
     const details = matches.map(post => `${post.company || '未填写部门'} · ${labels[post.status] || post.status}`).join('；');
-    showConfirm({title:'存在同名岗位',description:`已存在“${name}”（${details}）。是否仍新建一个独立岗位？`,actionLabel:'仍然新建',onConfirm:()=>{form.dataset.sameNameChecked='1'; let input=form.querySelector('[name="same_name_confirmed"]'); if(!input){input=document.createElement('input');input.type='hidden';input.name='same_name_confirmed';form.append(input);} input.value='1'; form.requestSubmit();}});
+    showConfirm({title:'存在重复岗位',description:`“${company}”下已存在“${name}”（${details}）。是否仍新建一个独立岗位？`,actionLabel:'仍然新建',onConfirm:()=>{form.dataset.sameNameChecked='1'; let input=form.querySelector('[name="same_name_confirmed"]'); if(!input){input=document.createElement('input');input.type='hidden';input.name='same_name_confirmed';form.append(input);} input.value='1'; form.requestSubmit();}});
   }, true);
 }
 
