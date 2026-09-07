@@ -230,6 +230,8 @@ function initAssessmentBulkRegistration() {
   const title = document.createElement('span'); title.className = 'bulk-candidate-title'; title.textContent = '选择人才（可多选）';
   const hint = document.createElement('small'); hint.className = 'bulk-candidate-hint'; hint.textContent = '可搜索人才；勾选后将为所有人员登记同一个测评岗位';
   const postSelect = form.querySelector('select[name="post_id"]');
+  const postLabel = postSelect?.closest('label');
+  if (postLabel && label) label.before(postLabel);
   const scopeTools = document.createElement('div'); scopeTools.className = 'bulk-candidate-scope';
   const matchScope = document.createElement('button'); matchScope.type = 'button'; matchScope.textContent = '意向职位匹配';
   const allScope = document.createElement('button'); allScope.type = 'button'; allScope.textContent = '全部人员';
