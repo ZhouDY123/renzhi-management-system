@@ -45,16 +45,31 @@ function migrate(): void {
 function upgrade_schema(PDO $pdo): void {
     $columns=[
         'candidate'=>['health TEXT','politics TEXT','group_co_years INTEGER DEFAULT 0','group_co_mgmt INTEGER DEFAULT 0','listed_co_years INTEGER DEFAULT 0','listed_co_mgmt INTEGER DEFAULT 0','private_co_years INTEGER DEFAULT 0','private_co_mgmt INTEGER DEFAULT 0','work_bg TEXT','computer_skill TEXT','language TEXT','custom_values TEXT','intent_post_id INTEGER'],
-        'answer'=>["post_snapshot TEXT NOT NULL DEFAULT '{}'",'question_set_id INTEGER NOT NULL DEFAULT 0'],
+        'answer'=>["post_snapshot TEXT NOT NULL DEFAULT '{}'",'question_set_id INTEGER NOT NULL DEFAULT 0','assessment_registration_id INTEGER'],
         'result'=>['standard_version INTEGER NOT NULL DEFAULT 1',"weight_snapshot TEXT NOT NULL DEFAULT '{\"basic_conditions\":50,\"basic_quality\":25,\"professional\":25}'"],
         'question_set_item'=>['q_type TEXT','stem_snapshot TEXT','options_snapshot TEXT','answer_snapshot TEXT','score_snapshot REAL'],
         'interview_score'=>['detail_json TEXT', 'total_score REAL', 'strengths TEXT', 'risks TEXT', 'development TEXT', 'recommendation TEXT', 'salary_range TEXT', 'available_date TEXT'],
         'interview_score_draft'=>['detail_json TEXT', 'total_score REAL', 'strengths TEXT', 'risks TEXT', 'development TEXT', 'recommendation TEXT', 'salary_range TEXT', 'available_date TEXT']
     ];
     foreach($columns as $table=>$defs){$existing=array_column($pdo->query('PRAGMA table_info('.$table.')')->fetchAll(),'name');foreach($defs as $def){$name=strtok($def,' ');if(!in_array($name,$existing,true))$pdo->exec('ALTER TABLE '.$table.' ADD COLUMN '.$def);}}
-    // 人才先入库，再由 HR 为其登记一个面试岗位。
-    $pdo->exec("CREATE TABLE IF NOT EXISTS interview_pre_register (id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id INTEGER NOT NULL UNIQUE, post_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'registered', created_by INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(candidate_id) REFERENCES candidate(id), FOREIGN KEY(post_id) REFERENCES post(id), FOREIGN KEY(created_by) REFERENCES user(id))");
+    // 测评登记按批次保留，同一人才可重新测评；历史记录不覆盖。
+    $registrationSql=(string)$pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='interview_pre_register'")->fetchColumn();
+    if($registrationSql!==''&&str_contains($registrationSql,'candidate_id INTEGER NOT NULL UNIQUE')){
+        $pdo->beginTransaction();
+        try{
+            $pdo->exec('DROP INDEX IF EXISTS idx_interview_pre_register_post');
+            $pdo->exec('ALTER TABLE interview_pre_register RENAME TO interview_pre_register_legacy');
+            $pdo->exec("CREATE TABLE interview_pre_register (id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id INTEGER NOT NULL, post_id INTEGER NOT NULL, answer_id INTEGER, status TEXT NOT NULL DEFAULT 'registered', created_by INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(candidate_id) REFERENCES candidate(id), FOREIGN KEY(post_id) REFERENCES post(id), FOREIGN KEY(answer_id) REFERENCES answer(id), FOREIGN KEY(created_by) REFERENCES user(id))");
+            $pdo->exec('INSERT INTO interview_pre_register(id,candidate_id,post_id,status,created_by,created_at) SELECT id,candidate_id,post_id,status,created_by,created_at FROM interview_pre_register_legacy');
+            $pdo->exec('DROP TABLE interview_pre_register_legacy');
+            $pdo->commit();
+        }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+    }
+    $registrationColumns=array_column($pdo->query('PRAGMA table_info(interview_pre_register)')->fetchAll(),'name');
+    if(!in_array('answer_id',$registrationColumns,true))$pdo->exec('ALTER TABLE interview_pre_register ADD COLUMN answer_id INTEGER');
+    $pdo->exec("CREATE TABLE IF NOT EXISTS interview_pre_register (id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id INTEGER NOT NULL, post_id INTEGER NOT NULL, answer_id INTEGER, status TEXT NOT NULL DEFAULT 'registered', created_by INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(candidate_id) REFERENCES candidate(id), FOREIGN KEY(post_id) REFERENCES post(id), FOREIGN KEY(answer_id) REFERENCES answer(id), FOREIGN KEY(created_by) REFERENCES user(id))");
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_interview_pre_register_post ON interview_pre_register(post_id,status)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_interview_pre_register_candidate_status ON interview_pre_register(candidate_id,status)');
     // 将曾以“18至29岁”这类文本录入的年龄档位修正为真正的数值区间。
     $ageRules=$pdo->query("SELECT id,tier_label FROM scoring_standard WHERE dim_code='age' AND match_type='eq'")->fetchAll();
     $fixAge=$pdo->prepare("UPDATE scoring_standard SET match_type='range',match_rule=? WHERE id=?");
