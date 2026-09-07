@@ -814,7 +814,7 @@ function initPostDuplicateConfirmation() {
     }
     if (!matches.length) { form.dataset.sameNameChecked = '1'; form.requestSubmit(); return; }
     const details = matches.map(post => `${post.company || '未填写部门'} · ${labels[post.status] || post.status}`).join('；');
-    showConfirm({title:'存在同名岗位',description:`已存在“${name}”（${details}）。是否仍新建一个独立岗位？`,actionLabel:'仍然新建',onConfirm:()=>{form.dataset.sameNameChecked='1';form.requestSubmit();}});
+    showConfirm({title:'存在同名岗位',description:`已存在“${name}”（${details}）。是否仍新建一个独立岗位？`,actionLabel:'仍然新建',onConfirm:()=>{form.dataset.sameNameChecked='1'; let input=form.querySelector('[name="same_name_confirmed"]'); if(!input){input=document.createElement('input');input.type='hidden';input.name='same_name_confirmed';form.append(input);} input.value='1'; form.requestSubmit();}});
   }, true);
 }
 

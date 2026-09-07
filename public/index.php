@@ -46,6 +46,14 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&$page==='questions'&&$action==='question
  check_csrf();$id=(int)($_POST['id']??0);if(!$id){flash('未找到要删除的岗位专业题','error');redirect('/index.php?page=questions');}
  $pdo->prepare('DELETE FROM question_post WHERE id=?')->execute([$id]);audit('question_delete','post_question:'.$id);flash('岗位专业题已删除；已发布题卷和历史答卷不受影响');redirect('/index.php?page=questions');
 }
+if($page==='posts'&&$action==='post_name_lookup'){
+ header('Content-Type: application/json; charset=UTF-8');
+ $name=trim((string)($_GET['name']??''));
+ if($name===''){echo json_encode(['posts'=>[]],JSON_UNESCAPED_UNICODE);exit;}
+ $st=$pdo->prepare('SELECT name,company,status FROM post WHERE name=? ORDER BY id DESC');
+ $st->execute([$name]);
+ echo json_encode(['posts'=>$st->fetchAll()],JSON_UNESCAPED_UNICODE);exit;
+}
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();
  // 浏览器在隐藏或移除评分档位时，可能不会提交对应的分值字段；保留该档位原分值，避免整个维度无法保存。
@@ -54,18 +62,10 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   if($ruleIds){$currentScore=$pdo->prepare('SELECT tier_value FROM scoring_standard WHERE id=?');foreach($ruleIds as $i=>$ruleId){if(!array_key_exists($i,$tierValues)){$currentScore->execute([(int)$ruleId]);$tierValues[$i]=(string)($currentScore->fetchColumn()??0);}}$_POST['rule_id']=$ruleIds;$_POST['tier_value']=array_slice($tierValues,0,count($ruleIds));}
  }
  if($page==='standards'&&isset($_POST['dim_code'])){$sectionSt=$pdo->prepare('SELECT category FROM scoring_standard WHERE dim_code=? LIMIT 1');$sectionSt->execute([(string)$_POST['dim_code']]);if($sectionSt->fetchColumn()==='basic_quality')$_SESSION['standards_active_section']='suzhi';}
- if($page==='posts'&&$action==='post_name_lookup'){
-  header('Content-Type: application/json; charset=UTF-8');
-  $name=trim((string)($_GET['name']??''));
-  if($name===''){echo json_encode(['posts'=>[]],JSON_UNESCAPED_UNICODE);exit;}
-  $st=$pdo->prepare('SELECT name,company,status FROM post WHERE name=? ORDER BY id DESC');
-  $st->execute([$name]);
-  echo json_encode(['posts'=>$st->fetchAll()],JSON_UNESCAPED_UNICODE);exit;
- }
  try{
   if($action==='post_save'){
    $id=(int)($_POST['id']??0); $data=[trim($_POST['name']),trim($_POST['company']),$_POST['status'],trim($_POST['duty'])];
-   if($id){$data[]=$id;$pdo->prepare('UPDATE post SET name=?,company=?,status=?,duty=? WHERE id=?')->execute($data);}else{$data[]=token();$pdo->prepare('INSERT INTO post(name,company,status,duty,q_apply_token) VALUES(?,?,?,?,?)')->execute($data);$id=(int)$pdo->lastInsertId();} audit('post_save','post:'.$id,['name'=>$_POST['name']]);flash('岗位信息已保存'); redirect('/index.php?page=posts');
+   if($id){$data[]=$id;$pdo->prepare('UPDATE post SET name=?,company=?,status=?,duty=? WHERE id=?')->execute($data);}else{$duplicate=$pdo->prepare('SELECT 1 FROM post WHERE name=? LIMIT 1');$duplicate->execute([$data[0]]);if($duplicate->fetchColumn()&&($_POST['same_name_confirmed']??'')!=='1')throw new RuntimeException('已存在同名岗位，请确认后再新建');$data[]=token();$pdo->prepare('INSERT INTO post(name,company,status,duty,q_apply_token) VALUES(?,?,?,?,?)')->execute($data);$id=(int)$pdo->lastInsertId();} audit('post_save','post:'.$id,['name'=>$_POST['name']]);flash('岗位信息已保存'); redirect('/index.php?page=posts');
   }
   if($action==='post_rotate'){$id=(int)$_POST['id'];$pdo->prepare('UPDATE post SET q_apply_token=? WHERE id=?')->execute([token(),$id]);audit('post_token_rotate','post:'.$id);flash('应聘二维码令牌已轮换，旧入口立即失效');redirect('/index.php?page=posts');}
   if($action==='talent_save'){
