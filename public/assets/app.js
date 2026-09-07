@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
+  initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
 });
 
 function initLoginFields() {
@@ -373,6 +373,24 @@ function initRegistrationPaginationFooter() {
   pager.append(summary, controls);
   [...actions.querySelectorAll('a.btn')].filter(link => /上一页|下一页/.test(link.textContent)).forEach(link => controls.append(link));
   table.append(pager);
+}
+
+function initInterviewRecommendationTags() {
+  if (new URLSearchParams(location.search).get('page') !== 'interview_results') return;
+  document.querySelectorAll('.table-wrap table').forEach(table => {
+    const headers = [...table.querySelectorAll('thead th')];
+    const index = headers.findIndex(header => header.textContent.trim() === '录用建议');
+    if (index < 0) return;
+    table.querySelectorAll('tbody tr').forEach(row => {
+      const cell = row.cells[index]; if (!cell || cell.querySelector('.recommendation-tag')) return;
+      const value = cell.textContent.trim(); if (!value) return;
+      const tag = document.createElement('span'); tag.className = 'recommendation-tag';
+      if (value.includes('不推荐')) tag.classList.add('is-reject');
+      else if (value.includes('待定') || value.includes('复试')) tag.classList.add('is-pending');
+      else tag.classList.add('is-recommend');
+      tag.textContent = value; cell.replaceChildren(tag);
+    });
+  });
 }
 
 function initTalentResumePreview() {
