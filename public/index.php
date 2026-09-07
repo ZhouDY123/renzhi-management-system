@@ -95,8 +95,20 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   }
   if($action==='session_save'){
    $submissionToken=(string)($_POST['submission_token']??'');$expectedToken=(string)($_SESSION['interview_session_create_token']??'');if($submissionToken===''||$expectedToken===''||!hash_equals($expectedToken,$submissionToken))throw new RuntimeException('该创建请求已处理，请勿重复提交');unset($_SESSION['interview_session_create_token']);
-   $existing=$pdo->prepare('SELECT id FROM interview_session WHERE post_id=? AND interview_date=? LIMIT 1');$existing->execute([(int)$_POST['post_id'],$_POST['interview_date']]);if($existing->fetchColumn())throw new RuntimeException('该岗位当天已有面试场次，请修改面试日期或使用已有场次');
-   $pdo->prepare('INSERT INTO interview_session(post_id,interview_date,time_range,location,qr_token,created_by) VALUES(?,?,?,?,?,?)')->execute([(int)$_POST['post_id'],$_POST['interview_date'],trim($_POST['time_range']),trim($_POST['location']),token(),admin_user()['id']]);$sid=(int)$pdo->lastInsertId();audit('interview_session_create','session:'.$sid);flash('面试场次已创建'); redirect('/index.php?page=interviews');
+   $postId=(int)$_POST['post_id'];$interviewDate=$_POST['interview_date'];$timeRange=trim($_POST['time_range']);$location=trim($_POST['location']);
+   $existing=$pdo->prepare('SELECT id,status FROM interview_session WHERE post_id=? AND interview_date=? LIMIT 1');$existing->execute([$postId,$interviewDate]);$previous=$existing->fetch();
+   if($previous&&$previous['status']!=='canceled')throw new RuntimeException('该岗位当天已有面试场次，请修改面试日期或使用已有场次');
+   if($previous){
+    $sid=(int)$previous['id'];$pdo->beginTransaction();
+    $pdo->prepare('DELETE FROM interview_score_draft WHERE interviewer_id IN (SELECT id FROM session_interviewer WHERE session_id=?) OR interview_candidate_id IN (SELECT id FROM interview_candidate WHERE session_id=?)')->execute([$sid,$sid]);
+    $pdo->prepare('DELETE FROM interview_score WHERE session_id=?')->execute([$sid]);
+    $pdo->prepare('DELETE FROM session_interviewer WHERE session_id=?')->execute([$sid]);$pdo->prepare('DELETE FROM interview_candidate WHERE session_id=?')->execute([$sid]);
+    $pdo->prepare("UPDATE interview_session SET status='pending',time_range=?,location=?,qr_token=?,created_by=? WHERE id=?")->execute([$timeRange,$location,token(),admin_user()['id'],$sid]);
+    audit('interview_session_recreate','session:'.$sid);$pdo->commit();flash('已重新创建面试场次，请重新分配面试官和候选人');
+   }else{
+    $pdo->prepare('INSERT INTO interview_session(post_id,interview_date,time_range,location,qr_token,created_by) VALUES(?,?,?,?,?,?)')->execute([$postId,$interviewDate,$timeRange,$location,token(),admin_user()['id']]);$sid=(int)$pdo->lastInsertId();audit('interview_session_create','session:'.$sid);flash('面试场次已创建');
+   }
+   redirect('/index.php?page=interviews');
   }
   if($action==='standard_save'){
    $dimensions=standard_dimension_meta();$code=(string)($_POST['dim_code']??'');if(!isset($dimensions[$code]))throw new RuntimeException('请选择评分维度');$type=(string)($_POST['match_type']??'eq');if(!in_array($type,['eq','in','range'],true))throw new RuntimeException('请选择正确的判断方式');$tierLabel=trim((string)($_POST['tier_label']??''));if($tierLabel==='')throw new RuntimeException('请填写档位说明');$value=trim((string)($_POST['rule_value']??$tierLabel));if($value==='')$value=$tierLabel;$min=trim((string)($_POST['rule_min']??''));$max=trim((string)($_POST['rule_max']??''));
