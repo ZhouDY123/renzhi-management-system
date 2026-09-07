@@ -284,7 +284,7 @@ function initInterviewSessionControls() {
     if (host && id) {
       host.dataset.sessionId = id;
       const csrf = form.querySelector('input[name="csrf"]')?.value;
-      const isPending = host.querySelector('.badge')?.textContent.trim() === '待开始';
+      const isPending = host.querySelector('.badge')?.textContent.trim() === '待处理';
       if (isPending && csrf && !host.querySelector('.session-cancel')) {
         const cancel = document.createElement('form');
         cancel.method = 'post'; cancel.action = '?page=interviews&action=session_cancel'; cancel.className = 'session-cancel';
