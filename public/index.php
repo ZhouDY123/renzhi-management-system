@@ -257,7 +257,7 @@ if($page==='manual'){
 }
 
 if($page==='talent'){
- admin_header('人才审核','talent'); page_head('人才管理 / 审核中心','人才审核','查看测评明细，完成初审及终审决策。','<a class="btn secondary" href="?page=talent&action=export">导出 CSV</a>');
+ admin_header('人才审核','talent'); page_head('人才管理 / 审核中心','人才审核','查看测评明细，完成初审及终审决策。');
  $where=[];$params=[];$keyword=trim($_GET['q']??'');$filterPost=(int)($_GET['post_id']??0);
  if($keyword!==''){$where[]='(c.name LIKE ? OR c.mobile LIKE ?)';$params[]='%'.$keyword.'%';$params[]='%'.$keyword.'%';}
  if($filterPost){$where[]='a.post_id=?';$params[]=$filterPost;}
