@@ -134,6 +134,14 @@ function initFormValidation() {
     const invalid = [...form.querySelectorAll('input,select,textarea')].filter(f => !f.checkValidity());
     if (invalid.length) {
       e.preventDefault();
+      const isLogin = form.classList.contains('login-card');
+      if (isLogin) {
+        invalid.forEach(field => field.setAttribute('aria-invalid', 'true'));
+        const notice = document.createElement('div'); notice.className = 'form-error login-validation'; notice.setAttribute('role', 'alert');
+        notice.textContent = invalid.length > 1 ? '请输入登录账号和密码后再继续。' : '请填写登录信息后再继续。';
+        form.querySelector('.login-card-head')?.insertAdjacentElement('afterend', notice);
+        invalid[0].focus({preventScroll: true}); return;
+      }
       invalid.forEach((field, i) => {
         const id = field.id || `field-${Date.now()}-${i}`; field.id = id; field.setAttribute('aria-invalid', 'true');
         const msg = document.createElement('small'); msg.className = 'field-error'; msg.id = `${id}-error`;
