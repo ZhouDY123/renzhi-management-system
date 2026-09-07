@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
+  initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
 });
 
 function initLoginFields() {
@@ -358,6 +358,19 @@ function initInterviewSessionPagination() {
   nav.querySelector('[data-prev]').addEventListener('click', () => { page--; render(); list.scrollIntoView({behavior: 'smooth', block: 'start'}); });
   nav.querySelector('[data-next]').addEventListener('click', () => { page++; render(); list.scrollIntoView({behavior: 'smooth', block: 'start'}); });
   render();
+}
+
+function initRegistrationPaginationFooter() {
+  if (new URLSearchParams(location.search).get('page') !== 'preregister') return;
+  const actions = document.querySelector('.page-actions');
+  const summary = actions?.querySelector('.pagination-summary');
+  const table = document.querySelector('.table-wrap');
+  if (!summary || !table) return;
+  const pager = document.createElement('nav'); pager.className = 'table-pagination'; pager.setAttribute('aria-label', '测评登记分页');
+  const controls = document.createElement('div');
+  pager.append(summary, controls);
+  [...actions.querySelectorAll('a.btn')].filter(link => /上一页|下一页/.test(link.textContent)).forEach(link => controls.append(link));
+  table.append(pager);
 }
 
 function initTalentResumePreview() {
