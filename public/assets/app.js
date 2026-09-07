@@ -280,17 +280,15 @@ function initReviewActions() {
 
 function initInterviewSessionControls() {
   document.querySelectorAll('.session-state form[action*="action=session_status"]').forEach(form => {
-    const select = form.querySelector('select[name="status"]');
-    const button = form.querySelector('button');
-    if (select) select.setAttribute('aria-label', '选择场次状态');
-    if (button) { button.textContent = '更新状态'; button.title = '保存所选的场次状态'; }
+    const host = form.closest('.session-state'); const id = form.querySelector('input[name="id"]')?.value;
+    if (host && id) host.dataset.sessionId = id;
+    form.remove();
   });
   document.querySelectorAll('.session-state form[action*="action=session_rotate"]').forEach(form => form.remove());
   fetch('?page=interviews&action=session_progress', {credentials: 'same-origin'})
     .then(response => response.ok ? response.json() : [])
     .then(rows => rows.forEach(progress => {
-      const input = document.querySelector(`.session-state form[action*="action=session_status"] input[name="id"][value="${progress.id}"]`);
-      const host = input?.closest('.session-state'); if (!host) return;
+      const host = document.querySelector(`.session-state[data-session-id="${progress.id}"]`); if (!host) return;
       const expected = Number(progress.interviewer_count) * Number(progress.candidate_count);
       const complete = expected > 0 && Number(progress.completed_count) >= expected;
       const status = document.createElement('small'); status.className = `session-progress${complete ? ' is-complete' : ''}`;
