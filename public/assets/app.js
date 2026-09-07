@@ -186,7 +186,7 @@ function initAssessmentBulkRegistration() {
   postSelect?.addEventListener('change', () => { scope = 'match'; load(false); });
   more.addEventListener('click', () => { if (!hasMore) return; page += 1; load(true); });
   form.addEventListener('submit', () => { form.querySelectorAll('input[name="candidate_ids[]"]').forEach(input => input.remove()); chosen.forEach((text, id) => { const input = document.createElement('input'); input.type = 'hidden'; input.name = 'candidate_ids[]'; input.value = id; form.append(input); }); });
-  select.name = 'candidate_id_fallback'; select.required = false; select.hidden = true;
+  select.remove();
   label?.prepend(title); label?.append(hint, scopeTools, toolbar, list, footer); load(false);
   const button = form.querySelector('button.btn.primary'); if (button) button.textContent = '确认批量测评登记';
 }
