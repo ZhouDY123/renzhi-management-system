@@ -281,7 +281,25 @@ function initReviewActions() {
 function initInterviewSessionControls() {
   document.querySelectorAll('.session-state form[action*="action=session_status"]').forEach(form => {
     const host = form.closest('.session-state'); const id = form.querySelector('input[name="id"]')?.value;
-    if (host && id) host.dataset.sessionId = id;
+    if (host && id) {
+      host.dataset.sessionId = id;
+      const csrf = form.querySelector('input[name="csrf"]')?.value;
+      const isPending = host.querySelector('.badge')?.textContent.trim() === '待开始';
+      if (isPending && csrf && !host.querySelector('.session-cancel')) {
+        const cancel = document.createElement('form');
+        cancel.method = 'post'; cancel.action = '?page=interviews&action=session_cancel'; cancel.className = 'session-cancel';
+        cancel.innerHTML = `<input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="id" value="${id}"><button type="submit">取消场次</button>`;
+        cancel.addEventListener('submit', event => {
+          if (cancel.dataset.confirmed === '1') return;
+          event.preventDefault();
+          showConfirm({
+            title: '取消面试场次', description: '取消后无法恢复，确认继续？', actionLabel: '确认取消',
+            onConfirm: () => { cancel.dataset.confirmed = '1'; cancel.requestSubmit(); }
+          });
+        });
+        host.append(cancel);
+      }
+    }
     form.remove();
   });
   document.querySelectorAll('.session-state form[action*="action=session_rotate"]').forEach(form => form.remove());
