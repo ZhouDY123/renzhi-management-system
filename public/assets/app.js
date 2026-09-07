@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
+  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
 });
 
 function initFullMobileNumbers() {
@@ -793,6 +793,20 @@ function initQuestionEditorOptions() {
 function initDirectQrActions() {
   document.querySelector('[data-direct-print]')?.addEventListener('click', () => window.print());
   document.querySelector('[data-direct-download]')?.addEventListener('click', () => window.downloadQr?.());
+}
+
+function initPostDuplicateConfirmation() {
+  const form = document.querySelector('[data-post-create-form]'); if (!form) return;
+  let posts = []; try { posts = JSON.parse(form.dataset.existingPosts || '[]'); } catch (_) {}
+  const labels = { recruiting:'招聘中', reserve:'储备中', stop:'已停止' };
+  form.addEventListener('submit', event => {
+    if (form.dataset.sameNameConfirmed === '1' || form.querySelector('[name="id"]')?.value) return;
+    const name = form.querySelector('[name="name"]')?.value.trim(); if (!name) return;
+    const matches = posts.filter(post => String(post.name || '').trim() === name); if (!matches.length) return;
+    event.preventDefault();
+    const details = matches.map(post => `${post.company || '未填写部门'} · ${labels[post.status] || post.status}`).join('；');
+    showConfirm({title:'存在同名岗位',description:`已存在“${name}”（${details}）。是否仍新建一个独立岗位？`,actionLabel:'仍然新建',onConfirm:()=>{form.dataset.sameNameConfirmed='1';let input=form.querySelector('[name="same_name_confirmed"]');if(!input){input=document.createElement('input');input.type='hidden';input.name='same_name_confirmed';form.append(input);}input.value='1';form.requestSubmit();}});
+  });
 }
 
 function initFormModals() {
