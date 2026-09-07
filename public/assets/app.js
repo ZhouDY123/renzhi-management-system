@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
+  initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initQuestionEditorOptions(); initDirectQrActions(); initSelectedFields(); initFormModals(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
 });
 
 function initLoginFields() {
@@ -333,6 +333,31 @@ function initInterviewSessionControls() {
       if (!rows.length) { const option = new Option('暂无已答题且已推荐面试的候选人', ''); option.disabled = true; option.selected = true; select.append(option); return; }
       rows.forEach(row => select.append(new Option(`${row.name} · ${row.post_name}`, row.id)));
     })).catch(() => {});
+}
+
+function initInterviewSessionPagination() {
+  const list = document.querySelector('.session-list');
+  if (!list) return;
+  const cards = [...list.querySelectorAll(':scope > .session-card')], size = 6;
+  if (cards.length <= size) return;
+  const pages = Math.ceil(cards.length / size);
+  const params = new URLSearchParams(location.search);
+  let page = Math.min(Math.max(1, Number(params.get('sp')) || 1), pages);
+  const nav = document.createElement('nav'); nav.className = 'table-pagination session-pagination'; nav.setAttribute('aria-label', '面试场次分页');
+  nav.innerHTML = '<span></span><div><button type="button" class="btn secondary" data-prev>上一页</button><b></b><button type="button" class="btn secondary" data-next>下一页</button></div>';
+  list.insertAdjacentElement('afterend', nav);
+  const render = () => {
+    const start = (page - 1) * size;
+    cards.forEach((card, index) => { card.hidden = index < start || index >= start + size; });
+    nav.querySelector('span').textContent = `第 ${start + 1}–${Math.min(start + size, cards.length)} 个场次，共 ${cards.length} 个`;
+    nav.querySelector('b').textContent = `${page} / ${pages}`;
+    nav.querySelector('[data-prev]').disabled = page === 1; nav.querySelector('[data-next]').disabled = page === pages;
+    const next = new URLSearchParams(location.search); if (page === 1) next.delete('sp'); else next.set('sp', String(page));
+    history.replaceState(null, '', `${location.pathname}${next.size ? `?${next}` : ''}`);
+  };
+  nav.querySelector('[data-prev]').addEventListener('click', () => { page--; render(); list.scrollIntoView({behavior: 'smooth', block: 'start'}); });
+  nav.querySelector('[data-next]').addEventListener('click', () => { page++; render(); list.scrollIntoView({behavior: 'smooth', block: 'start'}); });
+  render();
 }
 
 function initTalentResumePreview() {
