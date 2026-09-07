@@ -813,7 +813,14 @@ function initFormModals() {
     const close = () => dirty ? showConfirm({title:'放弃未保存的修改？',description:'关闭后，本次填写的内容不会保存。',actionLabel:'放弃修改',onConfirm:discard}) : discard();
     top.querySelector('[data-dialog-close]').addEventListener('click', close); overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const params = new URLSearchParams(location.search); const isEditing = params.has('edit'); const autoOpen = i === 0 && (params.has('new') || isEditing);
-    const trigger = document.createElement('button'); trigger.type = 'button'; trigger.className = 'btn primary modal-trigger'; const triggerTitle = isEditing ? title.replace(/^编辑/,'新增') : title; trigger.textContent = triggerTitle.includes('密码') ? `修改${triggerTitle.replace('修改','')}` : `＋ ${triggerTitle}`; trigger.dataset.defaultLabel = trigger.textContent; trigger.addEventListener('click', () => { if (isEditing) { const next = new URLSearchParams(); const currentPage = new URLSearchParams(location.search).get('page') || ''; next.set('page', currentPage); next.set('new','1'); location.href = `${location.pathname}?${next}`; return; } open(); }); actions?.append(trigger); if (form.classList.contains('standard-dimension-form')) { const switcher=document.querySelector('.standard-section-switch'); if(switcher&&!switcher.dataset.swapped){const slot=document.createElement('div');slot.className='standard-create-slot';switcher.replaceWith(slot);actions?.append(switcher);slot.append(trigger);switcher.dataset.swapped='1';} }
+    const existingTrigger = i === 0 ? [...(actions?.querySelectorAll('a,button') || [])].find(item => item.getAttribute('href')?.includes('new=1')) : null;
+    let trigger = existingTrigger;
+    if (trigger) {
+      trigger.addEventListener('click', event => { event.preventDefault(); open(); });
+    } else {
+      trigger = document.createElement('button'); trigger.type = 'button'; trigger.className = 'btn primary modal-trigger'; const triggerTitle = isEditing ? title.replace(/^编辑/,'新增') : title; trigger.textContent = triggerTitle.includes('密码') ? `修改${triggerTitle.replace('修改','')}` : `＋ ${triggerTitle}`; trigger.dataset.defaultLabel = trigger.textContent; trigger.addEventListener('click', () => { if (isEditing) { const next = new URLSearchParams(); const currentPage = new URLSearchParams(location.search).get('page') || ''; next.set('page', currentPage); next.set('new','1'); location.href = `${location.pathname}?${next}`; return; } open(); }); actions?.append(trigger);
+    }
+    if (form.classList.contains('standard-dimension-form')) { const switcher=document.querySelector('.standard-section-switch'); if(switcher&&!switcher.dataset.swapped){const slot=document.createElement('div');slot.className='standard-create-slot';switcher.replaceWith(slot);actions?.append(switcher);slot.append(trigger);switcher.dataset.swapped='1';} }
     if (autoOpen) { open(); params.delete('new'); params.delete('edit'); const query = params.toString(); history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}`); }
   });
 }
