@@ -359,6 +359,9 @@ function initInterviewSessionPagination() {
   const pages = Math.ceil(cards.length / size);
   const params = new URLSearchParams(location.search);
   let page = Math.min(Math.max(1, Number(params.get('sp')) || 1), pages);
+  const targetId = decodeURIComponent(location.hash.slice(1));
+  const targetIndex = cards.findIndex(card => card.id === targetId);
+  if (targetIndex >= 0) page = Math.floor(targetIndex / size) + 1;
   const nav = document.createElement('nav'); nav.className = 'table-pagination session-pagination'; nav.setAttribute('aria-label', '面试场次分页');
   nav.innerHTML = '<span></span><div><button type="button" class="btn secondary" data-prev>上一页</button><b></b><button type="button" class="btn secondary" data-next>下一页</button></div>';
   list.insertAdjacentElement('afterend', nav);
@@ -369,11 +372,12 @@ function initInterviewSessionPagination() {
     nav.querySelector('b').textContent = `${page} / ${pages}`;
     nav.querySelector('[data-prev]').disabled = page === 1; nav.querySelector('[data-next]').disabled = page === pages;
     const next = new URLSearchParams(location.search); if (page === 1) next.delete('sp'); else next.set('sp', String(page));
-    history.replaceState(null, '', `${location.pathname}${next.size ? `?${next}` : ''}`);
+    history.replaceState(null, '', `${location.pathname}${next.size ? `?${next}` : ''}${location.hash}`);
   };
   nav.querySelector('[data-prev]').addEventListener('click', () => { page--; render(); list.scrollIntoView({behavior: 'smooth', block: 'start'}); });
   nav.querySelector('[data-next]').addEventListener('click', () => { page++; render(); list.scrollIntoView({behavior: 'smooth', block: 'start'}); });
   render();
+  if (targetIndex >= 0) requestAnimationFrame(() => cards[targetIndex].scrollIntoView({block: 'center'}));
 }
 
 function initRegistrationPaginationFooter() {
