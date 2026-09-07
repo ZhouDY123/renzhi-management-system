@@ -56,7 +56,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  if($page==='standards'&&isset($_POST['dim_code'])){$sectionSt=$pdo->prepare('SELECT category FROM scoring_standard WHERE dim_code=? LIMIT 1');$sectionSt->execute([(string)$_POST['dim_code']]);if($sectionSt->fetchColumn()==='basic_quality')$_SESSION['standards_active_section']='suzhi';}
  try{
   if($action==='post_save'){
-   $id=(int)($_POST['id']??0); $data=[trim($_POST['name']),trim($_POST['company']),$_POST['status'],trim($_POST['duty'])];if(!$id){$same=$pdo->prepare('SELECT 1 FROM post WHERE name=? LIMIT 1');$same->execute([$data[0]]);if($same->fetchColumn()&&($_POST['same_name_confirmed']??'')!=='1')throw new RuntimeException('已存在同名岗位，请确认后再新建');}
+   $id=(int)($_POST['id']??0); $data=[trim($_POST['name']),trim($_POST['company']),$_POST['status'],trim($_POST['duty'])];
    if($id){$data[]=$id;$pdo->prepare('UPDATE post SET name=?,company=?,status=?,duty=? WHERE id=?')->execute($data);}else{$data[]=token();$pdo->prepare('INSERT INTO post(name,company,status,duty,q_apply_token) VALUES(?,?,?,?,?)')->execute($data);$id=(int)$pdo->lastInsertId();} audit('post_save','post:'.$id,['name'=>$_POST['name']]);flash('岗位信息已保存'); redirect('/index.php?page=posts');
   }
   if($action==='post_rotate'){$id=(int)$_POST['id'];$pdo->prepare('UPDATE post SET q_apply_token=? WHERE id=?')->execute([token(),$id]);audit('post_token_rotate','post:'.$id);flash('应聘二维码令牌已轮换，旧入口立即失效');redirect('/index.php?page=posts');}
