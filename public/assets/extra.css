@@ -128,6 +128,28 @@ body.login-page .login-copy{align-self:stretch!important;max-width:510px!importa
 body.login-page .login-main{display:block!important;min-height:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}body.login-page .login-card{width:390px!important;max-width:100%!important;margin:0!important;padding:38px!important;border:0!important;border-radius:16px!important;background:rgba(255,255,255,.97)!important;box-shadow:0 22px 60px rgba(2,13,29,.28)!important}body.login-page .login-card-head{margin-bottom:24px!important}body.login-page .login-card-head>small{font-size:11px!important}body.login-page .login-card h1{margin:9px 0 6px!important;font-size:29px!important}body.login-page .login-card-head:after{font-size:14px!important}body.login-page .login-card label{margin-top:16px!important}body.login-page .login-card input{height:46px!important;background:#f6f8fc!important}body.login-page .login-submit{height:46px!important;margin-top:26px!important;border-radius:8px!important}body.login-page .login-security{display:none!important}
 .login-card .login-validation{margin:-8px 0 16px!important;padding:9px 11px!important;font-size:13px!important;line-height:1.45}
 .session-progress{display:block;margin:7px 0 2px;color:var(--muted);font-size:12px;font-weight:700}.session-progress.is-complete{color:var(--green)}
+
+/* 面试场次：以安排信息为主，状态与操作收束在右侧。 */
+.session-card{border-radius:12px;box-shadow:0 4px 14px rgba(18,40,74,.04)}
+.session-card .session{align-items:flex-start;padding:20px 18px 15px}
+.session-card .session>div:nth-child(2)>b{font-size:17px}
+.session-card .session p{margin:4px 0 10px;color:#5f7494}
+.session-state{min-width:160px;align-items:flex-end;justify-content:flex-start;gap:6px}
+.session-state>.badge{font-size:12px;padding:5px 10px}
+.session-state .session-progress{margin:0;text-align:right;font-weight:600;line-height:1.45}
+.session-state .session-cancel{margin:0}
+.session-state .session-cancel button{height:30px;border-color:#f0c8c3;background:#fff8f7;color:#b63d35;font-size:12px}
+.session-state .session-cancel button:hover{border-color:#e09b93;background:#fff0ee;box-shadow:none}
+.session-card .session-members{padding-bottom:10px}
+.session-card .session-members>div{min-height:58px;padding:10px 12px;background:#f8fafc}
+.session-card .session-members>div>b{font-size:13px}
+.session-empty{display:block;color:#91a0b3;font-size:12px}
+.session-card .assign-row{padding-bottom:18px}
+.session-card .assign-row form{min-height:52px;padding:9px;background:#fbfcfe}
+.session-card .assign-row select,.session-card .assign-row input{height:36px;font-size:13px}
+.session-card .assign-row button{height:36px;font-size:13px}
+@media(max-width:900px){.session-state{align-items:flex-start}.session-state .session-progress{text-align:left}}
+@media(max-width:560px){.session-card .session{padding:16px 14px 12px}.session-state{min-width:0}.session-card .assign-row form{align-items:stretch;flex-wrap:wrap}.session-card .assign-row select{min-width:100%}}
 @media(max-width:860px){body.login-page{display:block!important;width:calc(100% - 32px)!important;min-height:auto!important;margin:16px!important;padding:30px!important}body.login-page::after{border-radius:18px}body.login-page .login-visual{min-height:310px!important}body.login-page .login-copy{margin:64px 0 0!important}body.login-page .login-copy h1{font-size:34px!important}body.login-page .login-process{display:none!important}body.login-page .login-main{margin-top:32px!important}body.login-page .login-card{width:min(100%,430px)!important;margin:0 auto!important}}
 
 @media(min-width:861px){body.login-page{margin:max(24px,calc((100dvh - 650px)/2)) auto!important}body.login-page .login-card{border:1px solid rgba(255,255,255,.72)!important;box-shadow:0 26px 68px rgba(2,13,29,.3)!important}body.login-page .login-card input{border-color:#d7e0ed!important}}

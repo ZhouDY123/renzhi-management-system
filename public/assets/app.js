@@ -279,6 +279,14 @@ function initReviewActions() {
 }
 
 function initInterviewSessionControls() {
+  document.querySelectorAll('.session-members > div').forEach(group => {
+    if (!group.querySelector('span')) {
+      const empty = document.createElement('small');
+      empty.className = 'session-empty';
+      empty.textContent = '暂未分配';
+      group.append(empty);
+    }
+  });
   document.querySelectorAll('.session-state form[action*="action=session_status"]').forEach(form => {
     const host = form.closest('.session-state'); const id = form.querySelector('input[name="id"]')?.value;
     if (host && id) {
