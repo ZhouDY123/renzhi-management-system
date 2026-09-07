@@ -17,11 +17,11 @@ function render_talent_workflow(string $page, PDO $pdo): bool {
         $sql = "SELECT c.*, a.post_id AS applied_post_id, p.name AS applied_post_name, intent_p.name AS intent_post_name, r.total_score, r.review_status,
                 ip.id AS interview_registration_id, ip.status AS interview_registration_status, ip.post_id AS interview_post_id
                 FROM candidate c
-                LEFT JOIN answer a ON a.candidate_id=c.id
+                LEFT JOIN answer a ON a.id=(SELECT a2.id FROM answer a2 WHERE a2.candidate_id=c.id ORDER BY a2.id DESC LIMIT 1)
                 LEFT JOIN post p ON p.id=a.post_id
                 LEFT JOIN post intent_p ON intent_p.id=c.intent_post_id
                 LEFT JOIN result r ON r.answer_id=a.id
-                LEFT JOIN interview_pre_register ip ON ip.candidate_id=c.id";
+                LEFT JOIN interview_pre_register ip ON ip.id=(SELECT ip2.id FROM interview_pre_register ip2 WHERE ip2.candidate_id=c.id ORDER BY ip2.id DESC LIMIT 1)";
         $params=[];$where='';$perPage=12;$currentPage=max(1,(int)($_GET['p']??1));
         if ($q !== '') {$where=' WHERE c.name LIKE ? OR c.mobile LIKE ? OR c.major LIKE ?';$params=array_fill(0,3,'%'.$q.'%');}
         $count=$pdo->prepare('SELECT COUNT(DISTINCT c.id) FROM candidate c'.$where);$count->execute($params);$total=(int)$count->fetchColumn();$pages=max(1,(int)ceil($total/$perPage));$currentPage=min($currentPage,$pages);$offset=($currentPage-1)*$perPage;
