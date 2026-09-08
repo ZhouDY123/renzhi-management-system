@@ -249,7 +249,7 @@ function initInterviewerProfileFields() {
   if (toolbar && interviewerRows.length && !toolbar.querySelector('.interviewer-search')) {
     const search = document.createElement('label');
     search.className = 'interviewer-search';
-    search.innerHTML = '<span class="sr-only">搜索面试官姓名</span><input type="search" placeholder="搜索面试官姓名" aria-label="搜索面试官姓名">';
+    search.innerHTML = '<span class="sr-only">搜索面试官姓名</span><input type="search" placeholder="搜索面试官姓名" aria-label="搜索面试官姓名"><button type="button" class="btn primary">搜索</button>';
     const input = search.querySelector('input');
     const empty = document.createElement('p');
     empty.className = 'interviewer-search-empty';
@@ -257,7 +257,7 @@ function initInterviewerProfileFields() {
     empty.hidden = true;
     toolbar.append(search);
     toolbar.insertAdjacentElement('afterend', empty);
-    input.addEventListener('input', () => {
+    const runSearch = () => {
       const keyword = input.value.trim();
       let visible = 0;
       interviewerRows.forEach(row => {
@@ -266,7 +266,9 @@ function initInterviewerProfileFields() {
         if (matched) visible++;
       });
       empty.hidden = visible > 0;
-    });
+    };
+    search.querySelector('button').addEventListener('click', runSearch);
+    input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); runSearch(); } });
   }
   const configureForm = (form, action) => {
     if (!form) return;
