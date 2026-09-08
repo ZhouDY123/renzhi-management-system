@@ -244,6 +244,30 @@ function initInterviewerProfileFields() {
   const toolbarHint = document.querySelector('.user-table-toolbar small');
   if (toolbarTitle) toolbarTitle.textContent = '面试官名单';
   if (toolbarHint) toolbarHint.textContent = toolbarHint.textContent.replace(/可编辑、删除和重置面试官登录密码/, '可新增、编辑、停用或删除面试官');
+  const toolbar = document.querySelector('.user-table-toolbar');
+  const interviewerRows = [...document.querySelectorAll('.user-table-panel tbody tr')];
+  if (toolbar && interviewerRows.length && !toolbar.querySelector('.interviewer-search')) {
+    const search = document.createElement('label');
+    search.className = 'interviewer-search';
+    search.innerHTML = '<span class="sr-only">搜索面试官姓名</span><input type="search" placeholder="搜索面试官姓名" aria-label="搜索面试官姓名">';
+    const input = search.querySelector('input');
+    const empty = document.createElement('p');
+    empty.className = 'interviewer-search-empty';
+    empty.textContent = '未找到匹配的面试官';
+    empty.hidden = true;
+    toolbar.append(search);
+    toolbar.insertAdjacentElement('afterend', empty);
+    input.addEventListener('input', () => {
+      const keyword = input.value.trim();
+      let visible = 0;
+      interviewerRows.forEach(row => {
+        const matched = !keyword || row.cells?.[0]?.textContent.includes(keyword);
+        row.hidden = !matched;
+        if (matched) visible++;
+      });
+      empty.hidden = visible > 0;
+    });
+  }
   const configureForm = (form, action) => {
     if (!form) return;
     form.setAttribute('action', action);
