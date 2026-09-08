@@ -11,7 +11,7 @@ $documentRoot = realpath((string)($_SERVER['DOCUMENT_ROOT'] ?? ''));
 $projectRoot = realpath(ROOT_PATH);
 // 当站点根目录直接指向项目目录时，数据库必须放到 Web 根目录外，避免被静态下载。
 define('DB_PATH', $documentRoot !== false && $projectRoot !== false && rtrim($documentRoot, DIRECTORY_SEPARATOR) === rtrim($projectRoot, DIRECTORY_SEPARATOR)
-    ? dirname(ROOT_PATH) . '/.renzhi-private/app.db'
+    ? rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . '/renzhi-recruit-sandbox/app.db'
     : ROOT_PATH . '/data/app.db');
 
 function db(): PDO {
