@@ -249,7 +249,7 @@ function initInterviewerProfileFields() {
   if (toolbar && interviewerRows.length && !toolbar.querySelector('.interviewer-search')) {
     const search = document.createElement('label');
     search.className = 'interviewer-search';
-    search.innerHTML = '<span class="sr-only">搜索面试官姓名</span><input type="search" placeholder="搜索面试官姓名" aria-label="搜索面试官姓名"><button type="button" class="btn primary">搜索</button>';
+    search.innerHTML = '<span class="sr-only">搜索面试官姓名</span><input type="search" placeholder="搜索面试官姓名" aria-label="搜索面试官姓名"><button type="button" class="btn primary">搜索</button><button type="button" class="btn secondary">重置</button>';
     const input = search.querySelector('input');
     const empty = document.createElement('p');
     empty.className = 'interviewer-search-empty';
@@ -268,6 +268,7 @@ function initInterviewerProfileFields() {
       empty.hidden = visible > 0;
     };
     search.querySelector('button').addEventListener('click', runSearch);
+    search.querySelector('button.secondary').addEventListener('click', () => { input.value = ''; runSearch(); input.focus(); });
     input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); runSearch(); } });
   }
   const configureForm = (form, action) => {
