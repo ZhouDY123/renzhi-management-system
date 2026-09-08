@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initAuditLog();
+  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
 });
 
 function initFullMobileNumbers() {
@@ -232,6 +232,70 @@ function initUserAccountActions() {
       open(editModal);
     } catch (_) { window.location.reload(); }
   }));
+}
+
+function initInterviewerProfileFields() {
+  if (new URLSearchParams(location.search).get('page') !== 'interviewers') return;
+
+  const endpoint = '?page=interviewers&action=interviewer_detail&id=';
+  const configureForm = (form, action) => {
+    if (!form) return;
+    form.setAttribute('action', action);
+    form.querySelectorAll('label').forEach(label => {
+      const text = label.childNodes[0]?.textContent?.trim() || '';
+      if (/^(登录账号|初始密码|新密码|角色)/.test(text)) label.remove();
+    });
+    const submit = form.querySelector('button.btn');
+    [['部门/公司', 'company'], ['岗位', 'job_title']].forEach(([title, name]) => {
+      if (form.elements[name]) return;
+      const label = document.createElement('label');
+      label.textContent = title;
+      const input = document.createElement('input');
+      input.name = name;
+      input.required = true;
+      label.append(input);
+      if (submit) form.insertBefore(label, submit); else form.append(label);
+    });
+  };
+
+  const createForm = document.querySelector('#user-create-modal form');
+  const editForm = document.querySelector('#user-edit-modal form');
+  configureForm(createForm, '?page=interviewers&action=user_save_interviewer');
+  configureForm(editForm, '?page=interviewers&action=user_update_interviewer');
+
+  const table = document.querySelector('.user-table-panel table');
+  if (table) {
+    const headers = table.querySelectorAll('thead th');
+    if (headers[1]) headers[1].textContent = '部门/公司';
+    if (headers[3]) headers[3].textContent = '岗位';
+  }
+  document.querySelectorAll('[data-user-edit]').forEach(button => {
+    button.addEventListener('click', async () => {
+      try {
+        const user = JSON.parse(button.dataset.userEdit || '{}');
+        const profile = await fetch(endpoint + encodeURIComponent(user.id), { credentials: 'same-origin' }).then(response => response.json());
+        if (editForm) {
+          if (editForm.elements.company) editForm.elements.company.value = profile.company || '';
+          if (editForm.elements.job_title) editForm.elements.job_title.value = profile.job_title || '';
+        }
+        const row = button.closest('tr');
+        if (row?.cells) {
+          if (row.cells[1]) row.cells[1].textContent = profile.company || '—';
+          if (row.cells[3]) row.cells[3].textContent = profile.job_title || '—';
+        }
+      } catch (_) { /* 保持已打开的编辑窗口，用户可重新填写资料。 */ }
+    });
+  });
+  document.querySelectorAll('.user-table-panel tbody tr').forEach(async row => {
+    const button = row.querySelector('[data-user-edit]');
+    if (!button) return;
+    try {
+      const user = JSON.parse(button.dataset.userEdit || '{}');
+      const profile = await fetch(endpoint + encodeURIComponent(user.id), { credentials: 'same-origin' }).then(response => response.json());
+      if (row.cells?.[1]) row.cells[1].textContent = profile.company || '—';
+      if (row.cells?.[3]) row.cells[3].textContent = profile.job_title || '—';
+    } catch (_) { /* 旧数据没有补充资料时保留空占位。 */ }
+  });
 }
 
 function initAssessmentBulkRegistration() {
