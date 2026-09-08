@@ -7,7 +7,12 @@ session_set_cookie_params(['httponly'=>true,'secure'=>(!empty($_SERVER['HTTPS'])
 session_start();
 
 const ROOT_PATH = __DIR__ . '/..';
-const DB_PATH = ROOT_PATH . '/data/app.db';
+$documentRoot = realpath((string)($_SERVER['DOCUMENT_ROOT'] ?? ''));
+$projectRoot = realpath(ROOT_PATH);
+// 当站点根目录直接指向项目目录时，数据库必须放到 Web 根目录外，避免被静态下载。
+define('DB_PATH', $documentRoot !== false && $projectRoot !== false && rtrim($documentRoot, DIRECTORY_SEPARATOR) === rtrim($projectRoot, DIRECTORY_SEPARATOR)
+    ? dirname(ROOT_PATH) . '/.renzhi-private/app.db'
+    : ROOT_PATH . '/data/app.db');
 
 function db(): PDO {
     static $pdo;
@@ -77,9 +82,9 @@ function upgrade_schema(PDO $pdo): void {
             $pdo->commit();
         }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     }
+    $pdo->exec("CREATE TABLE IF NOT EXISTS interview_pre_register (id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id INTEGER NOT NULL, post_id INTEGER NOT NULL, answer_id INTEGER, status TEXT NOT NULL DEFAULT 'registered', created_by INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(candidate_id) REFERENCES candidate(id), FOREIGN KEY(post_id) REFERENCES post(id), FOREIGN KEY(answer_id) REFERENCES answer(id), FOREIGN KEY(created_by) REFERENCES user(id))");
     $registrationColumns=array_column($pdo->query('PRAGMA table_info(interview_pre_register)')->fetchAll(),'name');
     if(!in_array('answer_id',$registrationColumns,true))$pdo->exec('ALTER TABLE interview_pre_register ADD COLUMN answer_id INTEGER');
-    $pdo->exec("CREATE TABLE IF NOT EXISTS interview_pre_register (id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id INTEGER NOT NULL, post_id INTEGER NOT NULL, answer_id INTEGER, status TEXT NOT NULL DEFAULT 'registered', created_by INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(candidate_id) REFERENCES candidate(id), FOREIGN KEY(post_id) REFERENCES post(id), FOREIGN KEY(answer_id) REFERENCES answer(id), FOREIGN KEY(created_by) REFERENCES user(id))");
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_interview_pre_register_post ON interview_pre_register(post_id,status)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_interview_pre_register_candidate_status ON interview_pre_register(candidate_id,status)');
     // 将曾以“18至29岁”这类文本录入的年龄档位修正为真正的数值区间。
