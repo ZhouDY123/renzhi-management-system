@@ -212,6 +212,7 @@ function initInterviewRegistrationStatuses() {
 
 function initUserAccountActions() {
   const currentName = document.querySelector('.account b')?.textContent?.trim();
+  if (new URLSearchParams(location.search).get('page') === 'interviewers') document.querySelector('[data-user-modal-open="password"]')?.remove();
   document.querySelectorAll('.user-table-panel tbody tr').forEach(row => {
     const marker = row.querySelector('.muted');
     if (marker?.textContent.trim() === '当前账号' && currentName && row.cells?.[0]?.textContent.trim() !== currentName) marker.textContent = '仅系统管理员可管理';
