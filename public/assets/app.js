@@ -238,6 +238,12 @@ function initInterviewerProfileFields() {
   if (new URLSearchParams(location.search).get('page') !== 'interviewers') return;
 
   const endpoint = '?page=interviewers&action=interviewer_detail&id=';
+  const pageDescription = document.querySelector('.page-head p');
+  if (pageDescription) pageDescription.textContent = '集中维护参与面试评分的人员资料；人力资源审核员仅可管理面试官。';
+  const toolbarTitle = document.querySelector('.user-table-toolbar b');
+  const toolbarHint = document.querySelector('.user-table-toolbar small');
+  if (toolbarTitle) toolbarTitle.textContent = '面试官名单';
+  if (toolbarHint) toolbarHint.textContent = toolbarHint.textContent.replace(/可编辑、删除和重置面试官登录密码/, '可新增、编辑、停用或删除面试官');
   const configureForm = (form, action) => {
     if (!form) return;
     form.setAttribute('action', action);
