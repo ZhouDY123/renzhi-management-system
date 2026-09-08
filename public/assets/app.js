@@ -892,7 +892,7 @@ function initPostDuplicateConfirmation() {
 }
 
 function initFormModals() {
-  const forms = [...document.querySelectorAll('form.form-panel:not(.settings-form),form.dimension-form')]; if (!forms.length) return;
+  const forms = [...document.querySelectorAll('form.form-panel:not(.settings-form):not(.password-settings-form),form.dimension-form')]; if (!forms.length) return;
   const head = document.querySelector('.page-head'); let actions = head?.querySelector('.page-actions');
   if (head && !actions) { actions = document.createElement('div'); actions.className = 'page-actions'; [...head.children].slice(1).forEach(el => actions.appendChild(el)); head.appendChild(actions); }
   forms.forEach((form, i) => {
