@@ -274,4 +274,4 @@ form[action*="action=standard_publish"] .btn{min-width:88px!important;height:46p
 .filter-bar .post-count{margin-left:auto;color:var(--muted);font-size:13px;font-weight:700;white-space:nowrap}@media(max-width:560px){.filter-bar .post-count{margin-left:0}}
 
 /* 面试官评分明细使用完整表格线，便于横向、纵向核对评分内容。 */
-.interview-score-grid table{border-collapse:collapse}.interview-score-grid th,.interview-score-grid td{border-right:1px solid #dde5ee;border-bottom:1px solid #dde5ee}.interview-score-grid th:first-child,.interview-score-grid td:first-child{border-left:1px solid #dde5ee}.interview-score-grid thead th{border-top:1px solid #dde5ee;background:#f4f7fb;color:#41516a}
+.interview-score-grid{margin:0 0 30px 16px}.interview-score-grid table{border-collapse:collapse}.interview-score-grid th,.interview-score-grid td{border-right:1px solid #dde5ee;border-bottom:1px solid #dde5ee}.interview-score-grid th:first-child,.interview-score-grid td:first-child{border-left:1px solid #dde5ee}.interview-score-grid thead th{border-top:1px solid #dde5ee;background:#f4f7fb;color:#41516a}@media(max-width:720px){.interview-score-grid{margin-left:0;margin-bottom:22px}}
