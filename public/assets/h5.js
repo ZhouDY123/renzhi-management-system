@@ -30,6 +30,28 @@
   const token = query.get('t');
   if (!token) return;
 
+  if (query.get('m') === 'interview') {
+    const loginForm = document.querySelector('form.interviewer.verify');
+    if (loginForm && !loginForm.elements.mobile) {
+      const description = loginForm.querySelector('h2 + p');
+      if (description) description.textContent = '请输入您在本场面试名单中登记的姓名和手机号码';
+      const mobileLabel = document.createElement('label');
+      mobileLabel.textContent = '手机号码';
+      const mobile = document.createElement('input');
+      mobile.name = 'mobile';
+      mobile.inputMode = 'numeric';
+      mobile.pattern = '1[3-9]\\d{9}';
+      mobile.maxLength = 11;
+      mobile.autocomplete = 'tel';
+      mobile.placeholder = '请输入 11 位手机号码';
+      mobile.required = true;
+      mobileLabel.append(mobile);
+      loginForm.querySelector('.safe')?.before(mobileLabel);
+      loginForm.querySelector('.safe').textContent = '✓ 姓名和手机号码将与本场面试官名单匹配';
+      loginForm.querySelector('em')?.remove();
+    }
+  }
+
   fetch(`/h5.php?m=condition_options&t=${encodeURIComponent(token)}`, { credentials: 'same-origin' })
     .then(response => response.ok ? response.json() : {})
     .then(options => {
