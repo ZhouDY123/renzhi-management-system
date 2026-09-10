@@ -735,7 +735,7 @@ function initQuestionPaperBuilder() {
         if (checkbox) checkbox.disabled = !match;
         if (match && checkbox) { available += 1; if (shown) visible += 1; if (checkbox.checked) selected += 1; }
       });
-      if (count) count.textContent = available ? `已选 ${selected} / ${available} 道专业题` : '该岗位暂未启用专业题';
+      if (count) count.textContent = !postId ? '请先选择发布岗位' : (available ? `已选 ${selected} / ${available} 道专业题` : '该岗位暂未启用专业题');
       if (summary) { const number = document.createElement('b'); number.textContent = String(selected); summary.replaceChildren(number, document.createTextNode(' 道已选专业题')); }
       searchClear.hidden = !search.value; selectVisible.disabled = visible === 0; selectVisible.textContent = visible ? `全选当前结果（${visible}）` : '无匹配题目'; clearSelected.disabled = selected === 0;
       renderBasket();
@@ -768,14 +768,14 @@ function initSearchablePostSelects() {
     const list = document.createElement('div'); list.className = 'searchable-post-list'; list.id = listId; list.setAttribute('role', 'listbox'); list.hidden = true;
     control.append(input, clear, toggle, list); host.append(control); select.classList.add('searchable-post-native');
     let activeIndex = -1, open = false;
-    const selectedLabel = () => select.selectedOptions[0]?.textContent.trim() || '';
+    const selectedLabel = () => select.value ? (select.selectedOptions[0]?.textContent.trim() || '') : '';
     const visibleOptions = () => {
       const keyword = input.value.trim().toLocaleLowerCase('zh-CN');
       return options.filter(option => !keyword || option.label.toLocaleLowerCase('zh-CN').includes(keyword));
     };
     const setOpen = next => {
       open = next; list.hidden = !next; input.setAttribute('aria-expanded', String(next)); toggle.setAttribute('aria-expanded', String(next));
-      if (!next) { activeIndex = -1; input.removeAttribute('aria-activedescendant'); clear.hidden = true; }
+      if (!next) { activeIndex = -1; input.removeAttribute('aria-activedescendant'); }
     };
     const choose = option => {
       if (!option) return;
@@ -783,6 +783,7 @@ function initSearchablePostSelects() {
       select.dispatchEvent(new Event('change', {bubbles:true}));
       input.value = option.label;
       setOpen(false);
+      render();
     };
     const render = () => {
       const matches = visibleOptions(); list.replaceChildren();
@@ -791,7 +792,7 @@ function initSearchablePostSelects() {
         const item = document.createElement('button'); item.type = 'button'; item.tabIndex = -1; item.className = 'searchable-post-option'; item.id = `${listId}-${optionIndex}`; item.setAttribute('role', 'option'); item.setAttribute('aria-selected', String(option.value === select.value)); item.textContent = option.label;
         item.addEventListener('mousedown', event => event.preventDefault()); item.addEventListener('click', () => choose(option)); list.append(item);
       });
-      clear.hidden = !open || !input.value;
+      clear.hidden = !input.value;
       if (activeIndex >= matches.length) activeIndex = matches.length - 1;
       [...list.querySelectorAll('.searchable-post-option')].forEach((item, itemIndex) => {
         item.classList.toggle('is-active', itemIndex === activeIndex);
@@ -808,11 +809,11 @@ function initSearchablePostSelects() {
       if (event.key === 'ArrowDown') { event.preventDefault(); if (!open) openList(false); activeIndex = Math.min(activeIndex + 1, matches.length - 1); render(); }
       else if (event.key === 'ArrowUp') { event.preventDefault(); if (!open) openList(false); activeIndex = Math.max(activeIndex - 1, 0); render(); }
       else if (event.key === 'Enter' && open) { event.preventDefault(); choose(matches[activeIndex] || (matches.length === 1 ? matches[0] : null)); }
-      else if (event.key === 'Escape') { event.preventDefault(); input.value = selectedLabel(); setOpen(false); }
+      else if (event.key === 'Escape') { event.preventDefault(); input.value = selectedLabel(); setOpen(false); render(); }
     });
-    input.addEventListener('blur', () => window.setTimeout(() => { if (!host.contains(document.activeElement)) { input.value = selectedLabel(); setOpen(false); } }, 120));
-    clear.addEventListener('click', () => { input.value = ''; input.focus(); openList(false); });
-    toggle.addEventListener('click', () => { if (open) { input.value = selectedLabel(); setOpen(false); } else { input.focus(); openList(true); } });
+    input.addEventListener('blur', () => window.setTimeout(() => { if (!host.contains(document.activeElement)) { input.value = selectedLabel(); setOpen(false); render(); } }, 120));
+    clear.addEventListener('click', () => { input.value = ''; select.value = ''; select.dispatchEvent(new Event('change', {bubbles:true})); input.focus(); openList(false); });
+    toggle.addEventListener('click', () => { if (open) { input.value = selectedLabel(); setOpen(false); render(); } else { input.focus(); openList(true); } });
   });
 }
 
