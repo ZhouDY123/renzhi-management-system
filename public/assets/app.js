@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
+  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
 });
 
 function initFullMobileNumbers() {
@@ -984,7 +984,7 @@ function initQuestionEditorOptions() {
       };
       const add = document.createElement('button'); add.type = 'button'; add.className = 'btn secondary option-add'; add.textContent = '+ 新增选项';
       add.addEventListener('click', () => { row(''); sync(); list.querySelector('.question-option-row:last-child input')?.focus(); });
-      (parseOptions().length ? parseOptions() : ['']).forEach(row);
+      (parseOptions().length ? parseOptions() : ['', '']).forEach(row);
       editor.append(list, add); label.append(editor); sync();
       const type = form.querySelector('[name="q_type"]');
       const toggle = () => { editor.hidden = type?.value === 'short'; renderAnswerPicker([...list.querySelectorAll('input')].map(input => input.value.trim()).filter(Boolean)); };
