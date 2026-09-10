@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
+  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
 });
 
 function initFullMobileNumbers() {
@@ -751,6 +751,67 @@ function initQuestionPaperBuilder() {
       event.preventDefault(); checkbox.checked = !checkbox.checked; checkbox.dispatchEvent(new Event('change', {bubbles:true}));
     }));
     sync();
+  });
+}
+
+function initSearchablePostSelects() {
+  document.querySelectorAll('[data-searchable-post-select]').forEach((host, index) => {
+    const select = host.querySelector('select'); if (!select || host.dataset.enhanced) return;
+    host.dataset.enhanced = '1';
+    const options = [...select.options].map(option => ({value: option.value, label: option.textContent.trim()}));
+    const listId = `searchable-post-list-${index}`;
+    const control = document.createElement('div'); control.className = 'searchable-post-control';
+    const input = document.createElement('input'); input.type = 'search'; input.autocomplete = 'off'; input.placeholder = '输入岗位名称、部门或公司搜索'; input.value = select.selectedOptions[0]?.textContent.trim() || ''; input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-expanded', 'false'); input.setAttribute('aria-controls', listId); input.setAttribute('aria-label', '搜索并选择发布岗位');
+    const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'searchable-post-clear'; clear.textContent = '×'; clear.setAttribute('aria-label', '清除岗位搜索'); clear.hidden = true;
+    const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'searchable-post-toggle'; toggle.setAttribute('aria-label', '展开岗位列表'); toggle.setAttribute('aria-expanded', 'false'); toggle.innerHTML = '<span aria-hidden="true">⌄</span>';
+    const list = document.createElement('div'); list.className = 'searchable-post-list'; list.id = listId; list.setAttribute('role', 'listbox'); list.hidden = true;
+    control.append(input, clear, toggle, list); host.append(control); select.classList.add('searchable-post-native');
+    let activeIndex = -1, open = false;
+    const selectedLabel = () => select.selectedOptions[0]?.textContent.trim() || '';
+    const visibleOptions = () => {
+      const keyword = input.value.trim().toLocaleLowerCase('zh-CN');
+      return options.filter(option => !keyword || option.label.toLocaleLowerCase('zh-CN').includes(keyword));
+    };
+    const setOpen = next => {
+      open = next; list.hidden = !next; input.setAttribute('aria-expanded', String(next)); toggle.setAttribute('aria-expanded', String(next));
+      if (!next) { activeIndex = -1; input.removeAttribute('aria-activedescendant'); clear.hidden = true; }
+    };
+    const choose = option => {
+      if (!option) return;
+      select.value = option.value;
+      select.dispatchEvent(new Event('change', {bubbles:true}));
+      input.value = option.label;
+      setOpen(false);
+    };
+    const render = () => {
+      const matches = visibleOptions(); list.replaceChildren();
+      if (!matches.length) { const empty = document.createElement('p'); empty.className = 'searchable-post-empty'; empty.textContent = '未找到匹配岗位'; list.append(empty); activeIndex = -1; input.removeAttribute('aria-activedescendant'); }
+      matches.forEach((option, optionIndex) => {
+        const item = document.createElement('button'); item.type = 'button'; item.tabIndex = -1; item.className = 'searchable-post-option'; item.id = `${listId}-${optionIndex}`; item.setAttribute('role', 'option'); item.setAttribute('aria-selected', String(option.value === select.value)); item.textContent = option.label;
+        item.addEventListener('mousedown', event => event.preventDefault()); item.addEventListener('click', () => choose(option)); list.append(item);
+      });
+      clear.hidden = !open || !input.value;
+      if (activeIndex >= matches.length) activeIndex = matches.length - 1;
+      [...list.querySelectorAll('.searchable-post-option')].forEach((item, itemIndex) => {
+        item.classList.toggle('is-active', itemIndex === activeIndex);
+        if (itemIndex === activeIndex) input.setAttribute('aria-activedescendant', item.id);
+      });
+      if (activeIndex < 0) input.removeAttribute('aria-activedescendant');
+      return matches;
+    };
+    const openList = (showAll = false) => { if (showAll) input.value = ''; setOpen(true); render(); };
+    input.addEventListener('focus', () => { input.select(); openList(false); });
+    input.addEventListener('input', () => { activeIndex = -1; openList(false); });
+    input.addEventListener('keydown', event => {
+      const matches = visibleOptions();
+      if (event.key === 'ArrowDown') { event.preventDefault(); if (!open) openList(false); activeIndex = Math.min(activeIndex + 1, matches.length - 1); render(); }
+      else if (event.key === 'ArrowUp') { event.preventDefault(); if (!open) openList(false); activeIndex = Math.max(activeIndex - 1, 0); render(); }
+      else if (event.key === 'Enter' && open) { event.preventDefault(); choose(matches[activeIndex] || (matches.length === 1 ? matches[0] : null)); }
+      else if (event.key === 'Escape') { event.preventDefault(); input.value = selectedLabel(); setOpen(false); }
+    });
+    input.addEventListener('blur', () => window.setTimeout(() => { if (!host.contains(document.activeElement)) { input.value = selectedLabel(); setOpen(false); } }, 120));
+    clear.addEventListener('click', () => { input.value = ''; input.focus(); openList(false); });
+    toggle.addEventListener('click', () => { if (open) { input.value = selectedLabel(); setOpen(false); } else { input.focus(); openList(true); } });
   });
 }
 

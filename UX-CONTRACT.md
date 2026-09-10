@@ -7,7 +7,7 @@
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
 | Form | PHP 语义表单 + `app.js` 表单控制器 | 本文件 | 新增 / 编辑 / 设置页内嵌 | PHP 语法 + 浏览器键盘流程 |
-| Select/Listbox | 原生 `select` | 本文件 + DESIGN.md | native | 中文选项 + 键盘操作 |
+| Select/Listbox | 原生 `select`；岗位题卷发布使用 `app.js` 可搜索岗位选择器 | 本文件 + DESIGN.md | native / 可搜索岗位选择器 | 中文选项、筛选、键盘操作、表单值同步 |
 | Date | 原生 `input[type=date]` | 本文件 | native date-only | 浏览器日期输入检查 |
 | Dialog | `app.js` Dialog 控制器 | 本文件 | 表单 / 二维码 / 确认 | 焦点循环 + Escape + 恢复焦点 |
 | Toast | 页面 flash + `#app-live-region` | 本文件 | success / error | live region 检查 |
