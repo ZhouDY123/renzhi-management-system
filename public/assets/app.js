@@ -768,6 +768,7 @@ function initSearchablePostSelects() {
     const list = document.createElement('div'); list.className = 'searchable-post-list'; list.id = listId; list.setAttribute('role', 'listbox'); list.hidden = true;
     control.append(input, clear, toggle, list); host.append(control); select.classList.add('searchable-post-native');
     let activeIndex = -1, open = false;
+    const selectedLabel = () => select.selectedOptions[0]?.textContent.trim() || '';
     const visibleOptions = () => {
       const keyword = input.value.trim().toLocaleLowerCase('zh-CN');
       return options.filter(option => !keyword || option.label.toLocaleLowerCase('zh-CN').includes(keyword));
@@ -780,7 +781,7 @@ function initSearchablePostSelects() {
       if (!option) return;
       select.value = option.value;
       select.dispatchEvent(new Event('change', {bubbles:true}));
-      input.value = '';
+      input.value = option.label;
       setOpen(false);
     };
     const render = () => {
@@ -807,11 +808,11 @@ function initSearchablePostSelects() {
       if (event.key === 'ArrowDown') { event.preventDefault(); if (!open) openList(false); activeIndex = Math.min(activeIndex + 1, matches.length - 1); render(); }
       else if (event.key === 'ArrowUp') { event.preventDefault(); if (!open) openList(false); activeIndex = Math.max(activeIndex - 1, 0); render(); }
       else if (event.key === 'Enter' && open) { event.preventDefault(); choose(matches[activeIndex] || (matches.length === 1 ? matches[0] : null)); }
-      else if (event.key === 'Escape') { event.preventDefault(); input.value = ''; setOpen(false); }
+      else if (event.key === 'Escape') { event.preventDefault(); input.value = selectedLabel(); setOpen(false); }
     });
-    input.addEventListener('blur', () => window.setTimeout(() => { if (!host.contains(document.activeElement)) { input.value = ''; setOpen(false); } }, 120));
+    input.addEventListener('blur', () => window.setTimeout(() => { if (!host.contains(document.activeElement)) { input.value = selectedLabel(); setOpen(false); } }, 120));
     clear.addEventListener('click', () => { input.value = ''; input.focus(); openList(false); });
-    toggle.addEventListener('click', () => { if (open) { input.value = ''; setOpen(false); } else { input.focus(); openList(true); } });
+    toggle.addEventListener('click', () => { if (open) { input.value = selectedLabel(); setOpen(false); } else { input.focus(); openList(true); } });
   });
 }
 
