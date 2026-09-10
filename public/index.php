@@ -266,7 +266,7 @@ if($page==='standards'){
 
 if($page==='paper_archive'){
  admin_header('题卷档案','questions');
- $papers=$pdo->query('SELECT qs.id,qs.post_id,qs.version,qs.status,qs.published_at,p.name post_name FROM question_set qs JOIN post p ON p.id=qs.post_id ORDER BY p.id,qs.version DESC')->fetchAll();
+ $papers=$pdo->query('SELECT qs.id,qs.post_id,qs.version,qs.status,qs.published_at,p.name post_name FROM question_set qs JOIN post p ON p.id=qs.post_id ORDER BY qs.published_at DESC,qs.id DESC')->fetchAll();
  $itemSt=$pdo->prepare('SELECT question_type,q_type,stem_snapshot,score_snapshot,sort FROM question_set_item WHERE question_set_id=? ORDER BY sort,id');
  foreach($papers as &$paper){$itemSt->execute([(int)$paper['id']]);$paper['items']=$itemSt->fetchAll();}unset($paper);
  page_head('职位管理 / 题卷档案','已发布题卷档案','按岗位查看当前使用的试卷与历史版本；每个版本均保留发布时的题目快照。','<a class="btn secondary" href="?page=questions">返回题库工作台</a>'); ?>
