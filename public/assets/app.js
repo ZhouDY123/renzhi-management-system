@@ -943,7 +943,21 @@ function initFormModals() {
     const existingTrigger = i === 0 ? [...(actions?.querySelectorAll('a,button') || [])].find(item => item.getAttribute('href')?.includes('new=1')) : null;
     let trigger = existingTrigger;
     if (trigger) {
-      trigger.addEventListener('click', event => { event.preventDefault(); open(); });
+      trigger.addEventListener('click', event => {
+        event.preventDefault();
+        if (form.matches('[data-post-create-form]')) {
+          form.reset();
+          const id = form.querySelector('[name="id"]'); if (id) id.value = '';
+          ['name','company','series','duty'].forEach(name => { const field = form.querySelector(`[name="${name}"]`); if (field) field.value = ''; });
+          const status = form.querySelector('[name="status"]'); if (status) status.value = 'recruiting';
+          delete form.dataset.sameNameChecked;
+          form.querySelector('[name="same_name_confirmed"]')?.remove();
+          top.querySelector('h2').textContent = '新建岗位';
+          form.dispatchEvent(new CustomEvent('resetQuestionOptionsEditor'));
+          dirty = false;
+        }
+        open();
+      });
     } else {
       trigger = document.createElement('button'); trigger.type = 'button'; trigger.className = 'btn primary modal-trigger'; const triggerTitle = isEditing ? title.replace(/^编辑/,'新增') : title; trigger.textContent = triggerTitle.includes('密码') ? `修改${triggerTitle.replace('修改','')}` : `＋ ${triggerTitle}`; trigger.dataset.defaultLabel = trigger.textContent; trigger.addEventListener('click', () => { if (isEditing) { const next = new URLSearchParams(); const currentPage = new URLSearchParams(location.search).get('page') || ''; next.set('page', currentPage); next.set('new','1'); location.href = `${location.pathname}?${next}`; return; } open(); }); actions?.append(trigger);
     }
