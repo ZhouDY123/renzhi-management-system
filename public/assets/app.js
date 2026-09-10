@@ -674,6 +674,8 @@ function initQuestionPaperBuilder() {
       if (row.textContent.includes('已停用')) inactiveRows.push(row.cloneNode(true));
     });
     if (!select) return;
+    const requestedPostId = new URLSearchParams(window.location.search).get('publish_post_id');
+    if (requestedPostId && [...select.options].some(option => option.value === requestedPostId)) select.value = requestedPostId;
     if (!form.id) form.id = 'question-paper-publish-form';
     const tools = document.createElement('div'); tools.className = 'question-picker-tools';
     const searchWrap = document.createElement('label'); searchWrap.className = 'question-picker-search'; searchWrap.setAttribute('aria-label', '搜索岗位专业题');
@@ -740,7 +742,19 @@ function initQuestionPaperBuilder() {
       searchClear.hidden = !search.value; selectVisible.disabled = visible === 0; selectVisible.textContent = visible ? `全选当前结果（${visible}）` : '无匹配题目'; clearSelected.disabled = selected === 0;
       renderBasket();
     };
-    select.addEventListener('change', sync);
+    const preservePublishPost = () => {
+      const url = new URL(window.location.href);
+      if (select.value) url.searchParams.set('publish_post_id', select.value);
+      else url.searchParams.delete('publish_post_id');
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+      document.querySelectorAll('.question-actions a[href*="edit="]').forEach(link => {
+        const editUrl = new URL(link.href, window.location.href);
+        if (select.value) editUrl.searchParams.set('publish_post_id', select.value);
+        else editUrl.searchParams.delete('publish_post_id');
+        link.href = `${editUrl.pathname}${editUrl.search}${editUrl.hash}`;
+      });
+    };
+    select.addEventListener('change', () => { preservePublishPost(); sync(); });
     pickerRoot.querySelectorAll('input[type="checkbox"]').forEach(input => input.addEventListener('change', sync));
     search.addEventListener('input', sync); type.addEventListener('change', sync);
     searchClear.addEventListener('click', () => { search.value = ''; sync(); search.focus(); });
@@ -751,6 +765,7 @@ function initQuestionPaperBuilder() {
       if (!checkbox || checkbox.disabled || event.target === checkbox || event.target.closest('a,button,form')) return;
       event.preventDefault(); checkbox.checked = !checkbox.checked; checkbox.dispatchEvent(new Event('change', {bubbles:true}));
     }));
+    preservePublishPost();
     sync();
   });
 }
@@ -762,7 +777,7 @@ function initSearchablePostSelects() {
     const options = [...select.options].map(option => ({value: option.value, label: option.textContent.trim()}));
     const listId = `searchable-post-list-${index}`;
     const control = document.createElement('div'); control.className = 'searchable-post-control';
-    const input = document.createElement('input'); input.type = 'search'; input.autocomplete = 'off'; input.placeholder = '输入岗位名称、部门或公司搜索'; input.value = ''; input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-expanded', 'false'); input.setAttribute('aria-controls', listId); input.setAttribute('aria-label', '搜索并选择发布岗位');
+    const input = document.createElement('input'); input.type = 'search'; input.autocomplete = 'off'; input.placeholder = '输入岗位名称、部门或公司搜索'; input.value = select.value ? (select.selectedOptions[0]?.textContent.trim() || '') : ''; input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-expanded', 'false'); input.setAttribute('aria-controls', listId); input.setAttribute('aria-label', '搜索并选择发布岗位');
     const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'searchable-post-clear'; clear.textContent = '×'; clear.setAttribute('aria-label', '清除岗位搜索'); clear.hidden = true;
     const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'searchable-post-toggle'; toggle.setAttribute('aria-label', '展开岗位列表'); toggle.setAttribute('aria-expanded', 'false'); toggle.innerHTML = '<span aria-hidden="true">⌄</span>';
     const list = document.createElement('div'); list.className = 'searchable-post-list'; list.id = listId; list.setAttribute('role', 'listbox'); list.hidden = true;
