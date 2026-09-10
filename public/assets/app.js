@@ -938,6 +938,10 @@ function initQuestionEditorOptions() {
       return field.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
     };
     const answerValues = () => answerField.value.split(/[|,，]/).map(value => value.trim()).filter(Boolean);
+    const isStoredAnswer = (option, stored) => {
+      const normalize = value => String(value).trim().replace(/^[A-D][.、．]\s*/i, '');
+      return String(option).trim() === String(stored).trim() || normalize(option) === normalize(stored);
+    };
     const renderAnswerPicker = options => {
       answerLabel.querySelector('.question-answer-picker')?.remove();
       const type = form.querySelector('[name="q_type"]')?.value;
@@ -959,13 +963,13 @@ function initQuestionEditorOptions() {
       if (type === 'multi') {
         options.forEach((option, index) => {
           const choice = document.createElement('label'); choice.className = 'question-answer-choice';
-          const input = document.createElement('input'); input.type = 'checkbox'; input.value = option; input.checked = selected.includes(option);
+          const input = document.createElement('input'); input.type = 'checkbox'; input.value = option; input.checked = selected.some(value => isStoredAnswer(option, value));
           const text = document.createElement('span'); text.textContent = `选项 ${String.fromCharCode(65 + index)}：${option}`;
           input.addEventListener('change', syncAnswer); choice.append(input, text); picker.append(choice);
         });
       } else {
         const select = document.createElement('select'); const empty = document.createElement('option'); empty.value = ''; empty.textContent = '请选择正确答案'; select.append(empty);
-        options.forEach((option, index) => { const item = document.createElement('option'); item.value = option; item.textContent = `选项 ${String.fromCharCode(65 + index)}：${option}`; item.selected = selected[0] === option; select.append(item); });
+        options.forEach((option, index) => { const item = document.createElement('option'); item.value = option; item.textContent = `选项 ${String.fromCharCode(65 + index)}：${option}`; item.selected = selected.some(value => isStoredAnswer(option, value)); select.append(item); });
         select.addEventListener('change', syncAnswer); picker.append(select);
       }
       answerLabel.append(picker); syncAnswer();
