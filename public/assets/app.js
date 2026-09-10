@@ -596,20 +596,18 @@ function initStandardTabs() {
   const tabs = [...document.querySelectorAll('[data-standard-show]')];
   const panels = [...document.querySelectorAll('[data-standard-panel]')];
   if (!tabs.length || !panels.length) return;
-  tabs.forEach(tab => tab.addEventListener('click', () => {
-    const target = tab.dataset.standardShow;
+  const applyTab = target => {
     tabs.forEach(item => { const active = item.dataset.standardShow === target; item.classList.toggle('is-active', active); item.setAttribute('aria-selected', String(active)); });
     panels.forEach(panel => { panel.hidden = panel.dataset.standardPanel !== target; });
     document.querySelectorAll('.standard-create-slot .modal-trigger,.page-actions .modal-trigger').forEach(trigger => {
       if (!trigger.dataset.defaultLabel) trigger.dataset.defaultLabel = trigger.textContent;
-      const isSuzhi = target === 'suzhi';
-      trigger.textContent = isSuzhi ? '＋ 新增基本素质维度' : trigger.dataset.defaultLabel;
+      trigger.hidden = target === 'suzhi';
+      if (target !== 'suzhi') trigger.textContent = trigger.dataset.defaultLabel;
     });
-    const form = document.querySelector('form[action*="standard_dimension_create"]');
-    if (form) { form.querySelector('[name="standard_scope"]')?.setAttribute('value', target); const type=form.querySelector('[data-dimension-type]'); if(type){const isSuzhi=target==='suzhi';if(isSuzhi)type.value='answer';type.disabled=isSuzhi;type.dispatchEvent(new Event('change'));} const title = form.querySelector('.form-title h2'); if (title) title.textContent = `新增${target === 'suzhi' ? '基本素质' : '基本条件'}维度`; form.closest('.modal-dialog')?.querySelector('.modal-top h2') && (form.closest('.modal-dialog').querySelector('.modal-top h2').textContent = `新增${target === 'suzhi' ? '基本素质' : '基本条件'}维度`); }
-  }));
+  };
+  tabs.forEach(tab => tab.addEventListener('click', () => applyTab(tab.dataset.standardShow)));
   const initialSection = new URLSearchParams(location.search).get('section') || tabs.find(tab => tab.classList.contains('is-active'))?.dataset.standardShow;
-  if (initialSection === 'suzhi') tabs.find(tab => tab.dataset.standardShow === 'suzhi')?.click();
+  if (initialSection) applyTab(initialSection);
 }
 
 function initStandardDimensionSearch() {
@@ -629,7 +627,8 @@ function initStandardDimensionSearch() {
         if (matched) visible += 1;
       });
       if (clear) clear.hidden = !input.value;
-      if (result) result.textContent = keyword ? `找到 ${visible} 个匹配维度` : `共 ${cards.length} 个维度`;
+      const label = scope === 'suzhi' ? '题目' : '维度';
+      if (result) result.textContent = keyword ? `找到 ${visible} 道匹配${label}` : `共 ${cards.length} 道${label}`;
     };
     input.addEventListener('input', apply);
     clear?.addEventListener('click', () => { input.value = ''; apply(); input.focus(); });

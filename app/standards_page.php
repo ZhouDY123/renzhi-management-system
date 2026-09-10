@@ -5,9 +5,10 @@ function render_grouped_standards_page(string $page, PDO $pdo): bool {
     if ($page !== 'standards') return false;
     admin_header('评分标准','standards');
     $rows=$pdo->query('SELECT * FROM scoring_standard WHERE status!="retired" ORDER BY category,dim_code,sort,id')->fetchAll();
+    $suzhiQuestions=$pdo->query("SELECT id,dim_code,q_type,stem,options,answer,score,status,sort FROM question_base WHERE group_type='suzhi' ORDER BY sort,id")->fetchAll();
     $conditionGroups=[];$suzhiGroups=[];$initialSection=$_SESSION['standards_active_section']??'conditions';unset($_SESSION['standards_active_section']);
     foreach($rows as $row){$target=$row['category']==='basic_quality'?'suzhiGroups':'conditionGroups';${$target}[$row['dim_code']][]=$row;}
-    page_head('职位管理 / 评分体系','基本条件与基本素质','两类通用评分维度均可独立维护档位、分值和启用状态。'); ?>
+    page_head('职位管理 / 评分体系','基本条件与基本素质','基本条件按规则自动评分；基本素质由通用题库组成，并在发布题卷时固化。'); ?>
     <section class="grouped-standards">
       <div class="standard-section-switch" role="tablist" aria-label="评分内容切换"><button type="button" class="btn <?=$initialSection==='conditions'?'is-active':''?>" role="tab" aria-selected="<?=$initialSection==='conditions'?'true':'false'?>" data-standard-show="conditions">基本条件测评</button><button type="button" class="btn <?=$initialSection==='suzhi'?'is-active':''?>" role="tab" aria-selected="<?=$initialSection==='suzhi'?'true':'false'?>" data-standard-show="suzhi">基本素质测评</button></div>
       <div id="standard-conditions" class="standard-tab-panel" data-standard-panel="conditions" <?=$initialSection==='suzhi'?'hidden':''?>>
@@ -17,10 +18,10 @@ function render_grouped_standards_page(string $page, PDO $pdo): bool {
         <?=render_standard_dimension_cards($conditionGroups)?>
       </div>
       <div id="standard-suzhi" class="standard-tab-panel" data-standard-panel="suzhi" <?=$initialSection==='conditions'?'hidden':''?>>
-        <article class="panel grouped-standard-intro suzhi-intro"><div><b>二、基本素质测评</b><p>沟通协作、逻辑分析、责任意识、学习适应等通用维度；与基本条件采用同样的评分档位管理方式。</p></div></article>
-        <?=render_standard_dimension_search('suzhi','搜索基本素质维度，例如：沟通、责任') ?>
-        <?=render_standard_dimension_cards($suzhiGroups)?>
-        <?php if(!$suzhiGroups):?><div class="panel empty-state"><b>暂未设置基本素质维度</b><p>点击右上角“新增基本素质维度”开始配置。</p></div><?php endif;?>
+        <article class="panel grouped-standard-intro suzhi-intro"><div><b>二、基本素质通用题库</b><p>共 <?=count($suzhiQuestions)?> 道通用题，覆盖沟通协作、逻辑分析、责任意识、学习适应等素质；发布岗位题卷时将自动写入该版本。</p></div></article>
+        <?=render_standard_dimension_search('suzhi','搜索基本素质题目，例如：沟通、责任') ?>
+        <?=render_basic_quality_question_cards($suzhiQuestions)?>
+        <?php if(!$suzhiQuestions):?><div class="panel empty-state"><b>暂未导入基本素质题目</b><p>请导入题目后重新打开本页面。</p></div><?php endif;?>
       </div>
     </section><?php admin_footer();return true;
 }
@@ -32,6 +33,8 @@ function render_standard_dimension_form(string $scope): string {ob_start();?>
 function render_standard_dimension_search(string $scope,string $placeholder): string {ob_start();?>
 <div class="standard-search" role="search" aria-label="<?= $scope==='suzhi'?'基本素质':'基本条件'?>维度搜索"><label class="standard-search-field"><span aria-hidden="true">⌕</span><input type="search" data-standard-search="<?=e($scope)?>" placeholder="<?=e($placeholder)?>" autocomplete="off"><button type="button" class="standard-search-clear" data-standard-search-clear="<?=e($scope)?>" aria-label="清除搜索" hidden>×</button></label><small data-standard-search-result="<?=e($scope)?>"></small></div>
 <?php return (string)ob_get_clean();}
+
+function render_basic_quality_question_cards(array $questions): string {ob_start();?><div class="basic-quality-question-grid"><?php foreach($questions as $index=>$question):$options=json_decode((string)$question['options'],true)?:[];?><article class="panel dimension-score-card basic-quality-question"><header><div><small>第 <?=($index+1)?> 题 · <?=e(question_type_label((string)$question['q_type']))?></small><h2><?=e((string)$question['stem'])?></h2></div><div class="dimension-actions"><span><?=count($options)?> 个选项</span><em class="badge green">已启用</em></div></header><div class="basic-quality-options"><?php foreach($options as $optionIndex=>$option):$label=chr(65+$optionIndex);$isCorrect=str_contains((string)$question['answer'],$label);?><div class="<?=$isCorrect?'is-correct':''?>"><b><?=$label?></b><span><?=e((string)$option)?></span><?=$isCorrect?'<em>参考答案</em>':''?></div><?php endforeach;?></div></article><?php endforeach;?></div><?php return (string)ob_get_clean();}
 
 function render_standard_dimension_cards(array $groups): string {ob_start();foreach($groups as $code=>$rules):$first=$rules[0];$hasDraft=(bool)array_filter($rules,fn($rule)=>$rule['status']==='draft');$hasPublished=(bool)array_filter($rules,fn($rule)=>$rule['status']==='published');$isNumeric=in_array($first['match_type'],['range','bool_range'],true)||in_array($code,['age','work_years','prof_years','group_co','listed_co','private_co'],true);$saveAction=str_starts_with($code,'custom_')?'standard_custom_group_save':'standard_group_save';?><form class="panel dimension-score-card" data-numeric="<?=$isNumeric?'1':'0'?>" method="post" action="?page=standards&action=<?=$saveAction?>"><input type="hidden" name="csrf" value="<?=csrf()?>"><input type="hidden" name="dim_code" value="<?=e($code)?>"><header><div><small><?=e(standard_category_label($first['category']))?></small><h2><?=e($first['dim_name'])?></h2><p><?= $isNumeric?'按数值区间直接设置分值':'按答案或条件直接设置分值' ?></p></div><div class="dimension-actions"><span><?=count($rules)?> 个评分档位</span><?php if($hasPublished):?><em class="badge green">已启用</em><?php endif;?><?php if($hasDraft):?><em class="badge amber">待启用</em><button class="btn secondary" name="op" value="publish" formaction="?page=standards&action=<?=$saveAction?>">启用该维度</button><?php endif;?></div></header><div class="dimension-score-list"><?php foreach($rules as $rule):?><div class="dimension-score-row"><input type="hidden" name="rule_id[]" value="<?=$rule['id']?>"><div><b><?=e($rule['tier_label'])?></b><small><?=e(standard_rule_text($rule['match_type'],$rule['match_rule']))?></small></div><label>分值<input name="tier_value[]" type="number" min="0" step="0.1" value="<?=e((string)$rule['tier_value'])?>"></label></div><?php endforeach;?></div><footer><button formaction="?page=standards&action=standard_dimension_delete" class="btn danger" data-confirm-message="将删除整个评分维度及全部档位，确认继续？">删除维度</button><button class="btn primary">保存<?=e($first['dim_name'])?>评分</button></footer></form><?php endforeach;return (string)ob_get_clean();}
 
