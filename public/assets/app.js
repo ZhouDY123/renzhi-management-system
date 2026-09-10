@@ -827,10 +827,38 @@ function initQuestionArchiveLink() {
 function initPaperArchive() {
   const root = document.querySelector('.paper-archive-layout'); if (!root) return;
   const selects = [...root.querySelectorAll('[data-paper-select]')], records = [...root.querySelectorAll('[data-paper-record]')];
-  selects.forEach(button => button.addEventListener('click', () => {
-    const id = button.dataset.paperSelect; selects.forEach(item => item.classList.toggle('is-active', item === button));
+  const index = root.querySelector('.paper-archive-index'), list = index?.querySelector('.paper-archive-nav'), detail = root.querySelector('.paper-archive-detail'); if (!index || !list || !detail) return;
+  const search = document.createElement('div'); search.className = 'paper-archive-search';
+  const input = document.createElement('input'); input.type = 'search'; input.placeholder = '搜索岗位、部门或版本'; input.autocomplete = 'off'; input.setAttribute('aria-label', '搜索岗位与题卷版本');
+  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'paper-archive-search-clear'; clear.textContent = '×'; clear.hidden = true; clear.setAttribute('aria-label', '清除岗位搜索');
+  const summary = document.createElement('p'); summary.className = 'paper-archive-search-summary'; summary.setAttribute('aria-live', 'polite'); search.append(input, clear, summary); list.before(search);
+  const pager = document.createElement('nav'); pager.className = 'paper-archive-pagination'; pager.setAttribute('aria-label', '岗位题卷版本分页'); pager.innerHTML = '<button type="button" class="btn secondary" data-prev>上一页</button><b></b><button type="button" class="btn secondary" data-next>下一页</button>'; list.after(pager);
+  const noResults = document.createElement('div'); noResults.className = 'paper-archive-no-results'; noResults.hidden = true; noResults.textContent = '未找到匹配的岗位或题卷版本，请清除搜索后重试。'; detail.prepend(noResults);
+  const perPage = 6; let page = 1, selectedId = selects.find(item => item.classList.contains('is-active'))?.dataset.paperSelect || selects[0]?.dataset.paperSelect || '', composing = false;
+  const show = id => {
+    selectedId = id; selects.forEach(item => item.classList.toggle('is-active', item.dataset.paperSelect === id));
     records.forEach(record => { record.hidden = record.dataset.paperRecord !== id; });
-  }));
+  };
+  const matches = () => {
+    const keyword = input.value.trim().toLocaleLowerCase('zh-CN');
+    return selects.filter(item => !keyword || item.textContent.toLocaleLowerCase('zh-CN').includes(keyword));
+  };
+  const render = ({pickFirst = false} = {}) => {
+    const items = matches(), pages = Math.max(1, Math.ceil(items.length / perPage)); page = Math.min(Math.max(page, 1), pages);
+    const start = (page - 1) * perPage, visible = items.slice(start, start + perPage);
+    selects.forEach(item => { item.hidden = !visible.includes(item); });
+    if (pickFirst || !visible.some(item => item.dataset.paperSelect === selectedId)) show(visible[0]?.dataset.paperSelect || '');
+    noResults.hidden = items.length > 0;
+    clear.hidden = !input.value;
+    summary.textContent = items.length ? `显示第 ${start + 1}–${Math.min(start + perPage, items.length)} 条，共 ${items.length} 个版本` : '未找到匹配的岗位或版本';
+    pager.hidden = items.length <= perPage; pager.querySelector('b').textContent = `${page} / ${pages}`; pager.querySelector('[data-prev]').disabled = page === 1; pager.querySelector('[data-next]').disabled = page === pages;
+  };
+  selects.forEach(button => button.addEventListener('click', () => show(button.dataset.paperSelect)));
+  input.addEventListener('compositionstart', () => { composing = true; }); input.addEventListener('compositionend', () => { composing = false; page = 1; render({pickFirst:true}); });
+  input.addEventListener('input', () => { if (composing) return; page = 1; render({pickFirst:true}); });
+  clear.addEventListener('click', () => { input.value = ''; page = 1; render({pickFirst:true}); input.focus(); });
+  pager.querySelector('[data-prev]').addEventListener('click', () => { page -= 1; render({pickFirst:true}); }); pager.querySelector('[data-next]').addEventListener('click', () => { page += 1; render({pickFirst:true}); });
+  render();
 }
 
 function initPublishedPapers() {
