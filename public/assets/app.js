@@ -969,7 +969,9 @@ function initQuestionEditorOptions() {
         });
       } else {
         const select = document.createElement('select'); const empty = document.createElement('option'); empty.value = ''; empty.textContent = '请选择正确答案'; select.append(empty);
-        options.forEach((option, index) => { const item = document.createElement('option'); item.value = option; item.textContent = `选项 ${String.fromCharCode(65 + index)}：${option}`; item.selected = selected.some(value => isStoredAnswer(option, value)); select.append(item); });
+        const matchedAnswer = options.find(option => selected.some(value => isStoredAnswer(option, value))) || '';
+        options.forEach((option, index) => { const item = document.createElement('option'); item.value = option; item.textContent = `选项 ${String.fromCharCode(65 + index)}：${option}`; select.append(item); });
+        select.value = matchedAnswer;
         select.addEventListener('change', syncAnswer); picker.append(select);
       }
       answerLabel.append(picker); syncAnswer();
