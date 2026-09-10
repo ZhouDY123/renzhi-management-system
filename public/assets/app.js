@@ -937,7 +937,8 @@ function initQuestionEditorOptions() {
       try { const value = JSON.parse(field.value); if (Array.isArray(value)) return value.map(item => String(item)); } catch (_) {}
       return field.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
     };
-    const answerValues = () => answerField.value.split(/[|,，]/).map(value => value.trim()).filter(Boolean);
+    // 多选答案由编辑器统一用“|”保存；不能把中文逗号当分隔符，否则单选文本中的正常标点会导致答案无法回显。
+    const answerValues = () => answerField.value.split('|').map(value => value.trim()).filter(Boolean);
     const isStoredAnswer = (option, stored) => {
       const normalize = value => String(value).trim().replace(/^[A-D][.、．]\s*/i, '');
       return String(option).trim() === String(stored).trim() || normalize(option) === normalize(stored);
