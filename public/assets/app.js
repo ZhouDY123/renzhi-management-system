@@ -695,7 +695,11 @@ function initQuestionPaperBuilder() {
       });
       inactiveRows.forEach(row => {
         const meta = row.querySelector('small')?.textContent.trim() || '';
-        const post = [...select.options].find(option => meta.startsWith(`${option.textContent.trim()} ·`));
+        const options = [...select.options];
+        const post = options.find(option => meta.startsWith(`${option.textContent.trim()} ·`)) || options.find(option => {
+          const postName = option.textContent.trim().split(' · ')[0];
+          return meta.startsWith(`${postName} ·`);
+        });
         if (!post) return;
         row.classList.add('question-pick', 'is-inactive');
         row.dataset.questionPost = post.value;
