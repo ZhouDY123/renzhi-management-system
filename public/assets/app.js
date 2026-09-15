@@ -16,6 +16,17 @@ document.addEventListener('DOMContentLoaded', () => {
     link.target = '_blank';
     link.rel = 'noopener';
   });
+  document.querySelectorAll('.interview-score-grid tbody tr').forEach(row => {
+    const scoreId = row.querySelector('form[action*="score_reset"] input[name="score_id"]')?.value;
+    const actions = row.lastElementChild;
+    if (!scoreId || !actions || actions.querySelector('[data-review-jump]')) return;
+    const link = document.createElement('a');
+    link.className = 'table-action';
+    link.dataset.reviewJump = '1';
+    link.href = `/index.php?page=talent&tab=final&score_id=${encodeURIComponent(scoreId)}`;
+    link.textContent = '去审核';
+    actions.prepend(link);
+  });
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
   initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
 });

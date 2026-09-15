@@ -296,7 +296,7 @@ if($page==='manual'){
 
 if($page==='talent'){
  admin_header('人才审核','talent'); page_head('人才管理 / 审核中心','人才审核','查看测评明细，完成初审及终审决策。');
- $where=[];$params=[];$keyword=trim($_GET['q']??'');$filterPost=(int)($_GET['post_id']??0);$reviewTab=(string)($_GET['tab']??'first');if(!in_array($reviewTab,['first','arrange','final','hired'],true))$reviewTab='first';
+ $where=[];$params=[];$keyword=trim($_GET['q']??'');$filterPost=(int)($_GET['post_id']??0);$reviewTab=(string)($_GET['tab']??'first');if(!in_array($reviewTab,['first','arrange','final','hired'],true))$reviewTab='first';$scoreId=(int)($_GET['score_id']??0);if($scoreId){$jump=$pdo->prepare('SELECT r.id FROM interview_score sc JOIN interview_candidate ic ON ic.id=sc.interview_candidate_id JOIN answer a ON a.id=ic.answer_id JOIN result r ON r.answer_id=a.id WHERE sc.id=? LIMIT 1');$jump->execute([$scoreId]);$resultId=(int)$jump->fetchColumn();if($resultId){$reviewTab='final';$_GET['id']=$resultId;}}
  if($keyword!==''){$where[]='(c.name LIKE ? OR c.mobile LIKE ?)';$params[]='%'.$keyword.'%';$params[]='%'.$keyword.'%';}
  if($filterPost){$where[]='a.post_id=?';$params[]=$filterPost;}
  $doneCheck="EXISTS(SELECT 1 FROM interview_candidate ic JOIN interview_session s ON s.id=ic.session_id WHERE ic.answer_id=r.answer_id AND s.status='done')";$stageWhere=$reviewTab==='first'?"r.review_status='pending'":($reviewTab==='arrange'?"r.review_status IN ('first_pass','interview')":($reviewTab==='final'?"r.review_status='interview' AND $doneCheck":"r.review_status='final_pass'"));
