@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.session-qr-links').forEach(group => {
     const links = group.querySelectorAll('a');
-    if (links[0]) links[0].textContent = '面试官评分入口';
-    if (links[1]) links[1].textContent = '面试官评分二维码';
-    if (links[2]) links[2].textContent = '应聘者面试问卷入口';
-    if (links[3]) links[3].textContent = '应聘者面试问卷二维码';
+    if (links[0]) links[0].textContent = '评分入口';
+    if (links[1]) links[1].textContent = '评分码';
+    if (links[2]) links[2].textContent = '问卷入口';
+    if (links[3]) links[3].textContent = '问卷码';
   });
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
   initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
