@@ -476,9 +476,9 @@ function initInterviewSessionControls() {
     const state = card.querySelector('.session-state .badge')?.textContent.trim();
     if (!['已完成', '已取消'].includes(state)) return;
     card.classList.add('is-closed');
-    card.querySelectorAll('.assign-row select, .assign-row input, .assign-row button').forEach(control => {
+    card.querySelectorAll('select, input:not([type="hidden"]), button').forEach(control => {
       control.disabled = true;
-      control.title = state === '已取消' ? '该面试场次已取消，不能添加人员' : '该面试场次已完成，不能添加人员';
+      control.title = state === '已取消' ? '该面试场次已取消，不能再修改' : '该面试场次已完成，不能再修改';
     });
   });
   fetch('?page=interviews&action=session_progress', {credentials: 'same-origin'})

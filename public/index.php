@@ -216,7 +216,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   if($action==='session_rotate'){$id=(int)$_POST['id'];$pdo->prepare('UPDATE interview_session SET qr_token=? WHERE id=?')->execute([token(),$id]);audit('interview_token_rotate','session:'.$id);flash('面试二维码已轮换');redirect('/index.php?page=interviews');}
   if($action==='assignment_remove'){
    $scope=$_POST['scope'];$id=(int)$_POST['id'];
-   if($scope==='interviewer'){$pdo->prepare('DELETE FROM session_interviewer WHERE id=?')->execute([$id]);audit('interview_assignment_remove',$scope.':'.$id);flash('场次人员已移除');redirect('/index.php?page=interviews');}
+   if($scope==='interviewer'){$statusSt=$pdo->prepare('SELECT s.status FROM session_interviewer si JOIN interview_session s ON s.id=si.session_id WHERE si.id=?');$statusSt->execute([$id]);if(in_array((string)$statusSt->fetchColumn(),['done','canceled'],true))throw new RuntimeException('该面试场次已结束或取消，不能再修改人员');$pdo->prepare('DELETE FROM session_interviewer WHERE id=?')->execute([$id]);audit('interview_assignment_remove',$scope.':'.$id);flash('场次人员已移除');redirect('/index.php?page=interviews');}
    if($scope!=='candidate')throw new RuntimeException('移除类型无效');
    $st=$pdo->prepare('SELECT ic.id,ic.session_id,ic.candidate_id,ic.answer_id,s.post_id,s.status FROM interview_candidate ic JOIN interview_session s ON s.id=ic.session_id WHERE ic.id=?');$st->execute([$id]);$candidate=$st->fetch();if(!$candidate)throw new RuntimeException('候选人不存在');if($candidate['status']!=='pending')throw new RuntimeException('面试已开始，不能移除候选人');
    $scored=$pdo->prepare('SELECT COUNT(*) FROM interview_score WHERE interview_candidate_id=?');$scored->execute([$id]);if((int)$scored->fetchColumn())throw new RuntimeException('候选人已有面试评分，不能移除');
