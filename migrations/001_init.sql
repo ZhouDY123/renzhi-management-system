@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS post (
  duty TEXT, q_apply_token TEXT UNIQUE, created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 CREATE TABLE IF NOT EXISTS candidate_pre_register (
- id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, name TEXT NOT NULL, mobile TEXT NOT NULL UNIQUE,
+ id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, name TEXT NOT NULL, mobile TEXT NOT NULL,
  status TEXT NOT NULL DEFAULT 'registered', created_by INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
  FOREIGN KEY(post_id) REFERENCES post(id), FOREIGN KEY(created_by) REFERENCES user(id)
 );

@@ -88,6 +88,17 @@ function upgrade_schema(PDO $pdo): void {
             $pdo->commit();
         }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     }
+    // 同一人才可重新登记或登记多个岗位，不能再以手机号唯一限制预登记记录。
+    $preRegisterSql=(string)$pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='candidate_pre_register'")->fetchColumn();
+    if($preRegisterSql!==''&&str_contains($preRegisterSql,'mobile TEXT NOT NULL UNIQUE')){
+        $pdo->beginTransaction();
+        try{
+            $newSql=str_replace('CREATE TABLE candidate_pre_register','CREATE TABLE candidate_pre_register_rebuild',$preRegisterSql);
+            $newSql=str_replace('mobile TEXT NOT NULL UNIQUE','mobile TEXT NOT NULL',$newSql);
+            $columns=array_column($pdo->query('PRAGMA table_info(candidate_pre_register)')->fetchAll(),'name');$names=implode(',',array_map(fn($name)=>'"'.$name.'"',$columns));
+            $pdo->exec($newSql);$pdo->exec('INSERT INTO candidate_pre_register_rebuild('.$names.') SELECT '.$names.' FROM candidate_pre_register');$pdo->exec('DROP TABLE candidate_pre_register');$pdo->exec('ALTER TABLE candidate_pre_register_rebuild RENAME TO candidate_pre_register');$pdo->commit();
+        }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+    }
     $pdo->exec("CREATE TABLE IF NOT EXISTS interview_pre_register (id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id INTEGER NOT NULL, post_id INTEGER NOT NULL, answer_id INTEGER, status TEXT NOT NULL DEFAULT 'registered', created_by INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(candidate_id) REFERENCES candidate(id), FOREIGN KEY(post_id) REFERENCES post(id), FOREIGN KEY(answer_id) REFERENCES answer(id), FOREIGN KEY(created_by) REFERENCES user(id))");
     $registrationColumns=array_column($pdo->query('PRAGMA table_info(interview_pre_register)')->fetchAll(),'name');
     if(!in_array('answer_id',$registrationColumns,true))$pdo->exec('ALTER TABLE interview_pre_register ADD COLUMN answer_id INTEGER');
