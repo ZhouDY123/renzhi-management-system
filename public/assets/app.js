@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.questionnaire-preview dl dd').forEach((value, index) => {
     if (index === 2) value.textContent = value.textContent.trim().slice(0, 10);
   });
+  document.querySelectorAll('a[href*="page=interview_questionnaire"]').forEach(link => {
+    const url = new URL(link.href, window.location.href);
+    url.searchParams.set('standalone', '1');
+    link.href = url.toString();
+    link.target = '_blank';
+    link.rel = 'noopener';
+  });
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
   initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
 });
