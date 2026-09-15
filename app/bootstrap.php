@@ -55,9 +55,13 @@ function upgrade_schema(PDO $pdo): void {
         'result'=>['standard_version INTEGER NOT NULL DEFAULT 1',"weight_snapshot TEXT NOT NULL DEFAULT '{\"basic_conditions\":50,\"basic_quality\":25,\"professional\":25}'"],
         'question_set_item'=>['q_type TEXT','stem_snapshot TEXT','options_snapshot TEXT','answer_snapshot TEXT','score_snapshot REAL'],
         'interview_score'=>['detail_json TEXT', 'total_score REAL', 'strengths TEXT', 'risks TEXT', 'development TEXT', 'recommendation TEXT', 'salary_range TEXT', 'available_date TEXT'],
-        'interview_score_draft'=>['detail_json TEXT', 'total_score REAL', 'strengths TEXT', 'risks TEXT', 'development TEXT', 'recommendation TEXT', 'salary_range TEXT', 'available_date TEXT']
+        'interview_score_draft'=>['detail_json TEXT', 'total_score REAL', 'strengths TEXT', 'risks TEXT', 'development TEXT', 'recommendation TEXT', 'salary_range TEXT', 'available_date TEXT'],
+        'interview_session'=>['feedback_token TEXT']
     ];
     foreach($columns as $table=>$defs){$existing=array_column($pdo->query('PRAGMA table_info('.$table.')')->fetchAll(),'name');foreach($defs as $def){$name=strtok($def,' ');if(!in_array($name,$existing,true))$pdo->exec('ALTER TABLE '.$table.' ADD COLUMN '.$def);}}
+    $pdo->exec("UPDATE interview_session SET feedback_token=lower(hex(randomblob(16))) WHERE COALESCE(feedback_token,'')=''");
+    $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_interview_session_feedback_token ON interview_session(feedback_token)');
+    $pdo->exec("CREATE TABLE IF NOT EXISTS interview_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER NOT NULL, candidate_id INTEGER NOT NULL, overall_score INTEGER NOT NULL, arrangement_score INTEGER NOT NULL, interviewer_score INTEGER NOT NULL, comment TEXT, submitted_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(session_id) REFERENCES interview_session(id), FOREIGN KEY(candidate_id) REFERENCES candidate(id), UNIQUE(session_id,candidate_id))");
     // 同一人才可有多次测评答卷；保留历史答卷，不能再以 candidate_id 唯一限制。
     $answerSql=(string)$pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='answer'")->fetchColumn();
     if($answerSql!==''&&str_contains($answerSql,'candidate_id INTEGER NOT NULL UNIQUE')){
@@ -128,7 +132,7 @@ function seed(PDO $pdo): void {
         $pdo->prepare('INSERT INTO answer(candidate_id,post_id,candidate_snapshot,idempotency_key) VALUES(?,?,?,?)')->execute([$cid,1,$snap,bin2hex(random_bytes(12))]);
         $aid=(int)$pdo->lastInsertId();
         $pdo->prepare('INSERT INTO result(answer_id,eval_score,suzhi_score,postq_score,total_score) VALUES(?,?,?,?,?)')->execute([$aid,88,82,81.3,84.6]);
-        $pdo->prepare('INSERT INTO interview_session(post_id,interview_date,time_range,location,qr_token,created_by) VALUES(?,?,?,?,?,?)')->execute([1,date('Y-m-d'),'14:00-16:00','第一会议室',bin2hex(random_bytes(8)),2]);
+        $pdo->prepare('INSERT INTO interview_session(post_id,interview_date,time_range,location,qr_token,feedback_token,created_by) VALUES(?,?,?,?,?,?,?)')->execute([1,date('Y-m-d'),'14:00-16:00','第一会议室',bin2hex(random_bytes(8)),bin2hex(random_bytes(8)),2]);
         $sid=(int)$pdo->lastInsertId();
         $pdo->prepare('INSERT INTO interview_candidate(session_id,candidate_id,answer_id,seq) VALUES(?,?,?,1)')->execute([$sid,$cid,$aid]);
         $pdo->prepare('INSERT INTO session_interviewer(session_id,user_id,weight,is_lead) VALUES(?,?,?,?)')->execute([$sid,3,1,1]);

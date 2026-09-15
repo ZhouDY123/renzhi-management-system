@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS review (
 );
 CREATE TABLE IF NOT EXISTS interview_session (
  id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, interview_date TEXT NOT NULL, time_range TEXT,
- location TEXT, status TEXT NOT NULL DEFAULT 'pending', qr_token TEXT NOT NULL UNIQUE, created_by INTEGER,
+ location TEXT, status TEXT NOT NULL DEFAULT 'pending', qr_token TEXT NOT NULL UNIQUE, feedback_token TEXT NOT NULL UNIQUE, created_by INTEGER,
  created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(post_id) REFERENCES post(id),
  UNIQUE(post_id,interview_date)
 );
@@ -63,6 +63,13 @@ CREATE TABLE IF NOT EXISTS interview_score (
  submitted_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(session_id) REFERENCES interview_session(id),
  FOREIGN KEY(interviewer_id) REFERENCES session_interviewer(id), FOREIGN KEY(interview_candidate_id) REFERENCES interview_candidate(id),
  UNIQUE(interviewer_id,interview_candidate_id)
+);
+CREATE TABLE IF NOT EXISTS interview_feedback (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER NOT NULL, candidate_id INTEGER NOT NULL,
+ overall_score INTEGER NOT NULL, arrangement_score INTEGER NOT NULL, interviewer_score INTEGER NOT NULL,
+ comment TEXT, submitted_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+ FOREIGN KEY(session_id) REFERENCES interview_session(id), FOREIGN KEY(candidate_id) REFERENCES candidate(id),
+ UNIQUE(session_id,candidate_id)
 );
 CREATE TABLE IF NOT EXISTS op_log (
  id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT NOT NULL, target TEXT, detail TEXT, ip TEXT,
