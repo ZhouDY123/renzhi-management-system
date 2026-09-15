@@ -49,6 +49,12 @@ body{font-size:15px;line-height:1.55}.sidebar nav label{font-size:12px}.sidebar 
   --shadow-float:0 24px 70px rgba(8,26,49,.22);--focus:0 0 0 3px rgba(40,85,199,.22);
   --scroll-track:#e9eef5;--scroll-thumb:#9aa9bd;--scroll-hover:#657890;
 }
+
+/* 统一二维码已集中至二维码中心，场次卡片不再展示分散入口。 */
+.session-qr-links{display:none!important}
+.qr-center{align-items:start}
+.qr-center .qr-sheet{text-align:center}
+.qr-center .qr-sheet [id^="qr-"]{display:flex;justify-content:center;margin:20px 0}
 *{scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
 *::-webkit-scrollbar{width:10px;height:10px}*::-webkit-scrollbar-track{background:var(--scroll-track)}*::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border:2px solid var(--scroll-track);border-radius:10px}*::-webkit-scrollbar-thumb:hover{background:var(--scroll-hover)}
 html{scroll-behavior:smooth}body{font-family:var(--font-body);font-size:15px;line-height:1.65;letter-spacing:.01em;background:var(--canvas)}
