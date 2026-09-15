@@ -252,7 +252,8 @@ if($page==='posts'){
 
 if($page==='qrcode'){
  $type=$_GET['type']??'apply';$id=(int)($_GET['id']??0);
- if($type==='interview_shared'){$item=['name'=>'今日面试官评分','company'=>'统一入口'];$path='/h5.php?m=interview&t=unified';$subtitle='扫码验证后查看本人今日全部面试安排';}
+ if($type==='apply_shared'){$item=['name'=>'在线测评登记','company'=>'统一入口'];$path='/h5.php?m=apply&t=unified';$subtitle='扫码验证后选择本人已登记的测评岗位';}
+ elseif($type==='interview_shared'){$item=['name'=>'今日面试官评分','company'=>'统一入口'];$path='/h5.php?m=interview&t=unified';$subtitle='扫码验证后查看本人今日全部面试安排';}
  elseif($type==='feedback_shared'){$item=['name'=>'今日招聘问卷','company'=>'统一入口'];$path='/h5.php?m=interview_feedback&t=unified';$subtitle='扫码验证后填写本人今天的面试问卷';}
  elseif(in_array($type,['interview','feedback'],true)){$st=$pdo->prepare('SELECT s.qr_token,s.feedback_token,p.name,s.interview_date,s.location FROM interview_session s JOIN post p ON p.id=s.post_id WHERE s.id=?');$st->execute([$id]);$item=$st->fetch();$feedback=$type==='feedback';$path='/h5.php?m='.($feedback?'interview_feedback':'interview').'&t='.urlencode($feedback?($item['feedback_token']??''):($item['qr_token']??''));$subtitle=($item['interview_date']??'').' · '.($item['location']??'');}
  else{$st=$pdo->prepare('SELECT q_apply_token,name,company FROM post WHERE id=?');$st->execute([$id]);$item=$st->fetch();$path='/h5.php?m=apply&t='.urlencode($item['q_apply_token']??'');$subtitle=$item['company']??'';}
