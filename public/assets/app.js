@@ -27,6 +27,22 @@ document.addEventListener('DOMContentLoaded', () => {
     link.textContent = '去审核';
     actions.prepend(link);
   });
+  if (document.querySelector('.interview-score-grid')) {
+    fetch('/index.php?page=interview_results&action=review_states', { credentials: 'same-origin' })
+      .then(response => response.ok ? response.json() : [])
+      .then(rows => {
+        const states = new Map(rows.map(row => [String(row.id), row.review_status]));
+        document.querySelectorAll('[data-review-jump]').forEach(link => {
+          const scoreId = new URL(link.href, window.location.href).searchParams.get('score_id');
+          if (!['final_pass', 'final_reject'].includes(states.get(String(scoreId)))) return;
+          const disabled = document.createElement('span');
+          disabled.className = 'table-action is-disabled';
+          disabled.textContent = '已审核';
+          disabled.title = '该员工已完成终审';
+          link.replaceWith(disabled);
+        });
+      }).catch(() => {});
+  }
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
   initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
 });
