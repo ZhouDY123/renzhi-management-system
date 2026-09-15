@@ -176,6 +176,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   if($action==='question_toggle'){
    $id=(int)($_POST['id']??0);$pdo->prepare('UPDATE question_post SET status=CASE status WHEN 1 THEN 0 ELSE 1 END WHERE id=?')->execute([$id]);audit('question_toggle','post_question:'.$id);flash('专业题状态已切换；已发布题卷不受影响');redirect('/index.php?page=questions');
   }
+  if(in_array($action,['assign_interviewer','assign_candidate','assign_candidate_v2'],true)){$sid=(int)($_POST['session_id']??0);$statusSt=$pdo->prepare('SELECT status FROM interview_session WHERE id=?');$statusSt->execute([$sid]);if(in_array((string)$statusSt->fetchColumn(),['done','canceled'],true))throw new RuntimeException('该面试场次已结束或取消，不能再添加人员');}
   if($action==='assign_interviewer'){
    $sid=(int)$_POST['session_id'];$userId=(int)$_POST['user_id'];$exists=$pdo->prepare('SELECT 1 FROM session_interviewer WHERE session_id=? AND user_id=?');$exists->execute([$sid,$userId]);if($exists->fetchColumn()){flash('该面试官已在本场次，无需重复添加');redirect('/index.php?page=interviews#session-'.$sid);} $pdo->prepare('INSERT INTO session_interviewer(session_id,user_id,weight,is_lead) VALUES(?,?,?,?)')->execute([$sid,$userId,max(.1,(float)$_POST['weight']),isset($_POST['is_lead'])?1:0]);audit('interviewer_assign','session:'.$sid,['user_id'=>$userId]);flash('面试官已加入场次');redirect('/index.php?page=interviews#session-'.$sid);
   }

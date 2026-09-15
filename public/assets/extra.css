@@ -180,6 +180,7 @@ body.login-page .login-main{display:block!important;min-height:0!important;paddi
 .session-card .assign-row form{min-height:52px;padding:9px;background:#fbfcfe}
 .session-card .assign-row select,.session-card .assign-row input{height:36px;font-size:13px}
 .session-card .assign-row button{height:36px;font-size:13px}
+.session-card.is-closed .assign-row{opacity:.62}.session-card.is-closed .assign-row form{background:#f4f6f9}.session-card.is-closed .assign-row select,.session-card.is-closed .assign-row input,.session-card.is-closed .assign-row button{cursor:not-allowed}.session-card.is-closed .assign-row button{background:#a8b3c5;color:#fff;box-shadow:none}
 @media(max-width:900px){.session-state{align-items:flex-start}.session-state .session-progress{text-align:left}}
 @media(max-width:560px){.session-card .session{padding:16px 14px 12px}.session-state{min-width:0}.session-card .assign-row form{align-items:stretch;flex-wrap:wrap}.session-card .assign-row select{min-width:100%}}
 @media(max-width:860px){body.login-page{display:block!important;width:calc(100% - 32px)!important;min-height:auto!important;margin:16px!important;padding:30px!important}body.login-page::after{border-radius:18px}body.login-page .login-visual{min-height:310px!important}body.login-page .login-copy{margin:64px 0 0!important}body.login-page .login-copy h1{font-size:34px!important}body.login-page .login-process{display:none!important}body.login-page .login-main{margin-top:32px!important}body.login-page .login-card{width:min(100%,430px)!important;margin:0 auto!important}}
