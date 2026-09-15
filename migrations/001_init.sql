@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS interview_score (
 CREATE TABLE IF NOT EXISTS interview_feedback (
  id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER NOT NULL, candidate_id INTEGER NOT NULL,
  overall_score INTEGER NOT NULL, arrangement_score INTEGER NOT NULL, interviewer_score INTEGER NOT NULL,
- comment TEXT, submitted_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+ comment TEXT, responses TEXT NOT NULL DEFAULT '{}', submitted_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
  FOREIGN KEY(session_id) REFERENCES interview_session(id), FOREIGN KEY(candidate_id) REFERENCES candidate(id),
  UNIQUE(session_id,candidate_id)
 );
