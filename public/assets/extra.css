@@ -69,6 +69,10 @@ body{font-size:15px;line-height:1.55}.sidebar nav label{font-size:12px}.sidebar 
 .h5-body .verify .btn{width:100%;height:48px;margin-top:2px;border-radius:10px;font-size:14px}
 .h5-body .verify .safe{display:block;margin-top:14px;text-align:center;color:#6d9a88;font-size:11px}
 .h5-body .verify .identity{width:48px;height:48px;margin:0 auto 14px;border-radius:14px;background:#edf3ff;color:var(--primary);display:grid;place-items:center;font-size:25px}
+.h5-body .h5-title{min-height:142px;padding:26px 22px 20px}
+.h5-body .h5-title+.candidates{margin:16px 16px 22px;border:1px solid #dce5f0;border-radius:16px;box-shadow:0 8px 20px rgba(17,42,78,.08)}
+.h5-body .candidates .signed{margin:0 0 18px;padding:12px 14px;border-radius:10px;background:#f0f4fa;color:#2e4567}
+.h5-body .candidates .h5-empty{min-height:160px;display:grid;place-items:center;color:#102a52}
 *{scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
 *::-webkit-scrollbar{width:10px;height:10px}*::-webkit-scrollbar-track{background:var(--scroll-track)}*::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border:2px solid var(--scroll-track);border-radius:10px}*::-webkit-scrollbar-thumb:hover{background:var(--scroll-hover)}
 html{scroll-behavior:smooth}body{font-family:var(--font-body);font-size:15px;line-height:1.65;letter-spacing:.01em;background:var(--canvas)}
