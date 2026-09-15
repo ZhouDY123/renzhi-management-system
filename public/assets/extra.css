@@ -75,6 +75,7 @@ body{font-size:15px;line-height:1.55}.sidebar nav label{font-size:12px}.sidebar 
 .h5-body .interview-head+.candidates{margin:16px 16px 22px;border:1px solid #dce5f0;border-radius:16px;box-shadow:0 8px 20px rgba(17,42,78,.08)}
 .h5-body .candidates .signed{margin:0 0 18px;padding:12px 14px;border-radius:10px;background:#f0f4fa;color:#2e4567}
 .h5-body .candidates .h5-empty{min-height:160px;display:grid;place-items:center;color:#102a52}
+.completion-countdown{display:block;margin-top:18px;color:#7b899c;font-size:12px}
 *{scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
 *::-webkit-scrollbar{width:10px;height:10px}*::-webkit-scrollbar-track{background:var(--scroll-track)}*::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border:2px solid var(--scroll-track);border-radius:10px}*::-webkit-scrollbar-thumb:hover{background:var(--scroll-hover)}
 html{scroll-behavior:smooth}body{font-family:var(--font-body);font-size:15px;line-height:1.65;letter-spacing:.01em;background:var(--canvas)}
