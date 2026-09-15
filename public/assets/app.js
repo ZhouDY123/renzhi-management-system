@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
     actions.prepend(link);
   });
   if (document.querySelector('.interview-score-grid')) {
+    document.querySelectorAll('.interview-score-grid form[action*="score_reset"]').forEach(form => {
+      form.dataset.confirmMessage = '确认重置该条面试评分？当前面试官的评分记录将被清除，需要重新提交评分。';
+    });
     fetch('/index.php?page=interview_results&action=review_states', { credentials: 'same-origin' })
       .then(response => response.ok ? response.json() : [])
       .then(rows => {
