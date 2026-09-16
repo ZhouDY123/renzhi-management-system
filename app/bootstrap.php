@@ -62,6 +62,19 @@ function upgrade_schema(PDO $pdo): void {
     foreach($columns as $table=>$defs){$existing=array_column($pdo->query('PRAGMA table_info('.$table.')')->fetchAll(),'name');foreach($defs as $def){$name=strtok($def,' ');if(!in_array($name,$existing,true))$pdo->exec('ALTER TABLE '.$table.' ADD COLUMN '.$def);}}
     $pdo->exec("UPDATE interview_session SET feedback_token=lower(hex(randomblob(16))) WHERE COALESCE(feedback_token,'')=''");
     $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_interview_session_feedback_token ON interview_session(feedback_token)');
+    // 同一岗位同一天可安排不同时间的多个场次，已完成或已取消场次也必须保留历史。
+    $sessionSql=(string)$pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='interview_session'")->fetchColumn();
+    if($sessionSql!==''&&preg_match('/UNIQUE\s*\(\s*post_id\s*,\s*interview_date\s*\)/i',$sessionSql)){
+        $foreignKeys=(int)$pdo->query('PRAGMA foreign_keys')->fetchColumn();
+        $pdo->exec('PRAGMA foreign_keys=OFF');
+        try{
+            $newSessionSql=preg_replace("~CREATE TABLE interview_session\\s*\\(~i",'CREATE TABLE interview_session_rebuild (',$sessionSql,1);
+            $newSessionSql=preg_replace("~,?\\s*UNIQUE\\s*\\(\\s*post_id\\s*,\\s*interview_date\\s*\\)\\s*~i",'',$newSessionSql,1);
+            $columns=array_column($pdo->query('PRAGMA table_info(interview_session)')->fetchAll(),'name');$names=implode(',',array_map(fn($name)=>'"'.$name.'"',$columns));
+            $pdo->beginTransaction();$pdo->exec('DROP TRIGGER IF EXISTS interview_score_auto_complete');$pdo->exec($newSessionSql);$pdo->exec('INSERT INTO interview_session_rebuild('.$names.') SELECT '.$names.' FROM interview_session');$pdo->exec('DROP TABLE interview_session');$pdo->exec('ALTER TABLE interview_session_rebuild RENAME TO interview_session');$pdo->commit();
+            $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_interview_session_feedback_token ON interview_session(feedback_token)');
+        }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}finally{if($foreignKeys)$pdo->exec('PRAGMA foreign_keys=ON');}
+    }
     $pdo->exec("CREATE TABLE IF NOT EXISTS interview_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER NOT NULL, candidate_id INTEGER NOT NULL, overall_score INTEGER NOT NULL, arrangement_score INTEGER NOT NULL, interviewer_score INTEGER NOT NULL, comment TEXT, responses TEXT NOT NULL DEFAULT '{}', submitted_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(session_id) REFERENCES interview_session(id), FOREIGN KEY(candidate_id) REFERENCES candidate(id), UNIQUE(session_id,candidate_id))");
     // 同一人才可有多次测评答卷；保留历史答卷，不能再以 candidate_id 唯一限制。
     $answerSql=(string)$pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='answer'")->fetchColumn();

@@ -43,8 +43,7 @@ CREATE TABLE IF NOT EXISTS review (
 CREATE TABLE IF NOT EXISTS interview_session (
  id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, interview_date TEXT NOT NULL, time_range TEXT,
  location TEXT, status TEXT NOT NULL DEFAULT 'pending', qr_token TEXT NOT NULL UNIQUE, feedback_token TEXT NOT NULL UNIQUE, created_by INTEGER,
- created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(post_id) REFERENCES post(id),
- UNIQUE(post_id,interview_date)
+ created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), FOREIGN KEY(post_id) REFERENCES post(id)
 );
 CREATE TABLE IF NOT EXISTS interview_candidate (
  id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER NOT NULL, candidate_id INTEGER NOT NULL, answer_id INTEGER NOT NULL,
