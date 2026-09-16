@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch(() => {});
   }
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initInterviewStableScroll(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
+  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initReviewStableScroll(); initInterviewStableScroll(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
 });
 
 function initInterviewStableScroll() {
@@ -67,6 +67,20 @@ function initInterviewStableScroll() {
     window.scrollBy({top: card.getBoundingClientRect().top - Number(position.top || 0), left: 0, behavior: 'auto'});
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   };
+  requestAnimationFrame(() => requestAnimationFrame(restore));
+  setTimeout(restore, 160);
+}
+
+function initReviewStableScroll() {
+  if (new URLSearchParams(location.search).get('page') !== 'talent') return;
+  const key = 'talent-review-position';
+  document.querySelectorAll('form.review-form input[name="stage"][value="final"]').forEach(stage => {
+    stage.form?.addEventListener('submit', () => sessionStorage.setItem(key, String(window.scrollY)));
+  });
+  const saved = sessionStorage.getItem(key); if (saved === null) return;
+  sessionStorage.removeItem(key);
+  const top = Math.max(0, Number(saved) || 0);
+  const restore = () => window.scrollTo({top, left: 0, behavior: 'auto'});
   requestAnimationFrame(() => requestAnimationFrame(restore));
   setTimeout(restore, 160);
 }
