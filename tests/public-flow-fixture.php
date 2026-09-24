@@ -4,6 +4,20 @@ $root=$argv[1]??'';
 if(!str_contains($root,'recruit-flow-test-'))throw new RuntimeException('Disposable test root required');
 require $root.'/app/bootstrap.php';
 $pdo=db();
+if(in_array($argv[2]??'',['hire-second','unhire-second'],true)){
+    $pdo->prepare('UPDATE result SET review_status=? WHERE id=2')->execute([$argv[2]==='hire-second'?'final_pass':'first_reject']);exit;
+}
+if(($argv[2]??'')==='answer-counts'){
+    $counts=[];foreach(['answer','answer_detail','result','candidate_pre_register','interview_pre_register'] as $table)$counts[$table]=(int)$pdo->query('SELECT COUNT(*) FROM '.$table)->fetchColumn();
+    echo json_encode($counts);exit;
+}
+if(($argv[2]??'')==='cooldown-expire'){
+    $pdo->exec("UPDATE answer SET submit_at=datetime('now','localtime','-7 days')");
+    exit;
+}
+if(($argv[2]??'')==='another-post'){
+    echo json_encode(['token'=>$pdo->query("SELECT q_apply_token FROM post WHERE id<>1 AND status='recruiting' ORDER BY id LIMIT 1")->fetchColumn()]);exit;
+}
 if(($argv[2]??'')==='report-snapshot'){
     $before=$pdo->query('SELECT snapshot FROM interview_pass_report WHERE result_id=1')->fetchColumn();
     $pdo->exec('UPDATE interview_score SET total_score=1');

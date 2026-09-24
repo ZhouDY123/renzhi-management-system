@@ -1,4 +1,37 @@
 <?php
+function assessment_already_hired(PDO $pdo, string $name, string $mobile): bool {
+    $st=$pdo->prepare("SELECT 1 FROM candidate c JOIN answer a ON a.candidate_id=c.id JOIN result r ON r.answer_id=a.id WHERE TRIM(c.name)=? AND TRIM(c.mobile)=? AND r.review_status='final_pass' LIMIT 1");
+    $st->execute([trim($name),trim($mobile)]);
+    return (bool)$st->fetchColumn();
+}
+function show_assessment_hired(): never {
+    unset($_SESSION['apply_auth']);
+    header('Cache-Control: no-store');
+    h5_header('测评提示');
+    echo '<section class="h5-card"><h2>您已被录用，无需再次测评</h2><p>本次答题不会保存，也不会进入待安排面试。</p></section>';
+    h5_footer();exit;
+}
+// A submitted assessment starts a rolling seven-day cooldown across all posts.
+function assessment_next_allowed(PDO $pdo, string $name, string $mobile): ?string {
+    $st=$pdo->prepare('SELECT MAX(a.submit_at) FROM answer a JOIN candidate c ON c.id=a.candidate_id WHERE TRIM(c.name)=? AND TRIM(c.mobile)=?');
+    $st->execute([trim($name),trim($mobile)]);
+    $last=$st->fetchColumn();
+    if(!$last)return null;
+    $submitted=strtotime((string)$last);
+    if($submitted===false)return null;
+    $next=$submitted+7*24*60*60;
+    return time()<$next?date('Y-m-d H:i:s',$next):null;
+}
+function assessment_cooldown_message(string $next): string {
+    return '您在最近 7 天内已完成测评，不能重复测评（含其他岗位）。可再次测评时间：'.$next.'。';
+}
+function show_assessment_cooldown(string $next): never {
+    unset($_SESSION['apply_auth']);
+    header('Cache-Control: no-store');
+    h5_header('测评暂不可用');
+    echo '<section class="h5-card"><h2>暂不能重复测评</h2><p>'.e(assessment_cooldown_message($next)).'</p></section>';
+    h5_footer();exit;
+}
 // Public entry: registration rows are created by the application, not by HR.
 if($m==='apply'&&$t==='unified'){
     $rows=$pdo->query("SELECT p.* FROM post p WHERE p.status='recruiting' AND EXISTS(SELECT 1 FROM question_set qs WHERE qs.post_id=p.id AND qs.status='published') ORDER BY p.id DESC")->fetchAll();
@@ -15,6 +48,8 @@ if($m==='apply'&&$_SERVER['REQUEST_METHOD']==='POST'&&$step==='verify'){
     $st=$pdo->prepare("SELECT id FROM post WHERE q_apply_token=? AND status='recruiting'");$st->execute([$t]);$postId=(int)$st->fetchColumn();
     if(!$postId||$name===''||!preg_match('/^1[3-9]\d{9}$/',$mobile)){$error='请填写本人姓名和正确的手机号码';$step='';}
     elseif(!rate_limit_check('public_apply',($_SERVER['REMOTE_ADDR']??'').':'.$mobile,10,300,300)){$error='操作过于频繁，请稍后再试';$step='';}
+    elseif(assessment_already_hired($pdo,$name,$mobile)){show_assessment_hired();}
+    elseif($next=assessment_next_allowed($pdo,$name,$mobile)){$error=assessment_cooldown_message($next);$step='';unset($_SESSION['apply_auth']);}
     else {
         $questions=load_questions($postId);
         if(!$questions){$error='该岗位暂无可自动评分的客观题，请联系 HR';$step='';}

@@ -10,7 +10,17 @@ assert.equal((await person('/index.php?page=interview_report&id=1')).status,302,
 const reviewer=client();
 async function assess(name,mobile,correct){let page=await person('/h5.php?m=apply&t='+token);let response=await person('/h5.php?m=apply&t='+token+'&step=verify',{csrf:field(page.body,'csrf'),name,mobile});assert.equal(response.status,302);page=await person(response.location);assert(page.body.includes('自动测试专业题'));assert(!page.body.includes('不应出现在自动测评的简答题'));const data={csrf:field(page.body,'csrf'),idempotency_key:field(page.body,'idempotency_key'),gender:'男',birth_date:'2000-01-01',health:'健康',edu:'硕士',school_tier:'普通本科',major:'测试',title:'',politics:'群众',work_years:'12',prof_years:'12',group_co_years:'0',listed_co_years:'0',private_co_years:'0',work_bg:'测试',computer_skill:'熟练',language:'熟练','answers[base_1]':correct?'正确':'错误','answers[post_1][]':correct?'正确':'错误'};response=await person('/h5.php?m=apply&t='+token+'&step=submit',data);assert.equal(response.status,302);page=await person(response.location);assert(page.body.includes(correct?'100.0 / 100':'50.0 / 100'));assert(page.body.includes('<h2>测评成绩</h2>'));return page;}
 let page=await person('/h5.php?m=apply&t=unified');assert(page.body.includes('请选择应聘岗位'));assert(!page.body.includes('name="mobile"'));
+const staleForm=client(),staleSubmit=client();
+let staleCsrf='';
+for(const stale of [staleForm,staleSubmit]){
+ const p=await stale('/h5.php?m=apply&t='+token);
+ const v=await stale('/h5.php?m=apply&t='+token+'&step=verify',{csrf:field(p.body,'csrf'),name:'测试甲',mobile:'13900000101'});
+ assert.equal(v.status,302);const f=await stale(v.location);staleCsrf=field(f.body,'csrf');
+}
 await assess('测试甲','13900000101',true);await assess('测试乙','13900000102',false);
+assert((await staleForm('/h5.php?m=apply&t='+token+'&step=form')).body.includes('最近 7 天内已完成测评'));
+assert((await staleSubmit('/h5.php?m=apply&t='+token+'&step=submit',{csrf:staleCsrf})).body.includes('最近 7 天内已完成测评'));
+assert.equal(fixture('inspect').results.length,2,'stale submissions must not create results');
 page=await admin('/index.php?page=login');let response=await admin('/index.php?page=login',{csrf:field(page.body,'csrf'),username:'admin',password:'admin123'});assert.equal(response.status,302);
 page=await admin('/index.php?page=interviews');assert(page.body.includes('创建面试场次'));
 let arrangePage=await admin('/index.php?page=talent&tab=arrange');assert(arrangePage.body.includes('测试甲'));assert(!arrangePage.body.includes('测试乙'));
@@ -37,7 +47,37 @@ page=await admin('/index.php?page=users');assert(!page.body.includes('value="lea
 assert(page.body.includes('value="interviewer"'));assert(page.body.includes('lisi'));assert(!page.body.includes('面试官维护'));
 assert.equal((await admin('/index.php?page=interviewers')).location,'/index.php?page=users');assert.equal((await admin('/index.php?page=manual')).status,302);
 page=await admin('/index.php?page=talent&tab=first');assert(!page.body.includes('测评待处理'));assert(page.body.includes('待安排面试'));
-await assess('测试甲','13900000101',true);
+const retry=client();
+const beforeHiredAttempt=fixture('answer-counts');
+for(const postToken of [token,fixture('another-post').token]){
+ page=await retry('/h5.php?m=apply&t='+postToken);
+ response=await retry('/h5.php?m=apply&t='+postToken+'&step=verify',{csrf:field(page.body,'csrf'),name:' 测试甲 ',mobile:'13900000101'});
+ assert.equal(response.status,200);assert(response.body.includes('您已被录用，无需再次测评'),'hired identity blocked across posts');
+}
+assert.deepEqual(fixture('answer-counts'),beforeHiredAttempt,'hired verification creates no records');
+page=await retry('/h5.php?m=apply&t='+token);
+response=await retry('/h5.php?m=apply&t='+token+'&step=verify',{csrf:field(page.body,'csrf'),name:'测试甲',mobile:'13900000103'});
+assert.equal(response.status,302,'same name with different mobile is independent');
+page=await retry('/h5.php?m=apply&t='+token);
+response=await retry('/h5.php?m=apply&t='+token+'&step=verify',{csrf:field(page.body,'csrf'),name:'测试乙',mobile:'13900000102'});
+assert(response.body.includes('可再次测评时间：'));
+fixture('cooldown-expire');
+page=await retry('/h5.php?m=apply&t='+token);
+response=await retry('/h5.php?m=apply&t='+token+'&step=verify',{csrf:field(page.body,'csrf'),name:'测试甲',mobile:'13900000101'});
+assert(response.body.includes('您已被录用，无需再次测评'),'hired remains blocked after seven days');
+const hiredForm=client(),hiredSubmit=client();let hiredCsrf='';
+for(const c of [hiredForm,hiredSubmit]){
+ page=await c('/h5.php?m=apply&t='+token);
+ response=await c('/h5.php?m=apply&t='+token+'&step=verify',{csrf:field(page.body,'csrf'),name:'测试乙',mobile:'13900000102'});
+ assert.equal(response.status,302);page=await c(response.location);hiredCsrf=field(page.body,'csrf');
+}
+fixture('hire-second');const beforeStaleHired=fixture('answer-counts');
+assert((await hiredForm('/h5.php?m=apply&t='+token+'&step=form')).body.includes('您已被录用，无需再次测评'));
+assert((await hiredSubmit('/h5.php?m=apply&t='+token+'&step=submit',{csrf:hiredCsrf})).body.includes('您已被录用，无需再次测评'));
+assert.deepEqual(fixture('answer-counts'),beforeStaleHired,'stale hired submission saves no answer, detail or result');
+assert(!(await admin('/index.php?page=talent&tab=arrange')).body.includes('测试乙'));
+fixture('unhire-second');
+await assess('测试乙','13900000102',true);
 assert.equal(fixture('inspect').results.length,3,'repeat assessment creates a new result');
 page=await admin('/index.php?page=talent&tab=hired');
 assert(page.body.includes('<th>面试分数</th><th>面试报告</th>'));
