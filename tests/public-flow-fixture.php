@@ -4,6 +4,11 @@ $root=$argv[1]??'';
 if(!str_contains($root,'recruit-flow-test-'))throw new RuntimeException('Disposable test root required');
 require $root.'/app/bootstrap.php';
 $pdo=db();
+if(($argv[2]??'')==='report-snapshot'){
+    $before=$pdo->query('SELECT snapshot FROM interview_pass_report WHERE result_id=1')->fetchColumn();
+    $pdo->exec('UPDATE interview_score SET total_score=1');
+    echo json_encode(['snapshot'=>json_decode($before,true)]);exit;
+}
 if(($argv[2]??'')==='boundary'){
     $pdo->exec("UPDATE result SET total_score=60,review_status='first_pass' WHERE id=(SELECT MAX(id) FROM result)");exit;
 }
