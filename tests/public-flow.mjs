@@ -12,11 +12,15 @@ let page=await person('/h5.php?m=apply&t=unified');assert(page.body.includes('�
 await assess('测试甲','13900000101',true);await assess('测试乙','13900000102',false);
 page=await admin('/index.php?page=login');let response=await admin('/index.php?page=login',{csrf:field(page.body,'csrf'),username:'admin',password:'admin123'});assert.equal(response.status,302);
 page=await admin('/index.php?page=interviews');assert(page.body.includes('创建面试场次'));
+let arrangePage=await admin('/index.php?page=talent&tab=arrange');assert(arrangePage.body.includes('测试甲'));assert(!arrangePage.body.includes('测试乙'));
 let eligible=JSON.parse((await admin('/index.php?page=interviews&action=eligible_candidates')).body);assert.equal(eligible.length,1);
 fixture('above-boundary');assert.equal(JSON.parse((await admin('/index.php?page=interviews&action=eligible_candidates')).body).length,2,'60.1 must qualify');fixture('boundary');assert.equal(JSON.parse((await admin('/index.php?page=interviews&action=eligible_candidates')).body).length,1,'60 must not qualify');
 response=await admin('/index.php?page=interviews&action=session_save',{csrf:field(page.body,'csrf'),submission_token:field(page.body,'submission_token'),post_id:'1',interview_date:new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Shanghai'}),time_range:'14:00-16:00',location:'测试室'});assert.equal(response.status,302);
 page=await admin('/index.php?page=interviews');const csrf=field(page.body,'csrf');const sid=field(page.body,'session_id');
 response=await admin('/index.php?page=interviews&action=assign_candidate_v2',{csrf,session_id:sid,registration_id:eligible[0].id,seq:'1'});assert.equal(response.status,302);assert.equal(fixture('inspect').assignments.length,1);
+arrangePage=await admin('/index.php?page=talent&tab=arrange');assert(!arrangePage.body.includes('测试甲'));
+let pendingReview=await admin('/index.php?page=talent&tab=final');assert(pendingReview.body.includes('测试甲'));assert(pendingReview.body.includes('等待面试完成'));assert(!pendingReview.body.includes('name="stage" value="final"'));
+await admin('/index.php?page=talent&action=review',{csrf,result_id:'1',stage:'final',current:'interview',op:'pass'});assert.equal(fixture('inspect').results[0].review_status,'interview','unfinished interview cannot be approved');
 fixture('boundary');await admin('/index.php?page=interviews&action=assign_candidate_v2',{csrf,session_id:sid,registration_id:'2',seq:'2'});assert.equal(fixture('inspect').assignments.length,1,'60 must be rejected by backend');
 await admin('/index.php?page=interviews&action=assign_interviewer',{csrf,session_id:sid,user_id:'3',weight:'1'});
 page=await admin('/index.php?page=talent_pool');assert(!page.body.includes('测试甲'));assert(!page.body.includes('测试乙'));
