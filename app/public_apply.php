@@ -8,7 +8,8 @@ function show_assessment_hired(): never {
     unset($_SESSION['apply_auth']);
     header('Cache-Control: no-store');
     h5_header('测评提示');
-    echo '<section class="h5-card"><h2>您已被录用，无需再次测评</h2><p>本次答题不会保存，也不会进入待安排面试。</p></section>';
+    echo '<link rel="stylesheet" href="/assets/extra.css?v=notice-'.filemtime(__FILE__).'">';
+    echo '<section class="h5-card assessment-notice"><h2>您已被录用，无需再次测评</h2><p>本次答题不会保存，也不会进入待安排面试。</p></section>';
     h5_footer();exit;
 }
 // A submitted assessment starts a rolling seven-day cooldown across all posts.
@@ -29,7 +30,8 @@ function show_assessment_cooldown(string $next): never {
     unset($_SESSION['apply_auth']);
     header('Cache-Control: no-store');
     h5_header('测评暂不可用');
-    echo '<section class="h5-card"><h2>暂不能重复测评</h2><p>'.e(assessment_cooldown_message($next)).'</p></section>';
+    echo '<link rel="stylesheet" href="/assets/extra.css?v=notice-'.filemtime(__FILE__).'">';
+    echo '<section class="h5-card assessment-notice"><h2>暂不能重复测评</h2><p>'.e(assessment_cooldown_message($next)).'</p></section>';
     h5_footer();exit;
 }
 // Public entry: registration rows are created by the application, not by HR.

@@ -60,6 +60,9 @@ body{font-size:15px;line-height:1.55}.sidebar nav label{font-size:12px}.sidebar 
 .h5-body{background:#f3f6fa}
 .h5-body .h5{min-height:100vh;background:#f3f6fa}
 .h5-body .h5-brand{height:66px;padding:0 20px;background:#102a52;color:#fff;border-bottom:1px solid #0d2344}
+.h5-body .h5>.assessment-notice{margin:18px 16px 24px;transform:none;position:relative;top:auto;padding:28px 22px;border:1px solid #dce5f0;border-radius:16px}
+.h5-body .assessment-notice h2{line-height:1.5;overflow-wrap:anywhere}
+.h5-body .assessment-notice>p{margin:10px 0 0;line-height:1.8;overflow-wrap:anywhere}
 .h5-body .verify{margin:18px 16px 22px!important;padding:28px 23px 24px;border:1px solid #dce5f0;border-radius:16px;box-shadow:0 8px 20px rgba(17,42,78,.08);transform:none!important}
 .h5-body .verify h2{margin:2px 0 10px;text-align:center;color:#102a52;font-size:22px}
 .h5-body .verify>p{margin:0 0 24px;text-align:center;color:#7182a0;line-height:1.7}
