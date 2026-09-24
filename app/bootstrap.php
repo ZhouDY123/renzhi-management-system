@@ -48,6 +48,7 @@ function migrate(): void {
 }
 
 function upgrade_schema(PDO $pdo): void {
+    $pdo->exec("UPDATE user SET status=0 WHERE role='leader' AND status<>0");
     $columns=[
         'user'=>['company TEXT','job_title TEXT'],
         'candidate'=>['health TEXT','politics TEXT','group_co_years INTEGER DEFAULT 0','group_co_mgmt INTEGER DEFAULT 0','listed_co_years INTEGER DEFAULT 0','listed_co_mgmt INTEGER DEFAULT 0','private_co_years INTEGER DEFAULT 0','private_co_mgmt INTEGER DEFAULT 0','work_bg TEXT','computer_skill TEXT','language TEXT','custom_values TEXT','intent_post_id INTEGER'],
@@ -170,7 +171,7 @@ function e(?string $value): string { return htmlspecialchars($value ?? '', ENT_Q
 function csrf(): string { if(empty($_SESSION['csrf'])) $_SESSION['csrf']=bin2hex(random_bytes(24)); return $_SESSION['csrf']; }
 function check_csrf(): void { if(!hash_equals($_SESSION['csrf']??'', $_POST['csrf']??'')) { http_response_code(419); exit('请求已过期，请返回重试'); } }
 function redirect(string $url): never { header('Location: '.$url); exit; }
-function admin_user(): ?array { return $_SESSION['admin']??null; }
+function admin_user(): ?array { $u=$_SESSION['admin']??null;if($u&&($u['role']??'')==='leader'){unset($_SESSION['admin']);return null;}return $u; }
 function require_admin(): void { if(!admin_user()) redirect('/index.php?page=login'); }
 function can(string ...$roles): bool { $u=admin_user(); return $u&&($u['role']==='admin'||in_array($u['role'],$roles,true)); }
 function flash(string $message, string $type='ok'): void { $_SESSION['flash']=[$message,$type]; }
