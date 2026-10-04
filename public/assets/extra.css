@@ -63,6 +63,17 @@ body{font-size:15px;line-height:1.55}.sidebar nav label{font-size:12px}.sidebar 
 .h5-body .h5>.assessment-notice{margin:18px 16px 24px;transform:none;position:relative;top:auto;padding:28px 22px;border:1px solid #dce5f0;border-radius:16px}
 .h5-body .assessment-notice h2{line-height:1.5;overflow-wrap:anywhere}
 .h5-body .assessment-notice>p{margin:10px 0 0;line-height:1.8;overflow-wrap:anywhere}
+.h5-body .applicant-profile{padding:26px 24px 28px!important;text-align:left}
+.applicant-profile .profile-step{display:flex;gap:10px;margin:0 0 24px;padding:5px;border-radius:10px;background:#f1f4f9;color:#7d8ba1;font-size:12px;text-align:center}
+.profile-step span{flex:1;padding:8px 4px;border-radius:7px}.profile-step span:first-child{background:#fff;color:#2852cc;font-weight:700;box-shadow:0 2px 6px #1834560a}
+.h5-body .applicant-profile h2{text-align:left;font-size:24px;margin:0 0 8px}
+.h5-body .applicant-profile>p{text-align:left;margin:0 0 26px;font-size:13px}
+.h5-body .applicant-profile label{display:block;margin:0 0 18px;font-size:14px;font-weight:600;color:#344968}
+.h5-body .applicant-profile input,.h5-body .applicant-profile select{display:block;width:100%;height:48px;min-width:0;margin-top:8px;padding:0 13px;border:1px solid #cfdaea;border-radius:10px;background:#fff;color:#182b49;font-family:inherit;font-weight:400;font-size:16px;box-sizing:border-box}
+.h5-body .applicant-profile input:focus,.h5-body .applicant-profile select:focus{outline:0;border-color:#3157d5;box-shadow:0 0 0 3px #3157d51a}
+.applicant-profile .profile-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}.applicant-profile input::placeholder{color:#91a0b5;font-weight:400}
+.h5-body .applicant-profile .safe{line-height:1.6;margin:4px 0 18px;color:#8090a7}
+@media(max-width:360px){.h5-body .applicant-profile{padding:24px 18px!important}.applicant-profile .profile-pair{gap:12px}}
 .h5-body .verify{margin:18px 16px 22px!important;padding:28px 23px 24px;border:1px solid #dce5f0;border-radius:16px;box-shadow:0 8px 20px rgba(17,42,78,.08);transform:none!important}
 .h5-body .verify h2{margin:2px 0 10px;text-align:center;color:#102a52;font-size:22px}
 .h5-body .verify>p{margin:0 0 24px;text-align:center;color:#7182a0;line-height:1.7}

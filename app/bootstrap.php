@@ -51,7 +51,7 @@ function upgrade_schema(PDO $pdo): void {
     $pdo->exec("UPDATE user SET status=0 WHERE role='leader' AND status<>0");
     $columns=[
         'user'=>['company TEXT','job_title TEXT'],
-        'candidate'=>['health TEXT','politics TEXT','group_co_years INTEGER DEFAULT 0','group_co_mgmt INTEGER DEFAULT 0','listed_co_years INTEGER DEFAULT 0','listed_co_mgmt INTEGER DEFAULT 0','private_co_years INTEGER DEFAULT 0','private_co_mgmt INTEGER DEFAULT 0','work_bg TEXT','computer_skill TEXT','language TEXT','custom_values TEXT','intent_post_id INTEGER'],
+        'candidate'=>['age INTEGER','school_name TEXT','health TEXT','politics TEXT','group_co_years INTEGER DEFAULT 0','group_co_mgmt INTEGER DEFAULT 0','listed_co_years INTEGER DEFAULT 0','listed_co_mgmt INTEGER DEFAULT 0','private_co_years INTEGER DEFAULT 0','private_co_mgmt INTEGER DEFAULT 0','work_bg TEXT','computer_skill TEXT','language TEXT','custom_values TEXT','intent_post_id INTEGER'],
         'answer'=>["post_snapshot TEXT NOT NULL DEFAULT '{}'",'question_set_id INTEGER NOT NULL DEFAULT 0','assessment_registration_id INTEGER'],
         'result'=>['standard_version INTEGER NOT NULL DEFAULT 1',"weight_snapshot TEXT NOT NULL DEFAULT '{\"basic_conditions\":50,\"basic_quality\":25,\"professional\":25}'"],
         'question_set_item'=>['q_type TEXT','stem_snapshot TEXT','options_snapshot TEXT','answer_snapshot TEXT','score_snapshot REAL'],

@@ -3,13 +3,17 @@ import {execFileSync} from 'node:child_process';
 const [root, php, ext, token]=process.argv.slice(2);
 const base='http://127.0.0.1:18874';
 const fixture=mode=>JSON.parse(execFileSync(php,['-d',`extension_dir=${ext}`,'-d','extension=pdo_sqlite','tests/public-flow-fixture.php',root,mode],{encoding:'utf8'})||'null');
-function client(){let cookie='';return async function request(path,data){const response=await fetch(base+path,{method:data?'POST':'GET',headers:{Cookie:cookie,...(data?{'Content-Type':'application/x-www-form-urlencoded'}:{})},body:data?new URLSearchParams(data):undefined,redirect:'manual'});if(response.headers.get('set-cookie'))cookie=response.headers.get('set-cookie').split(';')[0];const body=await response.text();assert(!/Fatal error|Warning:|Parse error/.test(body),body.slice(0,1000));return {body,status:response.status,location:response.headers.get('location')};};}
+function client(){let cookie='';return async function request(path,data){if(data&&path.includes('step=verify'))data={'profile[gender]':'男','profile[age]':'26','profile[edu]':'硕士','profile[major]':'测试专业','profile[school_name]':'测试大学',...data};const response=await fetch(base+path,{method:data?'POST':'GET',headers:{Cookie:cookie,...(data?{'Content-Type':'application/x-www-form-urlencoded'}:{})},body:data?new URLSearchParams(data):undefined,redirect:'manual'});if(response.headers.get('set-cookie'))cookie=response.headers.get('set-cookie').split(';')[0];const body=await response.text();assert(!/Fatal error|Warning:|Parse error/.test(body),body.slice(0,1000));return {body,status:response.status,location:response.headers.get('location')};};}
 const field=(html,name)=>{const escaped=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');const match=html.match(new RegExp(`name="${escaped}"[^>]*value="([^"]*)"`));assert(match,`Missing field ${name}`);return match[1];};
 const person=client(), admin=client(), interviewer=client();
 assert.equal((await person('/index.php?page=interview_report&id=1')).status,302,'report requires authentication');
 const reviewer=client();
-async function assess(name,mobile,correct){let page=await person('/h5.php?m=apply&t='+token);let response=await person('/h5.php?m=apply&t='+token+'&step=verify',{csrf:field(page.body,'csrf'),name,mobile});assert.equal(response.status,302);page=await person(response.location);assert(page.body.includes('自动测试专业题'));assert(!page.body.includes('不应出现在自动测评的简答题'));const data={csrf:field(page.body,'csrf'),idempotency_key:field(page.body,'idempotency_key'),gender:'男',birth_date:'2000-01-01',health:'健康',edu:'硕士',school_tier:'普通本科',major:'测试',title:'',politics:'群众',work_years:'12',prof_years:'12',group_co_years:'0',listed_co_years:'0',private_co_years:'0',work_bg:'测试',computer_skill:'熟练',language:'熟练','answers[base_1]':correct?'正确':'错误','answers[post_1][]':correct?'正确':'错误'};response=await person('/h5.php?m=apply&t='+token+'&step=submit',data);assert.equal(response.status,302);page=await person(response.location);assert(page.body.includes(correct?'100.0 / 100':'50.0 / 100'));assert(page.body.includes('<h2>测评成绩</h2>'));return page;}
+async function assess(name,mobile,correct){let page=await person('/h5.php?m=apply&t='+token);let response=await person('/h5.php?m=apply&t='+token+'&step=verify',{csrf:field(page.body,'csrf'),name,mobile});assert.equal(response.status,302);page=await person(response.location);assert(page.body.includes('自动测试专业题'));for(const key of ['gender','birth_date','edu','major','school_tier'])assert(page.body.includes('name="'+key+'"'),'original answer field retained: '+key);assert(!page.body.includes('不应出现在自动测评的简答题'));const data={csrf:field(page.body,'csrf'),idempotency_key:field(page.body,'idempotency_key'),gender:'男',birth_date:'2000-01-01',health:'健康',edu:'硕士',school_tier:'普通本科',major:'测试',title:'',politics:'群众',work_years:'12',prof_years:'12',group_co_years:'0',listed_co_years:'0',private_co_years:'0',work_bg:'测试',computer_skill:'熟练',language:'熟练','answers[base_1]':correct?'正确':'错误','answers[post_1][]':correct?'正确':'错误'};response=await person('/h5.php?m=apply&t='+token+'&step=submit',data);assert.equal(response.status,302);page=await person(response.location);assert(page.body.includes(correct?'100.0 / 100':'50.0 / 100'));assert(page.body.includes('<h2>测评成绩</h2>'));return page;}
 let page=await person('/h5.php?m=apply&t=unified');assert(page.body.includes('请选择应聘岗位'));assert(!page.body.includes('name="mobile"'));
+page=await person('/h5.php?m=apply&t='+token);
+for(const key of ['gender','age','edu','major','school_name'])assert(page.body.includes('name="profile['+key+']"'));
+let invalid=await person('/h5.php?m=apply&t='+token+'&step=verify',{csrf:field(page.body,'csrf'),name:'资料不全',mobile:'13900000999','profile[school_name]':''});assert.equal(invalid.status,200);assert(invalid.body.includes('请完整填写'));
+assert.equal(fixture('answer-counts').candidate_pre_register,0,'invalid profile must not create registration');
 const staleForm=client(),staleSubmit=client();
 let staleCsrf='';
 for(const stale of [staleForm,staleSubmit]){
@@ -34,14 +38,15 @@ let pendingReview=await admin('/index.php?page=talent&tab=final');assert(pending
 await admin('/index.php?page=talent&action=review',{csrf,result_id:'1',stage:'final',current:'interview',op:'pass'});assert.equal(fixture('inspect').results[0].review_status,'interview','unfinished interview cannot be approved');
 fixture('boundary');await admin('/index.php?page=interviews&action=assign_candidate_v2',{csrf,session_id:sid,registration_id:'2',seq:'2'});assert.equal(fixture('inspect').assignments.length,1,'60 must be rejected by backend');
 await admin('/index.php?page=interviews&action=assign_interviewer',{csrf,session_id:sid,user_id:'3',weight:'1'});
-page=await admin('/index.php?page=talent_pool');assert(!page.body.includes('测试甲'));assert(!page.body.includes('测试乙'));
+page=await admin('/index.php?page=talent_pool');assert(page.body.includes('测试甲'));assert(page.body.includes('测试乙'));
 page=await interviewer('/h5.php?m=interview&t=unified');response=await interviewer('/h5.php?m=interview&t=unified&step=login',{csrf:field(page.body,'csrf'),real_name:'李四',mobile:'13800000002'});page=await interviewer(response.location);const scoreLink=page.body.match(/href="([^\"]*step=score[^\"]*)"/);assert(scoreLink,page.body);page=await interviewer('/h5.php'+scoreLink[1]);assert(page.body.includes('满分 100 分'));assert(page.body.includes('<span>100分</span>'));assert(page.body.includes('<span>20分</span>'));const action=page.body.match(/action="([^\"]*step=score)"/)[1];const scores={csrf:field(page.body,'csrf'),candidate_id:field(page.body,'candidate_id'),strengths:'好',risks:'无',recommendation:'recommend'};for(const dim of ['professional','experience','communication','logic','teamwork','learning','professionalism'])scores[`dims[${dim}]`]='4';response=await interviewer('/h5.php'+action,scores);assert.equal(response.status,302);
 page=await reviewer('/index.php?page=login');response=await reviewer('/index.php?page=login',{csrf:field(page.body,'csrf'),username:'lisi',password:'admin123'});assert.equal(response.status,302);
 for(const allowed of ['dashboard','talent','talent_pool','interview_results','password'])assert.equal((await reviewer('/index.php?page='+allowed)).status,200,allowed);
 for(const forbidden of ['users','posts','questions','interviews','settings'])assert.equal((await reviewer('/index.php?page='+forbidden)).status,403,forbidden);
 assert.equal((await reviewer('/index.php?page=dashboard&action=user_save',{})).status,403);
 page=await reviewer('/index.php?page=talent&tab=final');assert(page.body.includes('测试甲'));assert(!page.body.includes('测评待处理'));response=await reviewer('/index.php?page=talent&action=review',{csrf:field(page.body,'csrf'),result_id:'1',stage:'final',current:'interview',op:'pass',note:'测试通过'});assert(response.location.includes('tab=final'));
-page=await admin('/index.php?page=talent_pool');assert(page.body.includes('测试甲'));assert(!page.body.includes('测试乙'));assert.equal(fixture('inspect').fk.length,0);
+page=await admin('/index.php?page=talent_pool');assert(page.body.includes('测试甲'));assert(page.body.includes('测试乙'));assert.equal(fixture('inspect').fk.length,0);
+const profile=JSON.parse((await admin('/index.php?page=talent_pool&resume_id=1')).body);assert.equal(profile.age,26);assert.equal(profile.school_name,'测试大学');assert.equal(profile.gender,'男');assert.equal(profile.edu,'硕士');assert.equal(profile.major,'测试专业');
 const leader=client();page=await leader('/index.php?page=login');response=await leader('/index.php?page=login',{csrf:field(page.body,'csrf'),username:'oldleader',password:'test12345'});assert.equal(response.status,200);assert(response.body.includes('用户名或密码错误'));
 page=await admin('/index.php?page=users');assert(!page.body.includes('value="leader"'));
 assert(page.body.includes('value="interviewer"'));assert(page.body.includes('lisi'));assert(!page.body.includes('面试官维护'));
@@ -79,6 +84,10 @@ assert(!(await admin('/index.php?page=talent&tab=arrange')).body.includes('测�
 fixture('unhire-second');
 await assess('测试乙','13900000102',true);
 assert.equal(fixture('inspect').results.length,3,'repeat assessment creates a new result');
+page=await admin('/index.php?page=talent_pool');
+assert.equal((page.body.match(/<h3>测试乙<\/h3>/g)||[]).length,1,'repeat assessments must not duplicate talent cards');
+assert.equal((page.body.match(/<h3>测试甲<\/h3>/g)||[]).length,1);
+assert(page.body.includes('共 2 人'),'unsubmitted registrations must not enter talent pool');
 page=await admin('/index.php?page=talent&tab=hired');
 assert(page.body.includes('<th>面试分数</th><th>面试报告</th>'));
 assert(page.body.includes('target="_blank" rel="noopener">查看报告'));

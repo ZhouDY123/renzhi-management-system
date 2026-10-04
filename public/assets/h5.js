@@ -52,13 +52,16 @@
     }
   }
 
+  // Only scoring fields use configured options; new profile fields remain free text.
+  const assessmentForm = document.querySelector('form.h5-form');
+  if (!assessmentForm) return;
   fetch(`/h5.php?m=condition_options&t=${encodeURIComponent(token)}`, { credentials: 'same-origin' })
     .then(response => response.ok ? response.json() : {})
     .then(options => {
       Object.entries(options || {}).forEach(([field, values]) => {
         if (!Array.isArray(values) || values.length === 0) return;
-        let select = document.querySelector(`select[name="${field}"]`);
-        const input = document.querySelector(`input[name="${field}"]`);
+        let select = assessmentForm.querySelector(`select[name="${field}"]`);
+        const input = assessmentForm.querySelector(`input[name="${field}"]`);
         if (!select && input) {
           select = document.createElement('select');
           select.name = input.name;
