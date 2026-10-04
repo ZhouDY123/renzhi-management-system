@@ -695,10 +695,11 @@ function initStandardTabs() {
       if (!trigger.dataset.defaultLabel) trigger.dataset.defaultLabel = trigger.textContent;
       const isSuzhi = target === 'suzhi';
       trigger.hidden = isSuzhi;
-      trigger.textContent = isSuzhi ? '＋ 新增基本素质维度' : trigger.dataset.defaultLabel;
+      trigger.textContent = trigger.dataset.defaultLabel;
     });
     const form = document.querySelector('form[action*="standard_dimension_create"]');
-    if (form) { form.querySelector('[name="standard_scope"]')?.setAttribute('value', target); const type=form.querySelector('[data-dimension-type]'); if(type){const isSuzhi=target==='suzhi';if(isSuzhi)type.value='answer';type.disabled=isSuzhi;type.dispatchEvent(new Event('change'));} const title = form.querySelector('.form-title h2'); if (title) title.textContent = `新增${target === 'suzhi' ? '基本素质' : '基本条件'}维度`; form.closest('.modal-dialog')?.querySelector('.modal-top h2') && (form.closest('.modal-dialog').querySelector('.modal-top h2').textContent = `新增${target === 'suzhi' ? '基本素质' : '基本条件'}维度`); }
+    if (form) form.querySelector('[name="standard_scope"]')?.setAttribute('value', 'conditions');
+    document.querySelectorAll('[data-basic-rating-open]').forEach(button => { button.hidden = target !== 'suzhi'; });
   }));
   const initialSection = new URLSearchParams(location.search).get('section') || tabs.find(tab => tab.classList.contains('is-active'))?.dataset.standardShow;
   if (initialSection === 'suzhi') tabs.find(tab => tab.dataset.standardShow === 'suzhi')?.click();
@@ -773,10 +774,9 @@ function initQuestionPaperBuilder() {
     const search = document.createElement('input'); search.type = 'search'; search.placeholder = '搜索题干或关键词'; search.autocomplete = 'off'; search.setAttribute('aria-label', '搜索岗位专业题');
     const searchClear = document.createElement('button'); searchClear.type = 'button'; searchClear.className = 'question-picker-clear'; searchClear.textContent = '×'; searchClear.setAttribute('aria-label', '清除题目搜索'); searchClear.hidden = true;
     searchWrap.append(search, searchClear);
-    const type = document.createElement('select'); type.className = 'question-picker-type'; type.setAttribute('aria-label', '按题型筛选'); [['','全部题型'],['single','单选题'],['multi','多选题'],['short','简答题']].forEach(([value,label]) => { const option = document.createElement('option'); option.value = value; option.textContent = label; type.append(option); });
     const selectVisible = document.createElement('button'); selectVisible.type = 'button'; selectVisible.className = 'btn secondary question-picker-bulk'; selectVisible.textContent = '全选当前结果';
     const clearSelected = document.createElement('button'); clearSelected.type = 'button'; clearSelected.className = 'question-picker-link'; clearSelected.textContent = '清空已选';
-    tools.append(searchWrap, type, selectVisible, clearSelected);
+    tools.append(searchWrap, selectVisible, clearSelected);
     const basket = document.createElement('section'); basket.className = 'question-selection-basket'; basket.setAttribute('aria-label', '已选专业题');
     let pickerRoot = form;
     if (libraryList && pickHead && pickList) {
@@ -803,7 +803,6 @@ function initQuestionPaperBuilder() {
       libraryList.replaceChildren(pickHead, tools, pickList);
       select.closest('.question-post-select')?.after(basket);
     } else if (pickHead) { pickHead.after(tools); tools.after(basket); }
-    const typeMap = {single:'单选题', multi:'多选题', short:'简答题'};
     const selectedRows = () => [...pickerRoot.querySelectorAll('[data-question-post]')].filter(item => item.dataset.questionPost === select.value && item.querySelector('input[type="checkbox"]')?.checked);
     const renderBasket = () => {
       const rows = selectedRows(); basket.replaceChildren();
@@ -817,13 +816,13 @@ function initQuestionPaperBuilder() {
     const sync = () => {
       const postId = select.value;
       const items = [...pickerRoot.querySelectorAll('[data-question-post]')];
-      const keyword = search.value.trim().toLowerCase(); const typeValue = type.value;
+      const keyword = search.value.trim().toLowerCase();
       let available = 0, selected = 0, visible = 0;
       items.forEach(item => {
         const match = item.dataset.questionPost === postId;
         const checkbox = item.querySelector('input[type="checkbox"]');
-        const text = item.textContent.toLowerCase(); const questionType = Object.entries(typeMap).find(([,label]) => text.includes(label))?.[0] || '';
-        const shown = match && (!keyword || text.includes(keyword)) && (!typeValue || questionType === typeValue);
+        const text = item.textContent.toLowerCase();
+        const shown = match && (!keyword || text.includes(keyword));
         item.hidden = !shown;
         if (checkbox) checkbox.disabled = !match;
         if (match && checkbox) { available += 1; if (shown) visible += 1; if (checkbox.checked) selected += 1; }
@@ -847,7 +846,7 @@ function initQuestionPaperBuilder() {
     };
     select.addEventListener('change', () => { preservePublishPost(); sync(); });
     pickerRoot.querySelectorAll('input[type="checkbox"]').forEach(input => input.addEventListener('change', sync));
-    search.addEventListener('input', sync); type.addEventListener('change', sync);
+    search.addEventListener('input', sync);
     searchClear.addEventListener('click', () => { search.value = ''; sync(); search.focus(); });
     selectVisible.addEventListener('click', () => { pickerRoot.querySelectorAll('[data-question-post]').forEach(item => { if (!item.hidden && item.dataset.questionPost === select.value) { const checkbox = item.querySelector('input[type="checkbox"]'); if (checkbox) checkbox.checked = true; } }); sync(); });
     clearSelected.addEventListener('click', () => { pickerRoot.querySelectorAll('[data-question-post]').forEach(item => { if (item.dataset.questionPost === select.value) { const checkbox = item.querySelector('input[type="checkbox"]'); if (checkbox) checkbox.checked = false; } }); sync(); });
@@ -1168,6 +1167,49 @@ function initFormModals() {
     if (form.classList.contains('standard-dimension-form')) { const switcher=document.querySelector('.standard-section-switch'); if(switcher&&!switcher.dataset.swapped){const slot=document.createElement('div');slot.className='standard-create-slot';switcher.replaceWith(slot);actions?.append(switcher);slot.append(trigger);switcher.dataset.swapped='1';} }
     if (autoOpen) { open(); params.delete('new'); params.delete('edit'); const query = params.toString(); history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}`); }
   });
+  initBasicRatingModal();
+}
+
+function initBasicRatingModal() {
+  const form = document.querySelector('.basic-rating-editor');
+  if (!form) return;
+  const trigger = document.createElement('button');
+  trigger.type = 'button'; trigger.className = 'btn primary';
+  trigger.dataset.basicRatingOpen = ''; trigger.textContent = '＋ 新增基本素质题';
+  (document.querySelector('.standard-create-slot') || document.querySelector('.page-actions')).append(trigger);
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay basic-rating-overlay'; overlay.setAttribute('aria-hidden', 'true');
+  overlay.innerHTML = '<section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="basic-rating-title"><div class="modal-top"><div><small>基本素质题库</small><h2 id="basic-rating-title"></h2></div><button type="button" class="modal-close" data-dialog-close aria-label="关闭弹窗">×</button></div></section>';
+  const title = overlay.querySelector('h2');
+  title.textContent = form.querySelector('.rating-editor-head h2').textContent;
+  form.classList.add('modal-form'); overlay.querySelector('.modal-dialog').append(form);
+  document.body.append(overlay); form.hidden = false;
+  let dirty = false;
+  form.addEventListener('input', () => { dirty = true; });
+  form.addEventListener('change', () => { dirty = true; });
+  const close = () => {
+    const discard = () => {
+      dirty = false; closeDialog(overlay);
+      const url = new URL(location.href); url.searchParams.delete('basic_edit');
+      history.replaceState(history.state, '', url);
+    };
+    if (dirty) showConfirm({title:'放弃未保存的修改？',description:'关闭后，本次填写的内容不会保存。',actionLabel:'放弃修改',onConfirm:discard});
+    else discard();
+  };
+  overlay.querySelector('[data-dialog-close]').addEventListener('click', close);
+  overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+  form.querySelector('[data-basic-rating-cancel]').addEventListener('click', close);
+  trigger.addEventListener('click', () => {
+    form.reset();
+    Object.entries({id:'0',stem:'',score:'3',sort:'1'}).forEach(([name,value]) => { form.elements.namedItem(name).value = value; });
+    form.elements.namedItem('enabled').checked = true;
+    form.querySelectorAll('.field-error').forEach(error => error.remove());
+    form.querySelectorAll('[aria-invalid]').forEach(field => field.removeAttribute('aria-invalid'));
+    title.textContent = '新增基本素质题'; dirty = false;
+    openDialog(overlay, form.elements.namedItem('stem'));
+  });
+  document.querySelector('[data-standard-show].is-active')?.click();
+  if (Number(form.elements.namedItem('id').value) > 0) openDialog(overlay, form.elements.namedItem('stem'));
 }
 
 function initSelectedFields() {
