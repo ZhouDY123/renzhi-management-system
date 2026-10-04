@@ -48,6 +48,7 @@ function migrate(): void {
 function upgrade_schema(PDO $pdo): void {
     $pdo->exec("UPDATE user SET status=0 WHERE role='leader' AND status<>0");
     $columns=[
+        'question_base'=>['post_id INTEGER REFERENCES post(id)'],
         'user'=>['company TEXT','job_title TEXT'],
         'candidate'=>['age INTEGER','school_name TEXT','health TEXT','politics TEXT','group_co_years INTEGER DEFAULT 0','group_co_mgmt INTEGER DEFAULT 0','listed_co_years INTEGER DEFAULT 0','listed_co_mgmt INTEGER DEFAULT 0','private_co_years INTEGER DEFAULT 0','private_co_mgmt INTEGER DEFAULT 0','work_bg TEXT','computer_skill TEXT','language TEXT','custom_values TEXT','intent_post_id INTEGER'],
         'answer'=>["post_snapshot TEXT NOT NULL DEFAULT '{}'",'question_set_id INTEGER NOT NULL DEFAULT 0','assessment_registration_id INTEGER'],
@@ -59,6 +60,7 @@ function upgrade_schema(PDO $pdo): void {
         'interview_feedback'=>["responses TEXT NOT NULL DEFAULT '{}'"]
     ];
     foreach($columns as $table=>$defs){$existing=array_column($pdo->query('PRAGMA table_info('.$table.')')->fetchAll(),'name');foreach($defs as $def){$name=strtok($def,' ');if(!in_array($name,$existing,true))$pdo->exec('ALTER TABLE '.$table.' ADD COLUMN '.$def);}}
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_question_base_post ON question_base(post_id,group_type,status)');
     $pdo->exec("UPDATE interview_session SET feedback_token=lower(hex(randomblob(16))) WHERE COALESCE(feedback_token,'')=''");
     $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_interview_session_feedback_token ON interview_session(feedback_token)');
     // 同一岗位同一天可安排不同时间的多个场次，已完成或已取消场次也必须保留历史。

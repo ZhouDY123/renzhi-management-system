@@ -815,6 +815,8 @@ function initQuestionPaperBuilder() {
     };
     const sync = () => {
       const postId = select.value;
+      const basicCount = form.querySelector('[data-basic-post-counts]');
+      if (basicCount) basicCount.querySelector('b').textContent = String(JSON.parse(basicCount.dataset.basicPostCounts)[postId] || 0);
       const items = [...pickerRoot.querySelectorAll('[data-question-post]')];
       const keyword = search.value.trim().toLowerCase();
       let available = 0, selected = 0, visible = 0;
@@ -1203,6 +1205,8 @@ function initBasicRatingModal() {
     form.reset();
     Object.entries({id:'0',stem:'',score:'3',sort:'1'}).forEach(([name,value]) => { form.elements.namedItem(name).value = value; });
     form.elements.namedItem('enabled').checked = true;
+    const post = form.elements.namedItem('post_id');
+    if (post) post.value = post.dataset.defaultPost === '0' ? '' : post.dataset.defaultPost;
     form.querySelectorAll('.field-error').forEach(error => error.remove());
     form.querySelectorAll('[aria-invalid]').forEach(field => field.removeAttribute('aria-invalid'));
     title.textContent = '新增基本素质题'; dirty = false;
