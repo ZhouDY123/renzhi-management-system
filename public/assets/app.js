@@ -694,7 +694,7 @@ function initStandardTabs() {
     document.querySelectorAll('.standard-create-slot .modal-trigger,.page-actions .modal-trigger').forEach(trigger => {
       if (!trigger.dataset.defaultLabel) trigger.dataset.defaultLabel = trigger.textContent;
       const isSuzhi = target === 'suzhi';
-      trigger.hidden = false;
+      trigger.hidden = isSuzhi;
       trigger.textContent = isSuzhi ? '＋ 新增基本素质维度' : trigger.dataset.defaultLabel;
     });
     const form = document.querySelector('form[action*="standard_dimension_create"]');

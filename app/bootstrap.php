@@ -42,9 +42,7 @@ function migrate(): void {
     upgrade_schema($pdo);
     if ((int)$pdo->query('SELECT COUNT(*) FROM user')->fetchColumn() === 0) seed($pdo);
     if ((int)$pdo->query('SELECT COUNT(*) FROM scoring_standard')->fetchColumn() === 0) seed_catalog($pdo);
-    if ((int)$pdo->query('SELECT COUNT(*) FROM question_post')->fetchColumn() === 0 && (int)$pdo->query('SELECT COUNT(*) FROM post')->fetchColumn() > 0) {
-        $pdo->prepare("INSERT INTO question_post(post_id,q_type,stem,answer,point_desc,score,status,sort) VALUES(1,'short',?,?,?,?,1,1)")->execute(['请简述集团预算管理的三个核心目标。','资源配置、经营约束、绩效评价','答案应覆盖资源配置、过程控制与绩效评价，并结合实际案例。',40]);
-    }
+    // Empty question banks are intentional; do not recreate demo questions.
 }
 
 function upgrade_schema(PDO $pdo): void {

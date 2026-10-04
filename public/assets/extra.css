@@ -63,6 +63,12 @@ body{font-size:15px;line-height:1.55}.sidebar nav label{font-size:12px}.sidebar 
 .h5-body .h5>.assessment-notice{margin:18px 16px 24px;transform:none;position:relative;top:auto;padding:28px 22px;border:1px solid #dce5f0;border-radius:16px}
 .h5-body .assessment-notice h2{line-height:1.5;overflow-wrap:anywhere}
 .h5-body .assessment-notice>p{margin:10px 0 0;line-height:1.8;overflow-wrap:anywhere}
+.self-rating-help{color:#70819a;font-size:13px;line-height:1.7;margin-bottom:22px}
+.basic-rating-editor{padding:24px;margin-bottom:20px}.basic-rating-editor h2{margin:0 0 20px}.basic-rating-editor label{display:block;margin-bottom:16px}.basic-rating-editor input[type=checkbox]{width:auto;height:auto}.basic-rating-editor textarea{width:100%}
+.self-rating-scope{display:block;font-size:12px;color:#3157d5;margin-bottom:6px;font-weight:500}
+.self-rating-question label{display:flex!important;align-items:center;gap:12px;min-height:48px;padding:12px!important;margin:8px 0!important;border:1px solid #dae3ef;border-radius:10px;background:#fff}
+.self-rating-question label:has(input:checked){border-color:#3157d5;background:#eff4ff;color:#2347b2}
+.self-rating-question input[type=radio]{flex:none;width:18px!important;height:18px!important;margin:0;accent-color:#3157d5}
 .h5-body .applicant-profile{padding:26px 24px 28px!important;text-align:left}
 .applicant-profile .profile-step{display:flex;gap:10px;margin:0 0 24px;padding:5px;border-radius:10px;background:#f1f4f9;color:#7d8ba1;font-size:12px;text-align:center}
 .profile-step span{flex:1;padding:8px 4px;border-radius:7px}.profile-step span:first-child{background:#fff;color:#2852cc;font-weight:700;box-shadow:0 2px 6px #1834560a}

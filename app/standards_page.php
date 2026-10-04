@@ -5,9 +5,9 @@ function render_grouped_standards_page(string $page, PDO $pdo): bool {
     if ($page !== 'standards') return false;
     admin_header('评分标准','standards');
     $rows=$pdo->query('SELECT * FROM scoring_standard WHERE status!="retired" ORDER BY category,dim_code,sort,id')->fetchAll();
-    $conditionGroups=[];$suzhiGroups=[];$initialSection=$_SESSION['standards_active_section']??'conditions';unset($_SESSION['standards_active_section']);
+    $conditionGroups=[];$suzhiGroups=[];$initialSection=($_GET['section']??$_SESSION['standards_active_section']??'conditions')==='suzhi'?'suzhi':'conditions';unset($_SESSION['standards_active_section']);
     foreach($rows as $row){$target=$row['category']==='basic_quality'?'suzhiGroups':'conditionGroups';${$target}[$row['dim_code']][]=$row;}
-    page_head('职位管理 / 评分体系','基本条件与基本素质','两类通用评分维度均可独立维护档位、分值和启用状态。'); ?>
+    page_head('职位管理 / 评分体系','基本条件与基本素质','基本条件按规则评分；基本素质采用固定五级自评题。'); ?>
     <section class="grouped-standards">
       <div class="standard-section-switch" role="tablist" aria-label="评分内容切换"><button type="button" class="btn <?=$initialSection==='conditions'?'is-active':''?>" role="tab" aria-selected="<?=$initialSection==='conditions'?'true':'false'?>" data-standard-show="conditions">基本条件测评</button><button type="button" class="btn <?=$initialSection==='suzhi'?'is-active':''?>" role="tab" aria-selected="<?=$initialSection==='suzhi'?'true':'false'?>" data-standard-show="suzhi">基本素质测评</button></div>
       <div id="standard-conditions" class="standard-tab-panel" data-standard-panel="conditions" <?=$initialSection==='suzhi'?'hidden':''?>>
@@ -17,10 +17,7 @@ function render_grouped_standards_page(string $page, PDO $pdo): bool {
         <?=render_standard_dimension_cards($conditionGroups)?>
       </div>
       <div id="standard-suzhi" class="standard-tab-panel" data-standard-panel="suzhi" <?=$initialSection==='conditions'?'hidden':''?>>
-        <article class="panel grouped-standard-intro suzhi-intro"><div><b>二、基本素质测评</b><p>沟通协作、逻辑分析、责任意识、学习适应等通用维度；与基本条件采用同样的评分档位管理方式。</p></div></article>
-        <?=render_standard_dimension_search('suzhi','搜索基本素质维度，例如：沟通、责任') ?>
-        <?=render_standard_dimension_cards($suzhiGroups)?>
-        <?php if(!$suzhiGroups):?><div class="panel empty-state"><b>暂未设置基本素质维度</b><p>点击右上角“新增基本素质维度”开始配置。</p></div><?php endif;?>
+        <?php render_basic_rating_editor($pdo);?>
       </div>
     </section><?php admin_footer();return true;
 }
