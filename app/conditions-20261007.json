@@ -1,0 +1,428 @@
+[
+  {
+    "score": 3,
+    "label": "硕士及以上",
+    "dimension": "学历",
+    "code": "custom_doc20261007_edu"
+  },
+  {
+    "score": 2.5,
+    "label": "本科",
+    "dimension": "学历",
+    "code": "custom_doc20261007_edu"
+  },
+  {
+    "score": 2,
+    "label": "专科",
+    "dimension": "学历",
+    "code": "custom_doc20261007_edu"
+  },
+  {
+    "score": 1.5,
+    "label": "高中",
+    "dimension": "学历",
+    "code": "custom_doc20261007_edu"
+  },
+  {
+    "score": 1,
+    "label": "高中以下",
+    "dimension": "学历",
+    "code": "custom_doc20261007_edu"
+  },
+  {
+    "score": 1,
+    "label": "是",
+    "dimension": "是否获得奖学金",
+    "code": "custom_doc20261007_scholarship"
+  },
+  {
+    "score": 0,
+    "label": "否",
+    "dimension": "是否获得奖学金",
+    "code": "custom_doc20261007_scholarship"
+  },
+  {
+    "score": 3,
+    "label": "双一流院校或国外同等级别院校",
+    "dimension": "毕业院校",
+    "code": "custom_doc20261007_school"
+  },
+  {
+    "score": 2.5,
+    "label": "一流院校或国外同等级别院校",
+    "dimension": "毕业院校",
+    "code": "custom_doc20261007_school"
+  },
+  {
+    "score": 2,
+    "label": "一本院校或国外同等级别院校",
+    "dimension": "毕业院校",
+    "code": "custom_doc20261007_school"
+  },
+  {
+    "score": 1.5,
+    "label": "二本院校",
+    "dimension": "毕业院校",
+    "code": "custom_doc20261007_school"
+  },
+  {
+    "score": 1,
+    "label": "三本及以下",
+    "dimension": "毕业院校",
+    "code": "custom_doc20261007_school"
+  },
+  {
+    "score": 2,
+    "label": "正高及以上",
+    "dimension": "职称",
+    "code": "custom_doc20261007_title"
+  },
+  {
+    "score": 1.5,
+    "label": "副高",
+    "dimension": "职称",
+    "code": "custom_doc20261007_title"
+  },
+  {
+    "score": 1,
+    "label": "中级",
+    "dimension": "职称",
+    "code": "custom_doc20261007_title"
+  },
+  {
+    "score": 0.5,
+    "label": "初级",
+    "dimension": "职称",
+    "code": "custom_doc20261007_title"
+  },
+  {
+    "score": 0,
+    "label": "无",
+    "dimension": "职称",
+    "code": "custom_doc20261007_title"
+  },
+  {
+    "score": 2,
+    "label": "X≥15年",
+    "dimension": "参加工作年限",
+    "code": "custom_doc20261007_work_years"
+  },
+  {
+    "score": 1.5,
+    "label": "10年≤X＜15年",
+    "dimension": "参加工作年限",
+    "code": "custom_doc20261007_work_years"
+  },
+  {
+    "score": 1,
+    "label": "8年≤X＜10年",
+    "dimension": "参加工作年限",
+    "code": "custom_doc20261007_work_years"
+  },
+  {
+    "score": 0.5,
+    "label": "5年≤X＜8年",
+    "dimension": "参加工作年限",
+    "code": "custom_doc20261007_work_years"
+  },
+  {
+    "score": 0.25,
+    "label": "0＜X＜5年",
+    "dimension": "参加工作年限",
+    "code": "custom_doc20261007_work_years"
+  },
+  {
+    "score": 0,
+    "label": "无工作经历",
+    "dimension": "参加工作年限",
+    "code": "custom_doc20261007_work_years"
+  },
+  {
+    "score": 2,
+    "label": "X≥10年",
+    "dimension": "从事专业年限",
+    "code": "custom_doc20261007_prof_years"
+  },
+  {
+    "score": 1.5,
+    "label": "8年≤X＜10年",
+    "dimension": "从事专业年限",
+    "code": "custom_doc20261007_prof_years"
+  },
+  {
+    "score": 1,
+    "label": "5年≤X＜8年",
+    "dimension": "从事专业年限",
+    "code": "custom_doc20261007_prof_years"
+  },
+  {
+    "score": 0.5,
+    "label": "3年≤X＜5年",
+    "dimension": "从事专业年限",
+    "code": "custom_doc20261007_prof_years"
+  },
+  {
+    "score": 0.25,
+    "label": "0＜X＜3年",
+    "dimension": "从事专业年限",
+    "code": "custom_doc20261007_prof_years"
+  },
+  {
+    "score": 0,
+    "label": "无相关专业经历",
+    "dimension": "从事专业年限",
+    "code": "custom_doc20261007_prof_years"
+  },
+  {
+    "score": 5,
+    "label": "X≥5年集团公司高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 4,
+    "label": "3年≤X＜5年集团公司高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 3,
+    "label": "X≥5年集团公司非高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 2,
+    "label": "3年≤X＜5年集团公司非高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 1,
+    "label": "X＜3年集团工作经历，不论是否高管",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 4,
+    "label": "X≥3年上市公司高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 3,
+    "label": "1年≤X＜3年上市公司的高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 2,
+    "label": "X≥3年上市公司非高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 1,
+    "label": "1年≤X＜3年上市公司非高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 0,
+    "label": "X＜1年上市公司工作经历，不论是否高管",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 3,
+    "label": "X≥3年非上市公司高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 2,
+    "label": "1年≤X＜3年非上市公司高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 1,
+    "label": "X≥5年非上市公司非高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 0.5,
+    "label": "3年≤X＜5年非上市公司非高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 0,
+    "label": "X＜3年非上市公司非高级管理职务工作履历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 0,
+    "label": "无上述相关工作经历",
+    "dimension": "工作履历择最高一档",
+    "code": "custom_doc20261007_career"
+  },
+  {
+    "score": 3,
+    "label": "本行业标杆企业",
+    "dimension": "工作背景",
+    "code": "custom_doc20261007_background"
+  },
+  {
+    "score": 2.5,
+    "label": "本行业知名企业",
+    "dimension": "工作背景",
+    "code": "custom_doc20261007_background"
+  },
+  {
+    "score": 2,
+    "label": "本行业一般企业",
+    "dimension": "工作背景",
+    "code": "custom_doc20261007_background"
+  },
+  {
+    "score": 1.5,
+    "label": "本行业外头部企业",
+    "dimension": "工作背景",
+    "code": "custom_doc20261007_background"
+  },
+  {
+    "score": 1,
+    "label": "本行业外一般企业",
+    "dimension": "工作背景",
+    "code": "custom_doc20261007_background"
+  },
+  {
+    "score": 0,
+    "label": "无可核验的企业工作背景",
+    "dimension": "工作背景",
+    "code": "custom_doc20261007_background"
+  },
+  {
+    "score": 2,
+    "label": "能准确理解岗位相关外语材料，并流畅交流、说明关键内容和回应问题",
+    "dimension": "外语",
+    "code": "custom_doc20261007_language"
+  },
+  {
+    "score": 1.5,
+    "label": "能理解主要内容并完成常规工作交流，少量错误不影响理解",
+    "dimension": "外语",
+    "code": "custom_doc20261007_language"
+  },
+  {
+    "score": 1,
+    "label": "能理解简单材料并进行基础听说读写，需要少量提示",
+    "dimension": "外语",
+    "code": "custom_doc20261007_language"
+  },
+  {
+    "score": 0.5,
+    "label": "仅能识别简单词句，需较多帮助才能传达基本信息",
+    "dimension": "外语",
+    "code": "custom_doc20261007_language"
+  },
+  {
+    "score": 0,
+    "label": "经提示后仍无法理解基础材料或完成简单交流",
+    "dimension": "外语",
+    "code": "custom_doc20261007_language"
+  },
+  {
+    "score": 2,
+    "label": "能自主学习AI工具，清晰描述任务和约束，独立完成岗位任务并验证结果，能迁移应用",
+    "dimension": "AI",
+    "code": "custom_doc20261007_ai"
+  },
+  {
+    "score": 1.5,
+    "label": "能独立使用AI完成常规岗位任务，调整提示并核对关键结果",
+    "dimension": "AI",
+    "code": "custom_doc20261007_ai"
+  },
+  {
+    "score": 1,
+    "label": "能依据教程使用AI完成简单任务，结果核验需少量提示",
+    "dimension": "AI",
+    "code": "custom_doc20261007_ai"
+  },
+  {
+    "score": 0.5,
+    "label": "能在逐步指导下使用AI完成基础操作",
+    "dimension": "AI",
+    "code": "custom_doc20261007_ai"
+  },
+  {
+    "score": 0,
+    "label": "经指导后仍无法完成基础AI应用任务",
+    "dimension": "AI",
+    "code": "custom_doc20261007_ai"
+  },
+  {
+    "score": 2,
+    "label": "能独立完成较复杂图纸，规范使用图层、块、尺寸标注及布局打印，并检查图纸质量",
+    "dimension": "CAD",
+    "code": "custom_doc20261007_cad"
+  },
+  {
+    "score": 1.5,
+    "label": "能独立完成常规二维图纸，规范使用图层、尺寸标注并按比例输出",
+    "dimension": "CAD",
+    "code": "custom_doc20261007_cad"
+  },
+  {
+    "score": 1,
+    "label": "能阅读并修改现有图纸，完成基本绘图、尺寸标注及文件输出",
+    "dimension": "CAD",
+    "code": "custom_doc20261007_cad"
+  },
+  {
+    "score": 0.5,
+    "label": "能在指导下查看图纸、测量尺寸及进行简单修改",
+    "dimension": "CAD",
+    "code": "custom_doc20261007_cad"
+  },
+  {
+    "score": 0,
+    "label": "经指导后仍无法完成基础CAD操作",
+    "dimension": "CAD",
+    "code": "custom_doc20261007_cad"
+  },
+  {
+    "score": 2,
+    "label": "能独立搭建多步骤工作流，连接数据或工具，设置人工复核、异常处理并验证运行结果",
+    "dimension": "工作流",
+    "code": "custom_doc20261007_workflow"
+  },
+  {
+    "score": 1.5,
+    "label": "能独立搭建并运行多步骤工作流，完成输入、处理与输出，检查结果并修正常见错误",
+    "dimension": "工作流",
+    "code": "custom_doc20261007_workflow"
+  },
+  {
+    "score": 1,
+    "label": "能修改现有工作流模板或串联多个步骤，完成常规任务并核对结果",
+    "dimension": "工作流",
+    "code": "custom_doc20261007_workflow"
+  },
+  {
+    "score": 0.5,
+    "label": "能在指导下运行现有工作流或完成单步任务",
+    "dimension": "工作流",
+    "code": "custom_doc20261007_workflow"
+  },
+  {
+    "score": 0,
+    "label": "经指导后仍无法完成基础工作流任务",
+    "dimension": "工作流",
+    "code": "custom_doc20261007_workflow"
+  }
+]

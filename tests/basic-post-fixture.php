@@ -12,4 +12,9 @@ foreach(['甲','乙','空'] as $name){
     $id=(int)$pdo->lastInsertId();$posts[]=$id;
     $pdo->prepare("INSERT INTO question_post(post_id,q_type,stem,score) VALUES(?,'rating',?,3)")->execute([$id,'专业测试'.$name]);$professional[]=(int)$pdo->lastInsertId();
 }
-echo json_encode(['posts'=>$posts,'professional'=>$professional]);
+$conditions=[];
+if(($argv[2]??'')==='seed-conditions'){
+ require $root.'/app/import_conditions_20261007.php';require $root.'/app/condition_form.php';import_conditions_20261007($pdo);
+ foreach(document_condition_groups($pdo) as $code=>$rows){usort($rows,fn($a,$b)=>$b['tier_value']<=>$a['tier_value']);$conditions[$code]=$rows[0]['tier_label'];}
+}
+echo json_encode(['posts'=>$posts,'professional'=>$professional,'conditions'=>$conditions]);
