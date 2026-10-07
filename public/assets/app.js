@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  initConditionOrdering();
   document.querySelectorAll('.session-qr-links').forEach(group => {
     const links = group.querySelectorAll('a');
     if (links[0]) links[0].textContent = '评分入口';
@@ -49,6 +50,49 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
   initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initReviewStableScroll(); initInterviewStableScroll(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
 });
+
+function initConditionOrdering() {
+  const panel = document.querySelector('#standard-conditions');
+  const cards = [...(panel?.querySelectorAll('.dimension-score-card') || [])];
+  if (!cards.length) return;
+  const box = document.createElement('details'); box.className = 'condition-order panel';
+  box.innerHTML = '<summary>调整基本条件显示顺序</summary><p>拖动条目调整顺序，也可用上移、下移按钮。保存后同步到答题页，未启用的维度不会出现在答题页。</p><ol></ol><footer><button type="button" class="btn primary">保存顺序</button><span role="status" aria-live="polite"></span></footer>';
+  panel.querySelector('.grouped-standard-intro').after(box);
+  const list = box.querySelector('ol'), save = box.querySelector('footer button'), status = box.querySelector('[role=status]');
+  const map = new Map(cards.map(card => [card.querySelector('[name=dim_code]').value, card]));
+  let dragging = null, saving = false;
+  const changed = () => { status.textContent = '顺序已调整，点击保存生效'; };
+  const move = (li, direction) => {
+    if (saving) return;
+    const sibling = direction < 0 ? li.previousElementSibling : li.nextElementSibling;
+    if (sibling) { direction < 0 ? list.insertBefore(li, sibling) : list.insertBefore(sibling, li); changed(); }
+  };
+  for (const [code, card] of map) {
+    const li = document.createElement('li'); li.dataset.code = code; li.draggable = true;
+    li.innerHTML = '<span class="condition-drag" aria-hidden="true">⠿</span><b></b><button type="button" data-up>上移</button><button type="button" data-down>下移</button>';
+    const name = card.querySelector('h2').textContent; li.querySelector('b').textContent = name;
+    li.querySelector('[data-up]').setAttribute('aria-label', '上移'+name);
+    li.querySelector('[data-down]').setAttribute('aria-label', '下移'+name);
+    li.querySelector('[data-up]').addEventListener('click', () => move(li, -1));
+    li.querySelector('[data-down]').addEventListener('click', () => move(li, 1));
+    li.addEventListener('dragstart', e => { if(saving){e.preventDefault();return;} dragging = li; e.dataTransfer.setData('text/plain', code); e.dataTransfer.effectAllowed = 'move'; li.classList.add('is-dragging'); });
+    li.addEventListener('dragover', e => { if(!dragging||dragging===li||saving)return; e.preventDefault(); const after=e.clientY>li.getBoundingClientRect().top+li.offsetHeight/2; list.insertBefore(dragging,after?li.nextSibling:li); changed(); });
+    li.addEventListener('drop', e => e.preventDefault());
+    li.addEventListener('dragend', () => {li.classList.remove('is-dragging');dragging=null;});
+    list.append(li);
+  }
+  save.addEventListener('click', async () => {
+    if(saving)return; saving=true; save.disabled=true; box.querySelectorAll('li button').forEach(b=>b.disabled=true);status.textContent='正在保存…';
+    const data=new URLSearchParams({csrf:cards[0].querySelector('[name=csrf]').value});
+    const order=[...list.children].map(li=>li.dataset.code);order.forEach(code=>data.append('order[]',code));
+    try{
+      const response=await fetch('?page=standards&action=condition_order_save',{method:'POST',credentials:'same-origin',body:data});
+      const result=await response.json();if(!response.ok||!result.ok)throw new Error(result.error||'保存失败，请重试');
+      order.forEach(code=>panel.append(map.get(code)));status.textContent='已保存，答题页将按此顺序显示';
+    }catch(error){status.textContent=error.message||'网络异常，未保存，请重试';}
+    finally{saving=false;save.disabled=false;box.querySelectorAll('li button').forEach(b=>b.disabled=false);}
+  });
+}
 
 function initInterviewStableScroll() {
   if (new URLSearchParams(location.search).get('page') !== 'interviews') return;

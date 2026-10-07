@@ -9,6 +9,10 @@ $result=import_conditions_20261007($pdo);if($result['tiers']!==71||$result['dime
 $groups=document_condition_groups($pdo);$max=0;$high=[];$low=[];
 foreach($groups as $code=>$rows){$max+=max(array_column($rows,'tier_value'));usort($rows,fn($a,$b)=>$a['tier_value']<=>$b['tier_value']);$low['conditions'][$code]=$rows[0]['tier_label'];$high['conditions'][$code]=end($rows)['tier_label'];}
 if($max!=29)throw new Exception('Maximum must be 29');
+$reversed=array_reverse(array_keys($groups));save_condition_order($pdo,$reversed,1);
+if(array_keys(document_condition_groups($pdo))!==$reversed)throw new Exception('Candidate order differs');
+foreach([array_slice($reversed,1),[...$reversed,$reversed[0]],['unknown',...array_slice($reversed,1)]] as $invalid){try{save_condition_order($pdo,$invalid,1);throw new Exception('Invalid order accepted');}catch(InvalidArgumentException $e){}}
+if(array_keys(document_condition_groups($pdo))!==$reversed)throw new Exception('Invalid request changed order');
 validate_document_conditions($high,$groups);
 if(calculate_eval_score($high,1)!=50)throw new Exception('Maximum score');
 if(calculate_eval_score($low,2)!=round(2/29*50,1))throw new Exception('Minimum score');

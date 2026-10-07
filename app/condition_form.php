@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__.'/condition_order.php';
 // Versioned, document-derived conditions use explicit single-choice tiers.
 function document_condition_groups(PDO $pdo): array {
     $version=(int)$pdo->query("SELECT MAX(version) FROM scoring_standard WHERE status='published' AND category!='basic_quality'")->fetchColumn();
     $st=$pdo->prepare("SELECT * FROM scoring_standard WHERE version=? AND status='published' AND dim_code LIKE 'custom_doc20261007_%' ORDER BY sort,id");$st->execute([$version]);$groups=[];
     foreach($st->fetchAll(PDO::FETCH_ASSOC) as $row)$groups[$row['dim_code']][]=$row;
-    return $groups;
+    return order_condition_groups($pdo,$groups);
 }
 function validate_document_conditions(array $data,array $groups): void {
     foreach($groups as $code=>$rows){$answer=$data['conditions'][$code]??null;

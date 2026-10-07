@@ -30,6 +30,13 @@ $access=[
 ];
 if(!in_array($page,$access[$role]??[],true)){http_response_code(403);?><!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>无访问权限 · 任职管理</title><link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/extra.css"></head><body class="login-page"><aside class="login-visual" aria-label="任职管理系统介绍"><div class="login-grid" aria-hidden="true"></div><div class="login-brand"><img class="login-wordmark" src="/assets/sanqi-logo.png" alt="三奇"></div></aside><main class="login-main"><section class="login-card" aria-labelledby="forbidden-title"><div class="login-card-head"><small>访问受限</small><h1 id="forbidden-title">您暂无此页面权限</h1><p>如需访问该功能，请联系系统管理员调整账号角色。</p></div><a class="btn primary login-submit" href="/index.php?action=logout">返回登录</a></section></main></body></html><?php exit;}
 
+if($page==='standards'&&$action==='condition_order_save'){
+ header('Content-Type: application/json; charset=UTF-8');
+ if($_SERVER['REQUEST_METHOD']!=='POST'||!can('admin','hr')){http_response_code(403);echo json_encode(['error'=>'无此操作权限']);exit;}
+ check_csrf();
+ try{save_condition_order($pdo,(array)($_POST['order']??[]),(int)admin_user()['id']);audit('condition_order_save','basic_conditions');echo json_encode(['ok'=>true]);}
+ catch(InvalidArgumentException $e){http_response_code(409);echo json_encode(['error'=>$e->getMessage()],JSON_UNESCAPED_UNICODE);}exit;
+}
 interview_report_schema($pdo);
 if($page==='interview_report'){render_interview_pass_report($pdo,(int)($_GET['id']??0));exit;}
 

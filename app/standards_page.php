@@ -1,12 +1,14 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/condition_order.php';
 
 function render_grouped_standards_page(string $page, PDO $pdo): bool {
     if ($page !== 'standards') return false;
     admin_header('评分标准','standards');
-    $rows=$pdo->query('SELECT * FROM scoring_standard WHERE status!="retired" ORDER BY category,dim_code,sort,id')->fetchAll();
+    $rows=$pdo->query('SELECT * FROM scoring_standard WHERE status!="retired" ORDER BY sort,id')->fetchAll();
     $conditionGroups=[];$suzhiGroups=[];$initialSection=($_GET['section']??$_SESSION['standards_active_section']??'conditions')==='suzhi'?'suzhi':'conditions';unset($_SESSION['standards_active_section']);
     foreach($rows as $row){$target=$row['category']==='basic_quality'?'suzhiGroups':'conditionGroups';${$target}[$row['dim_code']][]=$row;}
+    $conditionGroups=order_condition_groups($pdo,$conditionGroups);
     page_head('职位管理 / 评分体系','基本条件与基本素质','基本条件按规则评分；基本素质采用固定五级自评题。'); ?>
     <section class="grouped-standards">
       <div class="standard-section-switch" role="tablist" aria-label="评分内容切换"><button type="button" class="btn <?=$initialSection==='conditions'?'is-active':''?>" role="tab" aria-selected="<?=$initialSection==='conditions'?'true':'false'?>" data-standard-show="conditions">基本条件测评</button><button type="button" class="btn <?=$initialSection==='suzhi'?'is-active':''?>" role="tab" aria-selected="<?=$initialSection==='suzhi'?'true':'false'?>" data-standard-show="suzhi">基本素质测评</button></div>
