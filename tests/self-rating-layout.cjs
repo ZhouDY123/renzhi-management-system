@@ -13,7 +13,9 @@ const assert=require('node:assert/strict');
   for(const width of [320,375,480]){
    await page.setViewportSize({width,height:850});
    assert.equal(await questions.first().locator('input[type=radio]').count(),5);
-   await questions.first().getByText('比较符合',{exact:true}).click();
+   await questions.first().locator('.rating-star[title="比较符合"]').click();
+   assert.equal(await questions.first().locator('.rating-star.lit').count(),4);
+   assert.equal(await questions.first().locator('.rating-star-answer strong').textContent(),'比较符合');
    assert.equal(await questions.first().locator('input:checked').inputValue(),'比较符合');
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   }
