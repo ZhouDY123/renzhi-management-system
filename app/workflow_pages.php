@@ -27,11 +27,21 @@ function render_talent_workflow(string $page, PDO $pdo): bool {
         <?php admin_footer();return true;
     }
     if($page==='preregister'){
+        if(!can('admin','hr')){http_response_code(403);return true;}
+        require_once __DIR__.'/appendix_detail.php';
+        appendix_schema($pdo);
+        if(isset($_GET['appendix_id'])){
+            header('Content-Type: application/json; charset=UTF-8');header('Cache-Control: no-store');
+            $detail=appendix_record_detail($pdo,(int)$_GET['appendix_id']);
+            if(!$detail)http_response_code(404);
+            echo json_encode($detail?:['error'=>'该测评记录不存在或已删除。'],JSON_UNESCAPED_UNICODE);return true;
+        }
         admin_header('测评记录','preregister');page_head('人才管理 / 在线测评','测评记录','求职者扫码自主选择岗位，交卷自动评分；总分超过 60 分可安排面试。');
-        $rows=$pdo->query("SELECT c.name,c.mobile,p.name post_name,a.submit_at,r.total_score,r.score_status FROM answer a JOIN candidate c ON c.id=a.candidate_id JOIN post p ON p.id=a.post_id JOIN result r ON r.answer_id=a.id ORDER BY a.id DESC")->fetchAll();?>
-        <section class="panel table-wrap"><table><thead><tr><th>求职者</th><th>应聘岗位</th><th>手机号</th><th>测评分数</th><th>面试资格</th><th>提交时间</th></tr></thead><tbody>
-        <?php if(!$rows):?><tr><td colspan="6" class="empty-cell">暂无测评记录</td></tr><?php endif;foreach($rows as $r):?><tr><td><?=e($r['name'])?></td><td><?=e($r['post_name'])?></td><td><?=e($r['mobile'])?></td><td><?=number_format((float)$r['total_score'],1)?></td><td><?=$r['score_status']==='completed'?((float)$r['total_score']>60?'可安排面试':'未达到 60 分以上'):'待评分'?></td><td><?=e($r['submit_at'])?></td></tr><?php endforeach;?></tbody></table></section>
-        <?php admin_footer();return true;
+        $rows=$pdo->query("SELECT a.id answer_id,c.name,c.mobile,p.name post_name,a.submit_at,r.total_score,r.score_status,s.status appendix_status,s.responses_json FROM answer a JOIN candidate c ON c.id=a.candidate_id JOIN post p ON p.id=a.post_id JOIN result r ON r.answer_id=a.id LEFT JOIN appendix_submission s ON s.answer_id=a.id ORDER BY a.id DESC")->fetchAll();?>
+        <link rel="stylesheet" href="/assets/appendix.css?v=<?=asset_mtime('appendix.css')?>">
+        <section class="panel table-wrap assessment-record-table"><table><thead><tr><th>求职者</th><th>应聘岗位</th><th>手机号</th><th>测评分数</th><th>面试资格</th><th>提交时间</th><th>附录信息</th></tr></thead><tbody>
+        <?php if(!$rows):?><tr><td colspan="7" class="empty-cell">暂无测评记录</td></tr><?php endif;foreach($rows as $r):$appendixState=appendix_record_status($r['appendix_status'],$r['responses_json']);?><tr><td><?=e($r['name'])?></td><td><?=e($r['post_name'])?></td><td><?=e($r['mobile'])?></td><td><?=number_format((float)$r['total_score'],1)?></td><td><?=$r['score_status']==='completed'?((float)$r['total_score']>60?'可安排面试':'未达到 60 分以上'):'待评分'?></td><td><?=e($r['submit_at'])?></td><td><div class="appendix-record-cell"><span class="appendix-record-status <?=e($appendixState['tone'])?>"><?=e($appendixState['label'])?></span><button type="button" class="appendix-detail-link" data-appendix-detail="<?=$r['answer_id']?>" aria-label="查看<?=e($r['name'])?>本次测评的附录详情">查看详情 <span aria-hidden="true">›</span></button></div></td></tr><?php endforeach;?></tbody></table></section>
+        <?php render_appendix_detail_dialog();admin_footer();return true;
     }
     return false;
 }

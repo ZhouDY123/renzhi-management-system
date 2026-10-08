@@ -80,7 +80,7 @@ const {chromium}=require('playwright');
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
    const brand=await page.locator('.h5-brand').boundingBox(),intro=await page.locator('.appendix-intro').boundingBox();
    assert(intro.y>=brand.y+brand.height+12,'No header overlap');
-   // One blank submission, one skip with malformed data; neither changes the 100-point result.
+   // One partial submission, one skip with malformed data; neither changes the 100-point result.
    const appendixCsrf=await page.locator('.appendix-form [name=csrf]').inputValue();
    const appendixAnswer=await page.locator('[name=appendix_answer_id]').inputValue();
    if(process.env.APPENDIX_SCREENSHOTS){mkdirSync(process.env.APPENDIX_SCREENSHOTS,{recursive:true});await page.screenshot({path:join(process.env.APPENDIX_SCREENSHOTS,'appendix-mobile.png'),fullPage:true});}
@@ -88,7 +88,9 @@ const {chromium}=require('playwright');
    assert.equal((await page.request.post(submitted.url(),{form:{csrf:appendixCsrf,appendix_answer_id:'999999'}})).status(),409,'Stale/foreign attempts rejected');
    const stranger=await browser.newContext();
    assert.equal((await stranger.request.get(submitted.url())).status(),403,'Another browser cannot access the appendix');await stranger.close();
-   const done=await page.request.post(submitted.url(),{form:{csrf:appendixCsrf,appendix_answer_id:appendixAnswer,intent:i?'skip':'submit',...(i?{appendix:'invalid'}:{})}});
+   const textName=await page.locator('.appendix-form textarea[name$="[value]"]').first().getAttribute('name');
+   const noteName=await page.locator('.appendix-form textarea[name$="[note]"]').first().getAttribute('name');
+   const done=await page.request.post(submitted.url(),{form:{csrf:appendixCsrf,appendix_answer_id:appendixAnswer,intent:i?'skip':'submit',...(i?{appendix:'invalid'}:{[textName]:'测试公司\n岗位：测试岗位\n任职时间：2020—2025',[noteName]:'<img src=x onerror=alert(1)>按原文展示'})}});
    assert((await done.text()).includes('100.0 / 100'),'All highest tiers must yield 100 overall after appendix');
    const reopened=await page.request.get(submitted.url());
    assert(!((await reopened.text()).includes('class="h5-card appendix-intro"')),'Completed appendix must not reopen');
@@ -125,15 +127,35 @@ const {chromium}=require('playwright');
   await page.reload();assert.equal(await page.locator('.appendix-library-row').count(),8);
   await page.goto(base+'/index.php?page=appendix&view=responses');assert.equal(await page.locator('.appendix-records details').count(),2);
   assert(!/Fatal error|Warning:/.test(await page.content()));
+  await page.goto(base+'/index.php?page=preregister');
+  assert(await page.getByRole('columnheader',{name:'附录信息'}).isVisible());
+  const filledRow=page.locator('tr').filter({has:page.locator('.appendix-record-status.filled')}).first();
+  await filledRow.locator('[data-appendix-detail]').click();
+  await page.locator('.appendix-detail-question').first().waitFor();
+  assert.equal(await page.locator('.appendix-detail-question').count(),8);
+  assert((await page.locator('.appendix-detail-body').innerText()).includes('测试公司'));
+  assert((await page.locator('.appendix-detail-body').innerText()).includes('<img src=x onerror=alert(1)>'));
+  assert.equal(await page.locator('.appendix-detail-body img').count(),0,'Answers must not execute as HTML');
+  if(process.env.APPENDIX_SCREENSHOTS)await page.screenshot({path:join(process.env.APPENDIX_SCREENSHOTS,'appendix-record-detail.png')});
+  await page.keyboard.press('Escape');
+  assert(!(await page.locator('.appendix-detail-modal').isVisible()));
+  const skippedRow=page.locator('tr').filter({hasText:'已跳过'}).first();
+  await skippedRow.locator('[data-appendix-detail]').click();await page.locator('.appendix-detail-empty').waitFor();
+  assert.equal(await page.locator('.appendix-detail-question').count(),0,'No previous candidate details may leak');
+  await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.querySelector('.appendix-detail-modal').getBoundingClientRect().right<=innerWidth));
+  if(process.env.APPENDIX_SCREENSHOTS)await page.screenshot({path:join(process.env.APPENDIX_SCREENSHOTS,'appendix-record-mobile.png')});
+  await page.keyboard.press('Escape');
+  assert.equal((await page.request.get(base+'/index.php?page=preregister&appendix_id=999999')).status(),404);
   for(const role of ['hr','lisi']){
    const context=await browser.newContext();const userPage=await context.newPage();
    await userPage.goto(base+'/index.php?page=login');await userPage.locator('[name=username]').fill(role);await userPage.locator('[name=password]').fill('admin123');await userPage.locator('.login-submit').click();await userPage.waitForURL(url=>!url.search.includes('page=login'),{waitUntil:'domcontentloaded'});
    assert.equal((await userPage.goto(base+'/index.php?page=appendix')).status(),role==='hr'?200:403);
    assert.equal((await userPage.goto(base+'/index.php?page=appendix&view=responses')).status(),role==='hr'?200:403);
+   assert.equal((await userPage.request.get(base+'/index.php?page=preregister&appendix_id=999999')).status(),role==='hr'?404:403);
    await context.close();
   }
   assert.deepEqual(fixture('inspect').fk,[]);
-  console.log('PASS: assessment full flow; appendix blank/skip, mobile spacing, CSRF, ownership, replay; admin CRUD, enabled state, navigation, restricted records; immutable questions and 100-point scores');
+  console.log('PASS: assessment full flow; appendix partial/skip, mobile spacing, CSRF, ownership, replay; admin CRUD, enabled state, detail modal, XSS escaping, restricted records; immutable questions and 100-point scores');
  }finally{
   if(browser)await browser.close();
   if(server&&server.exitCode===null){server.kill();await once(server,'exit');}
