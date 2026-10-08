@@ -44,4 +44,57 @@
   if (dialog.dataset.autoOpen === '1') {
     dialog.showModal();document.body.classList.add('appendix-dialog-open');
   }
+  const preview = document.querySelector('.appendix-preview-modal');
+  if (!preview) return;
+  let previewOpener = null;
+  const node = (tag, text, className) => {
+    const element = document.createElement(tag);
+    if (text !== undefined) element.textContent = text;
+    if (className) element.className = className;
+    return element;
+  };
+  document.querySelectorAll('[data-appendix-preview]').forEach(button => button.addEventListener('click', () => {
+    const question = JSON.parse(button.dataset.appendixPreview);
+    const body = preview.querySelector('.appendix-preview-body');
+    body.replaceChildren();
+    body.append(node('h3', question.section, 'appendix-section'));
+    if (Number(question.enabled) !== 1) body.append(node('p', '此题已停用，求职者当前不会看到。', 'appendix-preview-status'));
+    const field = node('fieldset', undefined, 'appendix-item');
+    const legend = node('legend', question.title);
+    legend.append(node('small', '选填'));
+    field.append(legend);
+    if (question.help) field.append(node('p', question.help));
+    const values = JSON.parse(question.options_json || '[]');
+    if (values.length) {
+      const choices = node('div', undefined, 'appendix-options');
+      values.forEach(value => {
+        const label = node('label');
+        const input = node('input');
+        input.type = 'radio';input.name = 'appendix-preview-answer';input.value = value;
+        label.append(input, node('span', value));choices.append(label);
+      });
+      field.append(choices);
+    } else {
+      const input = node('textarea');
+      input.rows = 3;input.maxLength = 2000;
+      input.placeholder = '自愿填写，也可留空或填写不提供';
+      input.setAttribute('aria-label', question.title);
+      field.append(input);
+    }
+    if (question.supplement) {
+      const label = node('label', question.supplement, 'appendix-note');
+      const input = node('textarea');
+      input.rows = 2;input.maxLength = 2000;input.placeholder = '补充说明（选填）';
+      label.append(input);field.append(label);
+    }
+    body.append(field);
+    previewOpener = button;
+    preview.showModal();body.scrollTop = 0;
+    document.body.classList.add('appendix-dialog-open');
+  }));
+  preview.querySelectorAll('[data-appendix-preview-close]').forEach(button => button.addEventListener('click', () => preview.close()));
+  preview.addEventListener('close', () => {
+    document.body.classList.remove('appendix-dialog-open');
+    previewOpener?.focus({preventScroll:true});
+  });
 })();
