@@ -36,6 +36,13 @@ const {chromium}=require('playwright');
   await page.reload();
   assert.deepEqual(await page.locator('#standard-conditions .dimension-score-card [name=dim_code]').evaluateAll(items=>items.map(e=>e.value)),expectedOrder);
   const send=async(action,data)=>{const r=await page.request.post(base+'/index.php?page=standards&action='+action,{form:{csrf,...data}});const text=await r.text();assert(!/Fatal error|Parse error|Warning:/.test(text));return text;};
+  await send('standard_dimension_create',{dim_name:'岗位培训认证',standard_scope:'conditions',dimension_type:'answer','answer_label[0]':'未取得','answer_label[1]':'已取得','tier_value[0]':'0','tier_value[1]':'1'});
+  await page.goto(base+'/index.php?page=standards');
+  const dimension=page.locator('.dimension-score-card').filter({has:page.getByRole('heading',{name:'岗位培训认证',exact:true})});
+  const customCode=await dimension.locator('[name=dim_code]').inputValue();
+  const tierIds=await dimension.locator('[name="rule_id[]"]').evaluateAll(es=>es.map(e=>e.value));
+  await send('standard_dimension_publish',{dim_code:customCode,'rule_id[0]':tierIds[0],'rule_id[1]':tierIds[1],'tier_value[0]':'0','tier_value[1]':'1'});
+  ids.conditions[customCode]='已取得';expectedOrder.push(customCode);
   const input=(post,stem)=>({post_id:String(post),stem,score:'3',sort:'1',enabled:'on'});
   for(let i=0;i<2;i++)await send('basic_rating_save',input(ids.posts[i],'测试岗位题'+i));
   await send('basic_rating_save',input(999999,'测试岗位无效'));
@@ -62,10 +69,30 @@ const {chromium}=require('playwright');
    const response=await page.request.post(base+'/h5.php?m=apply&t='+encodeURIComponent(token)+'&step=verify',{form:{csrf:await page.locator('[name=csrf]').first().inputValue(),name:'隔离测试'+i,mobile:'1390000080'+i,'profile[gender]':'男','profile[age]':'26','profile[edu]':'本科','profile[major]':'测试','profile[school_name]':'测试大学'}});
    const html=await response.text();assert(html.includes('测试岗位题'+i));assert(!html.includes('测试岗位题'+(1-i)));
    assert(!html.includes('name="politics"'));
-   assert.equal((html.match(/name="conditions\[/g)||[]).length,12);
+   assert.equal((html.match(/name="conditions\[/g)||[]).length,13);
+   assert(html.includes('原始满分30分'),'A newly created enabled question must change the displayed maximum');
    assert.deepEqual([...html.matchAll(/name="conditions\[([^\]]+)\]"/g)].map(m=>m[1]),expectedOrder);
    const value=name=>html.match(new RegExp('name="'+name+'"[^>]*value="([^"]*)"'))[1];
-   const form={csrf:value('csrf'),idempotency_key:value('idempotency_key')};
+   const form={csrf:value('csrf'),idempotency_key:value('idempotency_key'),assessment_attempt:value('assessment_attempt')};
+   if(i===0){
+    await send('basic_rating_save',input(ids.posts[0],'重新发布后的新题'));
+    await send('question_publish_v2',{post_id:String(ids.posts[0]),'professional_ids[]':String(ids.professional[0])});
+    await send('standard_custom_group_save',{dim_code:customCode,'rule_id[0]':tierIds[0],'rule_id[1]':tierIds[1],'tier_value[0]':'0','tier_value[1]':'9'});
+    const refreshed=await page.request.get(base+'/h5.php?m=apply&t='+encodeURIComponent(token)+'&step=form');
+    const oldHtml=await refreshed.text();
+    assert(oldHtml.includes('测试岗位题0')&&!oldHtml.includes('重新发布后的新题'),'Existing session keeps original questions after publishing');
+    assert(oldHtml.includes('原始满分30分'),'Existing session keeps original condition scores');
+    const fresh=await browser.newContext();
+    const entry=await fresh.request.get(base+'/h5.php?m=apply&t='+encodeURIComponent(token));
+    const freshCsrf=(await entry.text()).match(/name="csrf"[^>]*value="([^"]*)"/)[1];
+    const started=await fresh.request.post(base+'/h5.php?m=apply&t='+encodeURIComponent(token)+'&step=verify',{form:{csrf:freshCsrf,name:'版本隔离验证',mobile:'13900000899','profile[gender]':'男','profile[age]':'26','profile[edu]':'本科','profile[major]':'测试','profile[school_name]':'测试大学'}});
+    const newHtml=await started.text();assert(newHtml.includes('重新发布后的新题')&&!newHtml.includes('测试岗位题0'),'New session uses latest published paper');
+    assert(newHtml.includes('原始满分38分'),'New session uses updated condition scores');
+    await fresh.close();
+    const rejected=await page.request.post(base+'/h5.php?m=apply&t='+encodeURIComponent(token)+'&step=submit',{form:{...form,assessment_attempt:'0'}});
+    assert((await rejected.text()).includes('答题页面与当前会话不一致'),'Stale-tab submissions rejected');
+    await send('standard_custom_group_save',{dim_code:customCode,'rule_id[0]':tierIds[0],'rule_id[1]':tierIds[1],'tier_value[0]':'0','tier_value[1]':'1'});
+   }
    for(const [code,label] of Object.entries(ids.conditions))form['conditions['+code+']']=label;
    for(const match of html.matchAll(/name="(answers\[(?:base|post)_\d+\])"/g))form[match[1]]='完全符合';
    const submitted=await page.request.post(base+'/h5.php?m=apply&t='+encodeURIComponent(token)+'&step=submit',{form});
@@ -95,6 +122,9 @@ const {chromium}=require('playwright');
    const reopened=await page.request.get(submitted.url());
    assert(!((await reopened.text()).includes('class="h5-card appendix-intro"')),'Completed appendix must not reopen');
   }
+  const conditionSnapshots=fixture('condition-snapshots');
+  assert.equal(conditionSnapshots.length,2);
+  for(const snapshot of conditionSnapshots){assert.equal(snapshot[customCode],1);assert.equal(Object.values(snapshot).reduce((sum,n)=>sum+n,0),30);}
   await page.setViewportSize({width:1440,height:1000});
   await page.goto(base+'/index.php?page=appendix');
   assert.equal(await page.locator('.appendix-library-row').count(),8);
@@ -155,6 +185,11 @@ const {chromium}=require('playwright');
    assert.equal((await userPage.request.get(base+'/index.php?page=preregister&appendix_id=999999')).status(),role==='hr'?404:403);
    await context.close();
   }
+  const pinned=fixture('paper-snapshots');
+  assert.equal(pinned[0].version,1,'Submitted answer references original retired paper');
+  assert.equal(pinned[0].status,'retired');
+  assert.equal(pinned[0].stem_snapshot,'测试岗位题0');
+  assert.equal(pinned[0].max_score,3);
   assert.deepEqual(fixture('inspect').fk,[]);
   console.log('PASS: assessment full flow; appendix partial/skip, mobile spacing, CSRF, ownership, replay; admin CRUD, enabled state, detail modal, XSS escaping, restricted records; immutable questions and 100-point scores');
  }finally{

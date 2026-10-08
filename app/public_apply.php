@@ -65,7 +65,15 @@ if($m==='apply'&&$_SERVER['REQUEST_METHOD']==='POST'&&$step==='verify'){
     elseif($next=assessment_next_allowed($pdo,$name,$mobile)){$error=assessment_cooldown_message($next);$step='';unset($_SESSION['apply_auth']);}
     elseif(!assessment_profile_valid(assessment_profile($_POST))){$error='请完整填写性别、年龄、学历、专业和毕业学校，年龄须为 1–120 的整数';$step='';}
     else {
-        $questions=load_questions($postId);
+        // Capture one consistent server-side snapshot before the candidate starts.
+        $pdo->beginTransaction();
+        try {
+            $set=$pdo->prepare("SELECT id FROM question_set WHERE post_id=? AND status='published' ORDER BY version DESC,id DESC LIMIT 1");
+            $set->execute([$postId]);$setId=(int)$set->fetchColumn();
+            $questions=$setId?load_questions($postId,$setId):[];
+            $paperSnapshot=['question_set_id'=>$setId,'questions'=>$questions,'conditions'=>document_condition_groups($pdo),'standard_version'=>(int)$pdo->query("SELECT COALESCE(MAX(version),1) FROM scoring_standard WHERE status='published'")->fetchColumn()];
+            $pdo->commit();
+        }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
         if(!$questions){$error='该岗位暂无可自动评分的客观题，请联系 HR';$step='';}
         else {
             $st=$pdo->prepare('SELECT id,name FROM candidate WHERE mobile=?');$st->execute([$mobile]);$candidate=$st->fetch();
@@ -77,7 +85,7 @@ if($m==='apply'&&$_SERVER['REQUEST_METHOD']==='POST'&&$step==='verify'){
                     $pdo->prepare("INSERT INTO interview_pre_register(candidate_id,post_id,status) VALUES(?,?,'registered')")->execute([$candidate['id'],$postId]);$assessmentId=(int)$pdo->lastInsertId();
                     $pdo->prepare("INSERT INTO candidate_pre_register(post_id,name,mobile,status) VALUES(?,?,?,'verified')")->execute([$postId,$name,$mobile]);$regId=(int)$pdo->lastInsertId();
                     $pdo->commit();
-                    $_SESSION['apply_auth']=['reg_id'=>$regId,'post_id'=>$postId,'candidate_id'=>(int)$candidate['id'],'assessment_id'=>$assessmentId,'mobile'=>$mobile,'profile'=>assessment_profile($_POST),'expires'=>time()+max(10,(int)setting('apply_timeout','30'))*60];
+                    $_SESSION['apply_auth']=['paper'=>$paperSnapshot,'reg_id'=>$regId,'post_id'=>$postId,'candidate_id'=>(int)$candidate['id'],'assessment_id'=>$assessmentId,'mobile'=>$mobile,'profile'=>assessment_profile($_POST),'expires'=>time()+max(10,(int)setting('apply_timeout','30'))*60];
                     redirect('/h5.php?m=apply&t='.urlencode($t).'&step=form');
                 }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
             }

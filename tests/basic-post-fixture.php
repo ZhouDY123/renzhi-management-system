@@ -3,8 +3,15 @@ $root=$argv[1]??'';
 if(!str_contains($root,'recruit-basic-post-test-'))throw new RuntimeException('Disposable root required');
 require $root.'/app/bootstrap.php';
 $pdo=db();
+if(($argv[2]??'')==='paper-snapshots'){
+    echo json_encode($pdo->query("SELECT qs.version,qs.status,d.stem_snapshot,d.max_score FROM answer a JOIN candidate c ON c.id=a.candidate_id JOIN question_set qs ON qs.id=a.question_set_id JOIN answer_detail d ON d.answer_id=a.id WHERE c.name LIKE '隔离测试%' AND d.question_type='base' ORDER BY a.id,d.id")->fetchAll());exit;
+}
 if(($argv[2]??'')==='inspect'){
     echo json_encode(['questions'=>$pdo->query("SELECT id,post_id,stem FROM question_base WHERE stem LIKE '测试岗位%' ORDER BY id")->fetchAll(),'papers'=>$pdo->query("SELECT s.post_id,i.stem_snapshot FROM question_set s JOIN question_set_item i ON i.question_set_id=s.id WHERE i.question_type='base' ORDER BY s.id,i.id")->fetchAll(),'fk'=>$pdo->query('PRAGMA foreign_key_check')->fetchAll()]);exit;
+}
+if(($argv[2]??'')==='condition-snapshots'){
+    $st=$pdo->query("SELECT a.candidate_snapshot FROM answer a JOIN candidate c ON c.id=a.candidate_id WHERE c.name LIKE '隔离测试%' ORDER BY a.id");
+    echo json_encode(array_map(fn($snapshot)=>json_decode($snapshot,true)['condition_maxima']??null,$st->fetchAll(PDO::FETCH_COLUMN)));exit;
 }
 $posts=[];$professional=[];
 foreach(['甲','乙','空'] as $name){
