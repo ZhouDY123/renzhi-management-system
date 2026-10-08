@@ -83,3 +83,20 @@
     })
     .catch(() => {});
 })();
+
+(() => {
+  const groups = document.querySelectorAll('.rating-stars');
+  const refresh = group => {
+    const radios = [...group.querySelectorAll('input[type="radio"]')];
+    const selected = radios.findIndex(input => input.checked);
+    radios.forEach((input, index) => input.closest('.rating-star').classList.toggle('lit', selected >= 0 && index <= selected));
+    const answer = group.closest('.self-rating-question').querySelector('.rating-star-answer');
+    answer.replaceChildren();answer.classList.toggle('selected', selected >= 0);
+    if (selected < 0) { answer.textContent = '请选择符合程度'; return; }
+    const prefix = document.createElement('span');prefix.textContent = '当前选择：';
+    const value = document.createElement('strong');value.textContent = radios[selected].value;
+    answer.append(prefix, value);
+  };
+  groups.forEach(group => { group.addEventListener('change', () => refresh(group)); refresh(group); });
+  window.addEventListener('pageshow', () => groups.forEach(refresh));
+})();

@@ -367,3 +367,18 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 .paper-archive-index{display:flex;flex-direction:column;height:730px}.paper-archive-index .paper-archive-nav{align-content:start;flex:1;min-height:0;overflow:hidden}.paper-archive-index .paper-archive-pagination{margin-top:auto;flex:0 0 auto}
 
 @media(max-width:400px){.self-rating-question .self-rating-options>label{font-size:11px!important}}
+
+/* Blue star self-assessment: full answer text stays below the five controls. */
+.h5 .self-rating-question .rating-stars{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:12px 0 4px}
+.h5 .self-rating-question label.rating-star{display:block!important;position:relative;min-width:0;min-height:0;padding:0!important;margin:0!important;border:0;background:transparent;cursor:pointer}
+.h5 .self-rating-question .rating-star input[type=radio]{position:absolute;width:1px!important;height:1px!important;opacity:0;margin:0!important;padding:0;left:50%;top:50%}
+.h5 .self-rating-question .rating-star>span{display:flex;align-items:center;justify-content:center;height:58px;border:1px solid transparent;border-radius:14px;background:transparent;transition:background .18s,border-color .18s,transform .18s}
+.rating-star svg{display:block;width:38px;height:38px;overflow:visible;flex:none}.rating-star svg path{fill:#f1f5fc;stroke:#b5c6df;stroke-width:1.6;stroke-linejoin:round;transition:fill .18s,stroke .18s}
+.rating-star.lit svg path,.rating-star:has(input:checked) svg path{fill:#3972e8;stroke:#2d65da}
+.h5 .self-rating-question .rating-star input:checked+span{background:#edf3ff;border-color:#cadbfc;box-shadow:0 3px 9px #2e66d810}
+.h5 .self-rating-question .rating-star input:focus-visible+span{outline:3px solid #9dbdfa;outline-offset:2px}.rating-star:active>span{transform:scale(.94)}
+.rating-star-ends{display:flex;justify-content:space-between;gap:12px;padding:0 6px;margin:10px 0 16px;color:#8999ae;font-size:11px}
+.rating-star-answer{min-height:48px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;justify-content:center;padding:9px 12px;text-align:center;border-radius:12px;background:#f5f7fb;border:1px solid #edf1f7;color:#94a2b5;font-size:13px}.rating-star-answer.selected{color:#4775bc;background:#f0f5ff;border-color:#e3edff}.rating-star-answer strong{font-size:16px;font-weight:600;color:#285fca}
+@media(hover:hover){.h5 .self-rating-question .rating-star:hover>span{background:#f0f5ff;transform:translateY(-2px)}.rating-star:hover svg path{stroke:#477de3}}
+@media(max-width:360px){.h5 .self-rating-question .rating-stars{gap:3px}.rating-star svg{width:32px;height:32px}.h5 .self-rating-question .rating-star>span{height:52px}}
+@media(prefers-reduced-motion:reduce){.h5 .self-rating-question .rating-star>span,.rating-star svg path{transition:none}}
