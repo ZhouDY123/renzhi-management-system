@@ -1,0 +1,10 @@
+[
+  {"key":"single_parent","section":"家庭及个人计划","title":"是否为单亲家庭","options":["是","否","不提供"],"help":"自愿填写，可选择不提供。","supplement":"自愿补充说明"},
+  {"key":"siblings","section":"家庭及个人计划","title":"有无兄弟姐妹","options":["有","无","不提供"],"help":"如有，可在补充说明中填写兄弟、姐妹人数（不含本人）。","supplement":"兄弟____人，姐妹____人（不含本人）"},
+  {"key":"marital_status","section":"家庭及个人计划","title":"婚姻状况","options":["未婚","已婚","其他","不提供"],"help":"自愿填写，可选择不提供。","supplement":""},
+  {"key":"marriage_plan","section":"家庭及个人计划","title":"未来一年有无结婚打算","options":["有","无","尚未确定","不适用","不提供"],"help":"自填表之日起未来一年。","supplement":""},
+  {"key":"previous_company","section":"离职前公司及诉讼情况","title":"离职前公司","options":[],"help":"公司名称、岗位、任职起止时间；如适用，请填写“尚未离职”或“无工作经历”。","supplement":""},
+  {"key":"industry","section":"离职前公司及诉讼情况","title":"是否为相关行业","options":["同行业","相关行业","非相关行业","不适用","不提供"],"help":"与本次测评岗位所属行业的关系。","supplement":"原公司所属行业及补充说明"},
+  {"key":"litigation","section":"离职前公司及诉讼情况","title":"有无诉讼情况","options":["无","有","待核实","不提供"],"help":"统计口径：本人作为当事人的诉讼（含已结案、未结案）。","supplement":"如有，可简述案件类型、本人诉讼身份、当前状态及与岗位相关情况"},
+  {"key":"blood_type","section":"血型自愿登记","title":"血型（自愿填写）","options":["A型","B型","AB型","O型","其他","不清楚","不提供"],"help":"仅作自愿信息登记，不作性格、工作能力或岗位匹配测评依据，不参与加分、扣分及录用判断。","supplement":""}
+]

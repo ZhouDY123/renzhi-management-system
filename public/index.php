@@ -23,8 +23,8 @@ if($page==='interviewers')redirect('/index.php?page=users');
 if($role==='interviewer'&&!in_array($action,['','review','password_change','export','export_interviews','review_states','score_reset'],true)){http_response_code(403);exit('无此操作权限');}
 
 $access=[
- 'admin'=>['dashboard','posts','standards','questions','paper_archive','preregister','talent','talent_pool','interviews','interview_results','interview_questionnaire','interview_report','users','settings','logs','qrcode'],
- 'hr'=>['dashboard','posts','standards','questions','paper_archive','preregister','talent','talent_pool','interviews','interview_results','interview_questionnaire','interview_report','users','qrcode','password'],
+ 'admin'=>['dashboard','posts','standards','appendix','questions','paper_archive','preregister','talent','talent_pool','interviews','interview_results','interview_questionnaire','interview_report','users','settings','logs','qrcode'],
+ 'hr'=>['dashboard','posts','standards','appendix','questions','paper_archive','preregister','talent','talent_pool','interviews','interview_results','interview_questionnaire','interview_report','users','qrcode','password'],
  'leader'=>[],
  'interviewer'=>['dashboard','talent','talent_pool','interview_results','interview_questionnaire','interview_report','password']
 ];
@@ -37,6 +37,7 @@ if($page==='standards'&&$action==='condition_order_save'){
  try{save_condition_order($pdo,(array)($_POST['order']??[]),(int)admin_user()['id']);audit('condition_order_save','basic_conditions');echo json_encode(['ok'=>true]);}
  catch(InvalidArgumentException $e){http_response_code(409);echo json_encode(['error'=>$e->getMessage()],JSON_UNESCAPED_UNICODE);}exit;
 }
+if($page==='appendix'){require ROOT_PATH.'/app/appendix_admin.php';appendix_admin($pdo,$action);}
 interview_report_schema($pdo);
 if($page==='interview_report'){render_interview_pass_report($pdo,(int)($_GET['id']??0));exit;}
 

@@ -69,10 +69,71 @@ const {chromium}=require('playwright');
    for(const [code,label] of Object.entries(ids.conditions))form['conditions['+code+']']=label;
    for(const match of html.matchAll(/name="(answers\[(?:base|post)_\d+\])"/g))form[match[1]]='完全符合';
    const submitted=await page.request.post(base+'/h5.php?m=apply&t='+encodeURIComponent(token)+'&step=submit',{form});
-   assert((await submitted.text()).includes('100.0 / 100'),'All highest tiers must yield 100 overall');
+   const appendixHtml=await submitted.text();
+   assert(appendixHtml.includes('补充信息'),'Assessment must lead to the separate appendix page');
+   assert(appendixHtml.includes('不影响测评结果'),'Appendix is optional and unscored');
+   await page.goto(submitted.url());
+   assert.equal(await page.locator('.appendix-item').count(),8);
+   assert.equal(await page.locator('.appendix-form [required]').count(),0);
+   assert.equal(await page.locator('.appendix-form input[type=radio]:checked').count(),0);
+   await page.setViewportSize({width:390,height:844});
+   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
+   const brand=await page.locator('.h5-brand').boundingBox(),intro=await page.locator('.appendix-intro').boundingBox();
+   assert(intro.y>=brand.y+brand.height+12,'No header overlap');
+   // One blank submission, one skip with malformed data; neither changes the 100-point result.
+   const appendixCsrf=await page.locator('.appendix-form [name=csrf]').inputValue();
+   const appendixAnswer=await page.locator('[name=appendix_answer_id]').inputValue();
+   if(process.env.APPENDIX_SCREENSHOTS){mkdirSync(process.env.APPENDIX_SCREENSHOTS,{recursive:true});await page.screenshot({path:join(process.env.APPENDIX_SCREENSHOTS,'appendix-mobile.png'),fullPage:true});}
+   assert.equal((await page.request.post(submitted.url(),{form:{csrf:'invalid',appendix_answer_id:appendixAnswer}})).status(),419,'CSRF enforced');
+   assert.equal((await page.request.post(submitted.url(),{form:{csrf:appendixCsrf,appendix_answer_id:'999999'}})).status(),409,'Stale/foreign attempts rejected');
+   const stranger=await browser.newContext();
+   assert.equal((await stranger.request.get(submitted.url())).status(),403,'Another browser cannot access the appendix');await stranger.close();
+   const done=await page.request.post(submitted.url(),{form:{csrf:appendixCsrf,appendix_answer_id:appendixAnswer,intent:i?'skip':'submit',...(i?{appendix:'invalid'}:{})}});
+   assert((await done.text()).includes('100.0 / 100'),'All highest tiers must yield 100 overall after appendix');
+   const reopened=await page.request.get(submitted.url());
+   assert(!((await reopened.text()).includes('class="h5-card appendix-intro"')),'Completed appendix must not reopen');
+  }
+  await page.setViewportSize({width:1440,height:1000});
+  await page.goto(base+'/index.php?page=appendix');
+  assert.equal(await page.locator('.appendix-library-row').count(),8);
+  const nav=await page.locator('.sidebar nav a').evaluateAll(es=>es.map(e=>e.getAttribute('href')));
+  assert.equal(nav.indexOf('/index.php?page=appendix'),nav.indexOf('/index.php?page=standards')+1,'Appendix navigation follows basic questions');
+  if(process.env.APPENDIX_SCREENSHOTS)await page.screenshot({path:join(process.env.APPENDIX_SCREENSHOTS,'appendix-admin.png'),fullPage:true});
+  await page.locator('[data-appendix-create]').click();
+  assert(await page.locator('.appendix-modal').isVisible());
+  assert(!(await page.locator('[data-appendix-options]').isVisible()));
+  assert(await page.locator('#appendix-editor [name=options]').isDisabled());
+  await page.locator('#appendix-editor [name=title]').fill('自动测试附录');
+  await page.locator('#appendix-editor [name=type]').selectOption('select');
+  await page.locator('#appendix-editor [name=options]').fill('是\n否\n不提供');
+  assert(await page.locator('[data-appendix-options]').isVisible());
+  await page.locator('#appendix-editor button[type=submit]').click();await page.waitForLoadState('networkidle');
+  assert.equal(await page.locator('.appendix-library-row').count(),9);
+  const created=page.locator('.appendix-library-row').filter({hasText:'自动测试附录'});
+  await created.getByRole('button',{name:'编辑'}).click();
+  assert(await page.locator('#appendix-editor [name=enabled]').isChecked());
+  await page.locator('#appendix-editor [name=title]').fill('自动测试附录修改');
+  await page.locator('#appendix-editor button[type=submit]').click();await page.waitForLoadState('networkidle');
+  const changed=page.locator('.appendix-library-row').filter({hasText:'自动测试附录修改'});
+  assert((await changed.textContent()).includes('已启用'));
+  const extraId=await changed.locator('[name=id]').first().inputValue();
+  const adminCsrf=await page.locator('#appendix-editor [name=csrf]').inputValue();
+  assert.equal((await page.request.post(base+'/index.php?page=appendix&action=appendix_toggle',{form:{csrf:'invalid',id:extraId}})).status(),419);
+  await page.request.post(base+'/index.php?page=appendix&action=appendix_toggle',{form:{csrf:adminCsrf,id:extraId}});
+  await page.reload();assert((await changed.textContent()).includes('已停用'));
+  await page.request.post(base+'/index.php?page=appendix&action=appendix_delete',{form:{csrf:adminCsrf,id:extraId}});
+  await page.reload();assert.equal(await page.locator('.appendix-library-row').count(),8);
+  await page.goto(base+'/index.php?page=appendix&view=responses');assert.equal(await page.locator('.appendix-records details').count(),2);
+  assert(!/Fatal error|Warning:/.test(await page.content()));
+  for(const role of ['hr','lisi']){
+   const context=await browser.newContext();const userPage=await context.newPage();
+   await userPage.goto(base+'/index.php?page=login');await userPage.locator('[name=username]').fill(role);await userPage.locator('[name=password]').fill('admin123');await userPage.locator('.login-submit').click();await userPage.waitForURL(url=>!url.search.includes('page=login'),{waitUntil:'domcontentloaded'});
+   assert.equal((await userPage.goto(base+'/index.php?page=appendix')).status(),role==='hr'?200:403);
+   assert.equal((await userPage.goto(base+'/index.php?page=appendix&view=responses')).status(),role==='hr'?200:403);
+   await context.close();
   }
   assert.deepEqual(fixture('inspect').fk,[]);
-  console.log('PASS: post validation, filtering, default selection, publishing counts, isolated papers, immutable snapshots and candidate questions');
+  console.log('PASS: assessment full flow; appendix blank/skip, mobile spacing, CSRF, ownership, replay; admin CRUD, enabled state, navigation, restricted records; immutable questions and 100-point scores');
  }finally{
   if(browser)await browser.close();
   if(server&&server.exitCode===null){server.kill();await once(server,'exit');}
