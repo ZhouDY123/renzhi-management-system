@@ -44,7 +44,7 @@ function appendix_admin(PDO $pdo,string $action): never {
                 if(!$st->rowCount())throw new InvalidArgumentException('题目不存在或已删除。');
                 audit($action,'appendix:'.$id);
             }else{http_response_code(400);exit('操作无效');}
-            flash('已保存。变更用于后续新打开的附录，不影响历史填写记录。');redirect('/index.php?page=appendix');
+            flash('已保存。变更用于后续新打开的附录，不影响历史填写记录。');redirect('/index.php?page=appendix'.($action==='appendix_save'&&($_POST['save_continue']??'')==='1'?'&create=1&section='.rawurlencode(trim((string)$_POST['section'])):''));
         }catch(InvalidArgumentException $e){
             $error=$e->getMessage();
             $editing=['id'=>0,'title'=>'','section'=>'补充信息','help'=>'','supplement'=>'','sort'=>0];
@@ -58,7 +58,7 @@ function appendix_admin(PDO $pdo,string $action): never {
     page_head('题目管理 / 自愿登记','附录题目','所有附录均为选填，不计分、不参与面试安排及录用判断。','<a class="btn secondary" href="?page=appendix&view=responses">填写记录</a>'.(($_GET['view']??'')==='responses'?'<a class="btn primary" href="?page=appendix&create=1">＋ 新增附录题目</a>':'<button type="button" class="btn primary" data-appendix-create>＋ 新增附录题目</button>'));
     if(($_GET['view']??'')==='responses'){appendix_admin_responses($pdo);admin_footer();exit;}
     $rows=$pdo->query('SELECT * FROM appendix_question WHERE deleted=0 ORDER BY sort,id')->fetchAll();
-    $defaults=['id'=>0,'section'=>'补充信息','title'=>'','options_json'=>'[]','help'=>'','supplement'=>'','sort'=>count($rows)+1,'enabled'=>1];
+    $defaults=['id'=>0,'section'=>trim((string)($_GET['section']??'补充信息')),'title'=>'','options_json'=>'[]','help'=>'','supplement'=>'','sort'=>count($rows)+1,'enabled'=>1];
     $autoOpen=$editing!==null||isset($_GET['create']);
     $editing=$editing??$defaults;
     $options=json_decode($editing['options_json'],true)?:[];
@@ -79,7 +79,7 @@ function appendix_admin(PDO $pdo,string $action): never {
     <label>额外补充输入框的名称 <em>选填</em><small>需要求职者另外补充文字时填写；留空则不显示额外输入框。</small><input name="supplement" maxlength="300" placeholder="例如：请补充说明具体情况" value="<?=e($editing['supplement'])?>"></label>
     <div class="appendix-field-pair appendix-settings-row"><label>显示顺序<small>数字越小，越靠前。</small><input type="number" name="sort" min="0" max="99999" step="1" value="<?=e((string)$editing['sort'])?>" required></label>
     <label class="appendix-enabled"><input type="checkbox" name="enabled" <?=$editing['enabled']?'checked':''?>> 启用此题</label>
-    </div></div><footer class="appendix-modal-footer"><span>选填 · 不计分</span><button type="button" class="btn secondary" data-appendix-close>取消</button><button type="submit" class="btn primary">保存题目</button></footer></form></dialog>
+    </div></div><footer class="appendix-modal-footer"><span>选填 · 不计分</span><button type="button" class="btn secondary" data-appendix-close>取消</button><button type="submit" class="btn secondary" data-save-continue>保存并继续新增</button><button type="submit" class="btn primary">保存题目</button></footer></form></dialog>
     <dialog class="appendix-modal appendix-preview-modal" aria-labelledby="appendix-preview-title">
     <header class="appendix-modal-head"><div><small>求职者视角</small><h2 id="appendix-preview-title">附录题目预览</h2><p>可试填，预览内容不会保存。</p></div><button type="button" data-appendix-preview-close class="appendix-close" aria-label="关闭预览">×</button></header>
     <div class="appendix-preview-body"></div><footer class="appendix-modal-footer"><span>选填 · 不计分</span><button type="button" class="btn primary" data-appendix-preview-close>关闭预览</button></footer></dialog><script src="/assets/appendix-admin.js?v=<?=asset_mtime('appendix-admin.js')?>" defer></script><?php admin_footer();exit;

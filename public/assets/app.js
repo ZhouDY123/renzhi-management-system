@@ -290,6 +290,11 @@ function initFormValidation() {
       }); invalid[0].focus(); return;
     }
     const btn = e.submitter;
+    if (form.querySelector('[data-save-continue]')) {
+      let intent = form.querySelector('input[name="save_continue"]');
+      if (!intent) { intent = document.createElement('input'); intent.type = 'hidden'; intent.name = 'save_continue'; form.append(intent); }
+      intent.value = btn?.hasAttribute('data-save-continue') ? '1' : '0';
+    }
     if (btn && !form.dataset.confirmPending) { btn.setAttribute('aria-busy', 'true'); btn.disabled = true; btn.textContent = '正在处理…'; }
   }));
 }
@@ -1236,7 +1241,7 @@ function initBasicRatingModal() {
   const close = () => {
     const discard = () => {
       dirty = false; closeDialog(overlay);
-      const url = new URL(location.href); url.searchParams.delete('basic_edit');
+      const url = new URL(location.href); url.searchParams.delete('basic_edit'); url.searchParams.delete('basic_new');
       history.replaceState(history.state, '', url);
     };
     if (dirty) showConfirm({title:'放弃未保存的修改？',description:'关闭后，本次填写的内容不会保存。',actionLabel:'放弃修改',onConfirm:discard});
@@ -1257,7 +1262,7 @@ function initBasicRatingModal() {
     openDialog(overlay, form.elements.namedItem('stem'));
   });
   document.querySelector('[data-standard-show].is-active')?.click();
-  if (Number(form.elements.namedItem('id').value) > 0) openDialog(overlay, form.elements.namedItem('stem'));
+  if (Number(form.elements.namedItem('id').value) > 0 || new URLSearchParams(location.search).has('basic_new')) openDialog(overlay, form.elements.namedItem('stem'));
 }
 
 function initSelectedFields() {
