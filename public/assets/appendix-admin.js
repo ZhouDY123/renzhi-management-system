@@ -25,6 +25,7 @@
     type.value = values.length ? 'select' : 'text';
     options.value = values.join('\n');
     form.elements.enabled.checked = Number(data.enabled) === 1;
+    form.querySelector('[data-save-continue]').hidden = Number(data.id) > 0;
     dialog.querySelector('h2').textContent = Number(data.id) ? '编辑附录题目' : '新增附录题目';
     updateType();
     dialog.showModal();

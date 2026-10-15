@@ -418,3 +418,5 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 .modal-form .searchable-post-option[aria-selected="true"]{background:#edf4ff;color:#245ab2;font-weight:600}
 .modal-form .searchable-post-option[aria-selected="true"]::after{content:'已选';position:absolute;right:14px;top:12px;font-size:12px}
 .modal-form .searchable-post-list[hidden]{display:none}
+
+[data-save-continue][hidden]{display:none!important}

@@ -1215,7 +1215,7 @@ function initFormModals() {
     dialog.append(top); form.classList.add('modal-form'); dialog.append(form); overlay.append(dialog); document.body.append(overlay);
     if (split) split.classList.add('modalized-layout'); if (parent && !parent.children.length && parent.parentElement?.classList.contains('split')) parent.remove();
     let dirty = false; form.addEventListener('input', () => { dirty = true; });
-    const open = () => openDialog(overlay, form.querySelector(focusables));
+    const open = () => { if (form.matches('.question-editor') && !Number(form.elements.namedItem('id').value) && !form.elements.namedItem('score').value) form.elements.namedItem('score').value = '10'; openDialog(overlay, form.querySelector(focusables)); };
     const discard = () => { form.reset(); if (form.matches('.question-editor')) { clearQuestionDraft(form); const url = new URL(location.href); url.searchParams.delete('post_id'); history.replaceState(null, '', url); } form.dispatchEvent(new CustomEvent('resetQuestionOptionsEditor')); dirty=false; closeDialog(overlay); };
     const close = () => dirty ? showConfirm({title:'放弃未保存的修改？',description:'关闭后，本次填写的内容不会保存。',actionLabel:'放弃修改',onConfirm:discard}) : discard();
     top.querySelector('[data-dialog-close]').addEventListener('click', close); overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
@@ -1280,7 +1280,7 @@ function initBasicRatingModal() {
     clearQuestionDraft(form);
     form.querySelectorAll('.field-error').forEach(error => error.remove());
     form.querySelectorAll('[aria-invalid]').forEach(field => field.removeAttribute('aria-invalid'));
-    title.textContent = '新增基本素质题'; dirty = false;
+    title.textContent = '新增基本素质题'; form.querySelector('[data-save-continue]').hidden = false; dirty = false;
     openDialog(overlay, form.elements.namedItem('stem'));
   });
   document.querySelector('[data-standard-show].is-active')?.click();
