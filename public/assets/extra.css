@@ -382,3 +382,6 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 @media(hover:hover){.h5 .self-rating-question .rating-star:hover>span{background:#f0f5ff;transform:translateY(-2px)}.rating-star:hover svg path{stroke:#477de3}}
 @media(max-width:360px){.h5 .self-rating-question .rating-stars{gap:3px}.rating-star svg{width:32px;height:32px}.h5 .self-rating-question .rating-star>span{height:52px}}
 @media(prefers-reduced-motion:reduce){.h5 .self-rating-question .rating-star>span,.rating-star svg path{transition:none}}
+
+.btn.secondary[data-save-continue]{background:#e8f2ff;border-color:#bed9fa;color:#2563a6}
+.btn.secondary[data-save-continue]:hover{background:#d9eaff;border-color:#9fc5f2}

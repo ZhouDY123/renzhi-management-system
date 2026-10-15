@@ -1176,6 +1176,19 @@ function initPostDuplicateConfirmation() {
   }, true);
 }
 
+function clearQuestionDraft(form) {
+  form.reset();
+  for (const field of form.querySelectorAll('input,select,textarea')) {
+    if (field.type === 'hidden' || field.readOnly) continue;
+    if (field.type === 'checkbox' || field.type === 'radio') field.checked = false;
+    else field.value = '';
+  }
+  const id = form.elements.namedItem('id'); if (id) id.value = '0';
+  const intent = form.elements.namedItem('save_continue'); if (intent) intent.value = '0';
+  form.querySelectorAll('.field-error,.form-error').forEach(node => node.remove());
+  form.querySelectorAll('[aria-invalid]').forEach(node => node.removeAttribute('aria-invalid'));
+}
+
 function initFormModals() {
   const forms = [...document.querySelectorAll('form.form-panel:not(.settings-form):not(.password-settings-form),form.dimension-form')]; if (!forms.length) return;
   const head = document.querySelector('.page-head'); let actions = head?.querySelector('.page-actions');
@@ -1190,7 +1203,7 @@ function initFormModals() {
     if (split) split.classList.add('modalized-layout'); if (parent && !parent.children.length && parent.parentElement?.classList.contains('split')) parent.remove();
     let dirty = false; form.addEventListener('input', () => { dirty = true; });
     const open = () => openDialog(overlay, form.querySelector(focusables));
-    const discard = () => { form.reset(); form.dispatchEvent(new CustomEvent('resetQuestionOptionsEditor')); dirty=false; closeDialog(overlay); };
+    const discard = () => { form.reset(); if (form.matches('.question-editor')) { clearQuestionDraft(form); const url = new URL(location.href); url.searchParams.delete('post_id'); history.replaceState(null, '', url); } form.dispatchEvent(new CustomEvent('resetQuestionOptionsEditor')); dirty=false; closeDialog(overlay); };
     const close = () => dirty ? showConfirm({title:'放弃未保存的修改？',description:'关闭后，本次填写的内容不会保存。',actionLabel:'放弃修改',onConfirm:discard}) : discard();
     top.querySelector('[data-dialog-close]').addEventListener('click', close); overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     const params = new URLSearchParams(location.search); const isEditing = params.has('edit'); const autoOpen = i === 0 && (params.has('new') || isEditing);
@@ -1240,7 +1253,7 @@ function initBasicRatingModal() {
   form.addEventListener('change', () => { dirty = true; });
   const close = () => {
     const discard = () => {
-      dirty = false; closeDialog(overlay);
+      clearQuestionDraft(form); dirty = false; closeDialog(overlay);
       const url = new URL(location.href); url.searchParams.delete('basic_edit'); url.searchParams.delete('basic_new');
       history.replaceState(history.state, '', url);
     };
@@ -1251,11 +1264,7 @@ function initBasicRatingModal() {
   overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
   form.querySelector('[data-basic-rating-cancel]').addEventListener('click', close);
   trigger.addEventListener('click', () => {
-    form.reset();
-    Object.entries({id:'0',stem:'',score:'3',sort:'1'}).forEach(([name,value]) => { form.elements.namedItem(name).value = value; });
-    form.elements.namedItem('enabled').checked = true;
-    const post = form.elements.namedItem('post_id');
-    if (post) post.value = post.dataset.defaultPost === '0' ? '' : post.dataset.defaultPost;
+    clearQuestionDraft(form);
     form.querySelectorAll('.field-error').forEach(error => error.remove());
     form.querySelectorAll('[aria-invalid]').forEach(field => field.removeAttribute('aria-invalid'));
     title.textContent = '新增基本素质题'; dirty = false;

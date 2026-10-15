@@ -32,10 +32,12 @@
     dialog.querySelector('.appendix-modal-body').scrollTop = 0;
     form.elements.title.focus({preventScroll:true});
   }
-  document.querySelectorAll('[data-appendix-create]').forEach(button => button.addEventListener('click', () => show(JSON.parse(dialog.dataset.defaults), button)));
+  document.querySelectorAll('[data-appendix-create]').forEach(button => button.addEventListener('click', () => show({id:0,section:'',title:'',sort:'',enabled:0}, button)));
   document.querySelectorAll('[data-appendix-edit]').forEach(button => button.addEventListener('click', () => show(JSON.parse(button.dataset.appendixEdit), button)));
   dialog.querySelectorAll('[data-appendix-close]').forEach(button => button.addEventListener('click', () => dialog.close()));
   dialog.addEventListener('close', () => {
+    clearQuestionDraft(form); type.value = 'text'; updateType();
+    const url = new URL(location.href); ['create','section','question'].forEach(key => url.searchParams.delete(key)); history.replaceState(null, '', url);
     document.body.classList.remove('appendix-dialog-open');
     opener?.focus({preventScroll:true});
   });
