@@ -913,13 +913,17 @@ function initQuestionPaperBuilder() {
 }
 
 function initSearchablePostSelects() {
+  document.querySelectorAll('.question-editor select[name="post_id"],.basic-rating-editor select[name="post_id"]').forEach(select => {
+    const host = document.createElement('span'); host.className = 'searchable-post-select'; host.dataset.searchablePostSelect = '';
+    select.before(host); host.append(select);
+  });
   document.querySelectorAll('[data-searchable-post-select]').forEach((host, index) => {
     const select = host.querySelector('select'); if (!select || host.dataset.enhanced) return;
     host.dataset.enhanced = '1';
-    const options = [...select.options].map(option => ({value: option.value, label: option.textContent.trim()}));
+    const options = [...select.options].filter(option => option.value && !option.disabled).map(option => ({value: option.value, label: option.textContent.trim()}));
     const listId = `searchable-post-list-${index}`;
     const control = document.createElement('div'); control.className = 'searchable-post-control';
-    const input = document.createElement('input'); input.type = 'search'; input.autocomplete = 'off'; input.placeholder = '输入岗位名称、部门或公司搜索'; input.value = select.value ? (select.selectedOptions[0]?.textContent.trim() || '') : ''; input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-expanded', 'false'); input.setAttribute('aria-controls', listId); input.setAttribute('aria-label', '搜索并选择发布岗位');
+    const input = document.createElement('input'); input.type = 'search'; input.autocomplete = 'off'; input.placeholder = '输入岗位名称、部门或公司搜索'; input.value = select.value ? (select.selectedOptions[0]?.textContent.trim() || '') : ''; input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-expanded', 'false'); input.setAttribute('aria-controls', listId); input.setAttribute('aria-label', '搜索并选择岗位'); input.required = select.required; select.tabIndex = -1;
     const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'searchable-post-clear'; clear.textContent = '×'; clear.setAttribute('aria-label', '清除岗位搜索'); clear.hidden = true;
     const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'searchable-post-toggle'; toggle.setAttribute('aria-label', '展开岗位列表'); toggle.setAttribute('aria-expanded', 'false'); toggle.innerHTML = '<span aria-hidden="true">⌄</span>';
     const list = document.createElement('div'); list.className = 'searchable-post-list'; list.id = listId; list.setAttribute('role', 'listbox'); list.hidden = true;
@@ -938,7 +942,7 @@ function initSearchablePostSelects() {
       if (!option) return;
       select.value = option.value;
       select.dispatchEvent(new Event('change', {bubbles:true}));
-      input.value = option.label;
+      input.value = option.label; input.setCustomValidity('');
       setOpen(false);
       render();
     };
@@ -953,24 +957,31 @@ function initSearchablePostSelects() {
       if (activeIndex >= matches.length) activeIndex = matches.length - 1;
       [...list.querySelectorAll('.searchable-post-option')].forEach((item, itemIndex) => {
         item.classList.toggle('is-active', itemIndex === activeIndex);
-        if (itemIndex === activeIndex) input.setAttribute('aria-activedescendant', item.id);
+        if (itemIndex === activeIndex) { input.setAttribute('aria-activedescendant', item.id); item.scrollIntoView({block:'nearest'}); }
       });
       if (activeIndex < 0) input.removeAttribute('aria-activedescendant');
       return matches;
     };
     const openList = (showAll = false) => { if (showAll) input.value = ''; setOpen(true); render(); };
-    input.addEventListener('focus', () => { input.select(); openList(false); });
-    input.addEventListener('input', () => { activeIndex = -1; openList(false); });
+    input.addEventListener('focus', () => { input.select(); openList(true); });
+    input.addEventListener('input', () => { activeIndex = -1; input.setCustomValidity(select.required ? '请从列表中选择岗位' : ''); openList(false); });
     input.addEventListener('keydown', event => {
       const matches = visibleOptions();
       if (event.key === 'ArrowDown') { event.preventDefault(); if (!open) openList(false); activeIndex = Math.min(activeIndex + 1, matches.length - 1); render(); }
       else if (event.key === 'ArrowUp') { event.preventDefault(); if (!open) openList(false); activeIndex = Math.max(activeIndex - 1, 0); render(); }
       else if (event.key === 'Enter' && open) { event.preventDefault(); choose(matches[activeIndex] || (matches.length === 1 ? matches[0] : null)); }
-      else if (event.key === 'Escape') { event.preventDefault(); input.value = selectedLabel(); setOpen(false); render(); }
+      else if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); input.value = selectedLabel(); setOpen(false); render(); }
     });
     input.addEventListener('blur', () => window.setTimeout(() => { if (!host.contains(document.activeElement)) { input.value = selectedLabel(); setOpen(false); render(); } }, 120));
     clear.addEventListener('click', () => { input.value = ''; select.value = ''; select.dispatchEvent(new Event('change', {bubbles:true})); input.focus(); openList(false); });
     toggle.addEventListener('click', () => { if (open) { input.value = selectedLabel(); setOpen(false); render(); } else { input.focus(); openList(true); } });
+    const syncSelection = () => { input.value = selectedLabel(); input.setCustomValidity(''); setOpen(false); render(); };
+    select.addEventListener('change', syncSelection);
+    host.closest('form')?.addEventListener('questionDraftCleared', syncSelection);
+    document.addEventListener('pointerdown', event => { if (!host.contains(event.target)) syncSelection(); });
+    input.addEventListener('invalid', () => input.focus());
+    select.addEventListener('invalid', () => input.focus());
+    render();
   });
 }
 
@@ -1185,6 +1196,7 @@ function clearQuestionDraft(form) {
     else field.value = '';
   }
   const id = form.elements.namedItem('id'); if (id) id.value = '0';
+  form.dispatchEvent(new CustomEvent('questionDraftCleared'));
   const intent = form.elements.namedItem('save_continue'); if (intent) intent.value = '0';
   form.querySelectorAll('.field-error,.form-error').forEach(node => node.remove());
   form.querySelectorAll('[aria-invalid]').forEach(node => node.removeAttribute('aria-invalid'));

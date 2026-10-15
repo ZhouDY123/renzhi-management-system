@@ -405,3 +405,16 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 .question-editor-actions .btn{min-width:100px;height:42px;min-height:42px;margin:0;font-size:14px}
 .question-editor-actions .btn.primary{box-shadow:none}
 @media(max-width:560px){.modal-dialog:has(.question-editor){width:100%}.question-editor.modal-form{padding:18px 16px 0;gap:16px}.question-editor .form-grid{gap:16px}.question-editor-actions{margin:0 -16px;padding:14px 16px;padding-bottom:max(14px,env(safe-area-inset-bottom));gap:8px}.question-editor-actions>div{gap:8px}.question-editor-actions .btn{min-width:0;padding:0 16px}}
+
+/* Consistent dropdown and dialog scrolling. */
+.modal-dialog,.appendix-modal,.appendix-modal-body,.searchable-post-list{scrollbar-width:thin;scrollbar-color:#bac9de transparent;scrollbar-gutter:stable}
+.modal-dialog::-webkit-scrollbar,.appendix-modal::-webkit-scrollbar,.appendix-modal-body::-webkit-scrollbar,.searchable-post-list::-webkit-scrollbar{width:7px;height:7px}
+.modal-dialog::-webkit-scrollbar-track,.appendix-modal::-webkit-scrollbar-track,.appendix-modal-body::-webkit-scrollbar-track,.searchable-post-list::-webkit-scrollbar-track{background:transparent;margin-block:16px}
+.modal-dialog::-webkit-scrollbar-thumb,.appendix-modal::-webkit-scrollbar-thumb,.appendix-modal-body::-webkit-scrollbar-thumb,.searchable-post-list::-webkit-scrollbar-thumb{background:#bac9de;border:2px solid #fff;border-radius:10px}
+.modal-dialog::-webkit-scrollbar-thumb:hover,.searchable-post-list::-webkit-scrollbar-thumb:hover{background:#8fa8ca}
+.modal-form .searchable-post-select .searchable-post-control input{font-size:14px;font-weight:400}
+.modal-form .searchable-post-list{max-height:min(260px,36dvh);padding:6px;border-color:#dce5f1;box-shadow:0 12px 32px #1e3a5f24;overscroll-behavior:contain}
+.modal-form .searchable-post-option{position:relative;padding:11px 72px 11px 12px;min-height:42px;font-size:14px;font-weight:400;line-height:1.5;white-space:normal}
+.modal-form .searchable-post-option[aria-selected="true"]{background:#edf4ff;color:#245ab2;font-weight:600}
+.modal-form .searchable-post-option[aria-selected="true"]::after{content:'已选';position:absolute;right:14px;top:12px;font-size:12px}
+.modal-form .searchable-post-list[hidden]{display:none}
