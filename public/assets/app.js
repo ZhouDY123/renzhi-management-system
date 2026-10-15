@@ -709,7 +709,8 @@ function initStandardEditModals() {
       const top = document.createElement('div'); top.className = 'modal-top'; top.innerHTML = '<div><small>评分规则</small><h2>编辑自动评分条件</h2></div><button type="button" class="modal-close" data-dialog-close aria-label="关闭弹窗">×</button>';
       source.classList.add('modal-form'); source.querySelector('.form-title')?.remove(); source.querySelectorAll('select[data-selected]').forEach(select => { if (select.dataset.selected) select.value = select.dataset.selected; });
       dialog.append(top, source); overlay.append(dialog); document.body.append(overlay);
-      const close = () => { closeDialog(overlay); setTimeout(() => overlay.remove(),180); }; top.querySelector('[data-dialog-close]').addEventListener('click', close); overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+      const close = () => { closeDialog(overlay); setTimeout(() => overlay.remove(),180); }; form.querySelector('[data-question-cancel]')?.addEventListener('click', close);
+    top.querySelector('[data-dialog-close]').addEventListener('click', close); overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
       source.addEventListener('submit', () => { const tier=source.querySelector('[name="tier_label"]'),value=source.querySelector('[name="rule_value"]'),type=source.querySelector('[name="match_type"]'); if(type?.value!=='range'&&!value?.value.trim())value.value=tier?.value.trim()||''; });
       openDialog(overlay, source.querySelector('select, input, textarea'));
     } catch { location.href = link.href; }

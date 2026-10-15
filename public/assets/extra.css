@@ -385,3 +385,23 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 
 .btn.secondary[data-save-continue]{background:#e8f2ff;border-color:#bed9fa;color:#2563a6}
 .btn.secondary[data-save-continue]:hover{background:#d9eaff;border-color:#9fc5f2}
+
+/* Professional question editor: compact fields and a stable action row. */
+.modal-dialog:has(.question-editor){width:min(700px,96vw);scrollbar-width:thin}
+.modal-dialog:has(.question-editor) .modal-top{padding:18px 24px}
+.modal-dialog:has(.question-editor) .modal-top h2{font-family:inherit;font-size:21px;font-weight:700}
+.question-editor.modal-form{gap:18px;padding:22px 24px 0}
+.question-editor.modal-form label{font-size:13px;font-weight:600;margin:0}
+.question-editor .form-grid{gap:18px;align-items:start}
+.question-editor.modal-form input,.question-editor.modal-form select,.question-editor.modal-form textarea{font-family:inherit;font-size:14px;font-weight:400;line-height:1.5;border-color:#d9e2ef;border-radius:10px;min-height:44px;margin-top:8px}
+.question-editor.modal-form input[readonly]{background:#f5f7fb;color:#64748b;border-color:#e7edf5}
+.question-editor.modal-form select{appearance:none;padding-right:42px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%2364748b' stroke-width='1.8' viewBox='0 0 24 24'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") no-repeat right 12px center;cursor:pointer}
+.question-editor.modal-form select:invalid{color:#94a3b8}
+.question-editor.modal-form textarea{resize:vertical;min-height:88px}
+.question-editor.modal-form textarea[name=point_desc]{min-height:70px}
+.question-editor .self-rating-help{padding:12px 14px;margin:0;background:#f4f7fc;border:1px solid #e6edf7;border-radius:10px;font-size:12px;color:#718096;line-height:1.75}
+.question-editor-actions{position:sticky;bottom:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 -24px;padding:16px 24px;background:#fff;border-top:1px solid #e6edf5}
+.question-editor-actions>div{display:flex;align-items:center;gap:10px}
+.question-editor-actions .btn{min-width:100px;height:42px;min-height:42px;margin:0;font-size:14px}
+.question-editor-actions .btn.primary{box-shadow:none}
+@media(max-width:560px){.modal-dialog:has(.question-editor){width:100%}.question-editor.modal-form{padding:18px 16px 0;gap:16px}.question-editor .form-grid{gap:16px}.question-editor-actions{margin:0 -16px;padding:14px 16px;padding-bottom:max(14px,env(safe-area-inset-bottom));gap:8px}.question-editor-actions>div{gap:8px}.question-editor-actions .btn{min-width:0;padding:0 16px}}
