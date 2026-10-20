@@ -57,7 +57,7 @@ function appendix_text(mixed $value,int $limit=2000): string {
     return trim($value);
 }
 
-function appendix_complete(PDO $pdo,int $answerId,array $questions,array $input,bool $skip): void {
+function appendix_validate_responses(array $questions,array $input,bool $skip=false): array {
     if($skip && $questions)throw new InvalidArgumentException('请完成全部附录题目后提交，不能跳过。');
     $responses=[];
     if(!$skip){
@@ -75,6 +75,11 @@ function appendix_complete(PDO $pdo,int $answerId,array $questions,array $input,
             if($value!==''||$note!=='')$responses[(string)$q['id']]=['value'=>$value,'note'=>$note];
         }
     }
+    return $responses;
+}
+
+function appendix_complete(PDO $pdo,int $answerId,array $questions,array $input,bool $skip): void {
+    $responses=appendix_validate_responses($questions,$input,$skip);
     // Conditional update makes refresh/double-click/replay harmless; scores are never touched.
     $pdo->prepare("UPDATE appendix_submission SET responses_json=?,status=?,completed_at=datetime('now','localtime') WHERE answer_id=? AND status='pending'")
         ->execute([json_encode((object)$responses,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),$skip?'skipped':'submitted',$answerId]);
@@ -109,6 +114,11 @@ function appendix_h5(PDO $pdo,array $post,string $token): never {
     <input type="hidden" name="csrf" value="<?=csrf()?>">
     <input type="hidden" name="appendix_answer_id" value="<?=$answerId?>">
     <?php if($error):?><div class="form-error" role="alert"><?=e($error)?></div><?php endif;
+    render_appendix_fields($questions);?>
+    <div class="appendix-actions"><button type="submit" class="btn primary" name="intent" value="submit">提交并查看成绩</button></div></form><?php h5_footer();exit;
+}
+
+function render_appendix_fields(array $questions): void {
     $section='';foreach($questions as $i=>$q):
         if($q['section']!==$section):$section=$q['section'];?><h2 class="appendix-section"><?=e($section)?></h2><?php endif;
         $item=is_array($_POST['appendix'][$q['id']]??null)?$_POST['appendix'][$q['id']]:[];
@@ -118,5 +128,4 @@ function appendix_h5(PDO $pdo,array $post,string $token): never {
     <?php if($options):?><div class="appendix-options"><?php foreach($options as $option):?><label><input type="radio" name="appendix[<?=$q['id']?>][value]" required value="<?=e($option)?>" <?=$value===$option?'checked':''?>><span><?=e($option)?></span></label><?php endforeach;?></div>
     <?php else:?><textarea name="appendix[<?=$q['id']?>][value]" required rows="3" maxlength="2000" aria-label="<?=e($q['title'])?>" placeholder="请填写您的回答"><?=e($value)?></textarea><?php endif;
     if($q['supplement']!==''):?><label class="appendix-note"><?=e($q['supplement'])?><textarea name="appendix[<?=$q['id']?>][note]" rows="2" maxlength="2000" placeholder="补充说明（选填）"><?=e($note)?></textarea></label><?php endif;?></fieldset><?php endforeach;?>
-    <div class="appendix-actions"><button type="submit" class="btn primary" name="intent" value="submit">提交并查看成绩</button></div></form><?php h5_footer();exit;
-}
+<?php }
