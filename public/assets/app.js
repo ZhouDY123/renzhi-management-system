@@ -754,19 +754,34 @@ function initGroupedStandardTiers() {
         const input=document.createElement('input');input.type='hidden';input.name='tier_order[]';input.value=id?`existing:${id}`:`new:${newIndex++}`;form.append(input);
       });
     });
-    function syncTierMoves() {
-      const rows=[...list.querySelectorAll('.dimension-score-row:not(.is-removed)')];
-      rows.forEach((row,index)=>{row.querySelector('[data-tier-up]').disabled=index===0;row.querySelector('[data-tier-down]').disabled=index===rows.length-1;});
-    }
-    const tierObserver=new MutationObserver(syncTierMoves);tierObserver.observe(list,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
-    syncTierMoves();
     function addRemove(row, isNew) {
-      const moves=document.createElement('div');moves.className='tier-order-actions';
-      for(const [direction,label] of [['up','上移'],['down','下移']]){
-        const move=document.createElement('button');move.type='button';move.textContent=label;move.dataset[direction==='up'?'tierUp':'tierDown']='';
-        move.addEventListener('click',()=>{const rows=[...list.querySelectorAll('.dimension-score-row:not(.is-removed)')],index=rows.indexOf(row),other=rows[index+(direction==='up'?-1:1)];if(!other)return;if(direction==='up')list.insertBefore(row,other);else list.insertBefore(other,row);syncTierMoves();move.focus();});moves.append(move);
-      }
-      row.append(moves);
+      const grip=document.createElement('span');grip.className='tier-drag-handle';grip.tabIndex=0;grip.setAttribute('role','button');grip.setAttribute('aria-label','拖动调整档位顺序，也可使用上下方向键');grip.title='拖动排序';grip.textContent='⠿';row.prepend(grip);
+      grip.addEventListener('keydown',event=>{
+        if(!['ArrowUp','ArrowDown'].includes(event.key))return;event.preventDefault();
+        const rows=[...list.querySelectorAll('.dimension-score-row:not(.is-removed)')],index=rows.indexOf(row),other=rows[index+(event.key==='ArrowUp'?-1:1)];
+        if(other){if(event.key==='ArrowUp')list.insertBefore(row,other);else list.insertBefore(other,row);grip.focus();}
+      });
+      grip.addEventListener('pointerdown',event=>{
+        if(event.button!==0)return;event.preventDefault();
+        const originalNext=row.nextSibling, pointerId=event.pointerId;
+        let y=event.clientY, frame=0, active=true;
+        grip.setPointerCapture(pointerId);row.classList.add('is-tier-dragging');document.body.classList.add('tier-sorting');grip.setAttribute('aria-pressed','true');
+        const reorder=()=>{
+          const siblings=[...list.querySelectorAll('.dimension-score-row:not(.is-removed)')].filter(item=>item!==row);
+          const before=siblings.find(item=>{const box=item.getBoundingClientRect();return y<box.top+box.height/2;});
+          if(before){if(row.nextElementSibling!==before)list.insertBefore(row,before);}else if(list.lastElementChild!==row)list.append(row);
+          grip.setPointerCapture(pointerId);
+        };
+        const tick=()=>{if(!active)return;const edge=70,speed=y<edge?-10:(y>innerHeight-edge?10:0);if(speed){window.scrollBy(0,speed);reorder();}frame=requestAnimationFrame(tick);};
+        const move=e=>{if(e.pointerId!==pointerId)return;y=e.clientY;reorder();};
+        const finish=e=>{if(e.pointerId!==pointerId)return;active=false;cancelAnimationFrame(frame);
+          if(e.type==='pointercancel'){if(originalNext?.parentNode===list)list.insertBefore(row,originalNext);else list.append(row);}
+          row.classList.remove('is-tier-dragging');document.body.classList.remove('tier-sorting');grip.setAttribute('aria-pressed','false');
+          grip.removeEventListener('pointermove',move);grip.removeEventListener('pointerup',finish);grip.removeEventListener('pointercancel',finish);grip.removeEventListener('lostpointercapture',finish);
+          if(grip.hasPointerCapture(pointerId))grip.releasePointerCapture(pointerId);grip.focus({preventScroll:true});
+        };
+        grip.addEventListener('pointermove',move);grip.addEventListener('pointerup',finish);grip.addEventListener('pointercancel',finish);grip.addEventListener('lostpointercapture',finish);frame=requestAnimationFrame(tick);
+      });
  const button=document.createElement('button'); button.type='button'; button.className='remove-tier'; button.textContent='删除'; button.addEventListener('click', () => { if (isNew) { row.remove(); return; } const id=row.querySelector('[name="rule_id[]"]')?.value; if (id && !row.querySelector('[name="remove_id[]"]')) { const marker=document.createElement('input'); marker.type='hidden'; marker.name='remove_id[]'; marker.value=id; row.append(marker); } row.classList.add('is-removed'); }); row.append(button); }
   });
 }
