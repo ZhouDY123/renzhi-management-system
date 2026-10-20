@@ -742,13 +742,16 @@ function initGroupedStandardTiers() {
     let followupIndex = 0;
     const bindFollowup = row => {
       const details = row.querySelector('.tier-followup'); if (!details) return;
-      const text = details.querySelector('textarea');
-      text.addEventListener('input', () => { details.querySelector('summary').textContent = text.value.trim() ? '已设追问' : '＋追问'; });
+      const panel=details.querySelector('div'),text=panel.querySelector('textarea');
+      const toggle=document.createElement('button');toggle.type='button';toggle.className='tier-followup';toggle.textContent=text.value.trim()?'已设追问':'＋追问';toggle.setAttribute('aria-expanded','false');
+      panel.className='tier-followup-panel';panel.hidden=true;details.replaceWith(toggle,panel);
+      toggle.addEventListener('click',()=>{panel.hidden=!panel.hidden;toggle.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)text.focus({preventScroll:true});});
+      text.addEventListener('input', () => { toggle.textContent = text.value.trim() ? '已设追问' : '＋追问'; });
     };
     list.querySelectorAll('.dimension-score-row').forEach(bindFollowup);
 
     add.addEventListener('click', () => { const row=document.createElement('div'); row.className='dimension-score-row new-tier-row'; row.innerHTML=numericDimension?'<div class="range-inputs"><label class="range-title">档位标题（可自定义）<input name="new_label[]" placeholder="填写区间后自动生成"></label><label>最小值<input name="new_min[]" type="number" required></label><label>最大值（不含）<input name="new_max[]" type="number" required></label></div><label>分值<input name="new_value[]" type="number" min="0" step="0.01" value="0"></label>':'<div><label>答案或条件<input name="new_label[]" placeholder="例如：优秀（未填写则不新增）"></label></div><label>分值<input name="new_value[]" type="number" min="0" step="0.01" value="0"></label>'; const index=followupIndex++;const followup=document.createElement('details');followup.className='tier-followup';followup.innerHTML=`<summary>＋追问</summary><div><label>追问内容 <small>选择此项后显示，不计分；留空则取消</small><textarea name="new_text_question[${index}]" rows="2" maxlength="500" placeholder="请输入追问内容"></textarea></label><label class="tier-followup-required"><input type="checkbox" name="new_text_required[${index}]" value="1"> 必填</label></div>`;row.append(followup);row.dataset.followupIndex=String(index);list.append(row);bindFollowup(row); addRemove(row, true); row.querySelector('input')?.focus(); });
-    form.addEventListener('submit', () => { list.querySelectorAll('.new-tier-row').forEach((row,index) => { const text=row.querySelector('.tier-followup textarea'), required=row.querySelector('.tier-followup input'); if(text)text.name=`new_text_question[${index}]`;if(required)required.name=`new_text_required[${index}]`; }); });
+    form.addEventListener('submit', () => { list.querySelectorAll('.new-tier-row').forEach((row,index) => { const text=row.querySelector('.tier-followup-panel textarea'), required=row.querySelector('.tier-followup-panel input'); if(text)text.name=`new_text_question[${index}]`;if(required)required.name=`new_text_required[${index}]`; }); });
     if (numericDimension) form.addEventListener('submit', () => { const code=form.querySelector('[name="dim_code"]')?.value; const unit=code==='age'?'岁':(code?.includes('co')||code?.includes('years')?'年':''); const suffix={group_co:'集团公司工作履历',listed_co:'上市公司工作履历',private_co:'非上市公司工作履历',work_years:'参加工作年限',prof_years:'从事专业年限'}[code]||''; list.querySelectorAll('.new-tier-row').forEach(row => { const min=row.querySelector('[name="new_min[]"]')?.value, max=row.querySelector('[name="new_max[]"]')?.value, label=row.querySelector('[name="new_label[]"]'); if(min!==''&&max!==''&&label&&!label.value.trim())label.value=`${min}至${max}${unit}${suffix}`; }); });
     form.addEventListener('submit', () => {
       form.querySelectorAll('[name="tier_order[]"]').forEach(input => input.remove());
