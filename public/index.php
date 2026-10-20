@@ -88,7 +88,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  if($page==='standards')handle_basic_rating_action($pdo,$action);
  if($action==='condition_text_save'){
   if(!can('admin','hr'))throw new RuntimeException('无维护权限');
-  $code=(string)($_POST['dim_code']??'');save_condition_text($pdo,$code,$_POST['condition_text_question']??'',isset($_POST['condition_text_required']));
+  $code=(string)($_POST['dim_code']??'');save_condition_text($pdo,$code,$_POST['condition_text_question']??[], $_POST['condition_text_required']??[]);
   audit('condition_text_save','dim:'.$code);flash('文本问题已保存，新打开的答题页生效；不参与评分');redirect('/index.php?page=standards');
  }
 

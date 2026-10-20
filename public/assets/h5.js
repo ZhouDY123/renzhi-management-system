@@ -100,3 +100,17 @@
   groups.forEach(group => { group.addEventListener('change', () => refresh(group)); refresh(group); });
   window.addEventListener('pageshow', () => groups.forEach(refresh));
 })();
+
+// Follow-up questions depend only on the selected scoring tier.
+document.querySelectorAll('[data-condition-text]').forEach(box => {
+  const form = box.closest('form'), select = form.elements.namedItem(`conditions[${box.dataset.conditionText}]`), input = box.querySelector('textarea');
+  const config = JSON.parse(box.dataset.config);
+  const sync = (clear = false) => {
+    const question = config.tiers ? (config.tiers[select.value] || {}) : (select.value ? config : {});
+    if (clear) { input.value = ''; input.setCustomValidity(''); box.querySelectorAll('.field-error').forEach(el => el.remove()); input.removeAttribute('aria-invalid'); }
+    box.hidden = !question.question; input.disabled = !question.question; input.required = !!question.question && !!question.required;
+    box.querySelector('[data-text-title]').textContent = question.question || '';
+    box.querySelector('[data-text-hint]').textContent = (question.required ? '必填' : '选填') + ' · 不计分';
+  };
+  select.addEventListener('change', () => sync(true)); sync();
+});
