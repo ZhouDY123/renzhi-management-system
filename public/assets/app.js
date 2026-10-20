@@ -734,6 +734,11 @@ function initGroupedStandardTiers() {
     if (actions?.querySelector('.badge.green') && !actions.querySelector('[data-disable-dimension]')) { const disable = document.createElement('button'); disable.type='submit'; disable.className='btn secondary disable-dimension'; disable.textContent='停用'; disable.dataset.disableDimension='1'; disable.setAttribute('formaction','?page=standards&action=standard_dimension_disable'); actions.append(disable); }
     const numericDimension = form.dataset.numeric === '1'; const add = document.createElement('button'); add.type='button'; add.className='btn secondary add-tier'; add.textContent=numericDimension?'＋ 新增数值区间':'＋ 新增评分档位'; footer.prepend(add);
     list.querySelectorAll('.dimension-score-row').forEach(row => addRemove(row, false));
+    list.querySelectorAll('[data-tier-edit]').forEach(button=>button.addEventListener('click',()=>{
+      const fields=button.closest('.tier-caption').querySelector('.tier-edit-fields'),opening=fields.hidden;fields.hidden=!opening;
+      fields.querySelectorAll('input').forEach(input=>{input.disabled=!opening;if(!opening)input.value=input.defaultValue;});
+      button.textContent=opening?'取消编辑':'编辑';button.setAttribute('aria-expanded',String(opening));if(opening)fields.querySelector('input').focus();
+    }));
     let followupIndex = 0;
     const bindFollowup = row => {
       const details = row.querySelector('.tier-followup'); if (!details) return;

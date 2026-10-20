@@ -1,5 +1,22 @@
 <?php
 require_once __DIR__.'/condition_order.php';
+function edit_condition_tiers(PDO $pdo,string $code,array $input): void {
+    $labels=$input['edit_tier_label']??[];if(!is_array($labels))throw new RuntimeException('档位数据无效');
+    $find=$pdo->prepare("SELECT * FROM scoring_standard WHERE id=? AND dim_code=? AND status!='retired'");
+    $update=$pdo->prepare('UPDATE scoring_standard SET tier_label=?,match_rule=? WHERE id=?');
+    foreach($labels as $id=>$label){
+        if(in_array((int)$id,array_map('intval',(array)($input['remove_id']??[])),true))continue;
+        $find->execute([(int)$id,$code]);$row=$find->fetch(PDO::FETCH_ASSOC);if(!$row)throw new RuntimeException('档位已变化，请刷新后重试');
+        if(!is_string($label)||trim($label)===''||strlen($label)>600)throw new RuntimeException('请填写有效的档位名称');$label=trim($label);
+        $rule=json_decode($row['match_rule'],true)?:[];
+        if(in_array($row['match_type'],['range','bool_range'],true)){
+            foreach(['min','max'] as $bound){$value=$input['edit_tier_'.$bound][$id]??'';if(!is_string($value)||($value!==''&&(!is_numeric($value)||!is_finite((float)$value))))throw new RuntimeException('请填写有效的数值区间');if($value==='')unset($rule[$bound]);else $rule[$bound]=(float)$value;}
+            if((!isset($rule['min'])&&!isset($rule['max']))||(isset($rule['min'],$rule['max'])&&$rule['min']>=$rule['max']))throw new RuntimeException('请填写有效区间，最小值须小于最大值');
+        }elseif($row['match_type']==='eq'){$rule['value']=$label;}
+        $update->execute([$label,json_encode($rule,JSON_UNESCAPED_UNICODE),(int)$id]);
+    }
+    if($labels){$duplicate=$pdo->prepare("SELECT tier_label FROM scoring_standard WHERE dim_code=? AND status!='retired' GROUP BY tier_label HAVING COUNT(*)>1");$duplicate->execute([$code]);if($duplicate->fetchColumn()!==false)throw new RuntimeException('同一维度不能有重复的档位名称');}
+}
 function save_condition_tier_order(PDO $pdo,string $code,mixed $order,array $newIds): void {
     if(!is_array($order))throw new RuntimeException('档位顺序格式不正确');
     $st=$pdo->prepare("SELECT id,sort FROM scoring_standard WHERE dim_code=? AND status!='retired'");$st->execute([$code]);$rows=$st->fetchAll(PDO::FETCH_ASSOC);$ids=array_map('intval',array_column($rows,'id'));$sorted=[];
