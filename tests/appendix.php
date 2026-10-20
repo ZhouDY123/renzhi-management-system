@@ -6,6 +6,11 @@ $pdo->exec("PRAGMA foreign_keys=ON; CREATE TABLE app_setting(key TEXT PRIMARY KE
 appendix_schema($pdo);appendix_schema($pdo);
 $qs=appendix_questions($pdo);check(count($qs)===8,'Eight source appendix questions imported once');
 $original=$pdo->query('SELECT * FROM result')->fetchAll();
+foreach($qs as $q)check(!in_array('不提供',json_decode($q['options_json'],true),true),'Removed option absent from seed');
+$pdo->prepare('UPDATE appendix_question SET options_json=? WHERE id=?')->execute([json_encode(['是','否','不提供'],JSON_UNESCAPED_UNICODE),$qs[0]['id']]);
+appendix_schema($pdo);$qs=appendix_questions($pdo);
+check(!in_array('不提供',json_decode($qs[0]['options_json'],true),true),'Existing bank cleaned');
+
 $a=appendix_attempt($pdo,1);check(count(json_decode($a['questions_json'],true))===8,'Snapshot');
 $full=[];foreach($qs as $q){$options=json_decode($q['options_json'],true);$full[$q['id']]=['value'=>$options?$options[0]:'测试回答'];}
 foreach([[],['appendix'=>[$qs[0]['id']=>['value'=>$full[$qs[0]['id']]['value']]]],['appendix'=>array_replace($full,[$qs[0]['id']=>['value'=>'   ']])]] as $input){

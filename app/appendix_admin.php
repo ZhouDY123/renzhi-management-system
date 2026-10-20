@@ -11,7 +11,7 @@ function appendix_save_question(PDO $pdo,array $input): int {
     if(!in_array($type,['text','select'],true))throw new InvalidArgumentException('题型无效。');
     $options=[];
     if($type==='select'){
-        $options=array_values(array_unique(array_filter(array_map('trim',preg_split('/\R/u',appendix_text($input['options']??'',4000))),fn($v)=>$v!=='')));
+        $options=array_values(array_unique(array_filter(array_map('trim',preg_split('/\R/u',appendix_text($input['options']??'',4000))),fn($v)=>$v!==''&&$v!=='不提供')));
         if(count($options)<2||count($options)>20)throw new InvalidArgumentException('选择题请设置 2–20 个选项，每行一个。');
         foreach($options as $option)if(strlen($option)>400)throw new InvalidArgumentException('单个选项过长。');
     }
@@ -74,7 +74,7 @@ function appendix_admin(PDO $pdo,string $action): never {
     <label>题目内容 <em>必填</em><textarea name="title" maxlength="200" rows="2" required placeholder="例如：是否为相关行业"><?=e($editing['title'])?></textarea></label>
     <div class="appendix-field-pair"><label>所属分组<input name="section" maxlength="100" value="<?=e($editing['section'])?>" required placeholder="例如：工作经历"></label>
     <label>答题方式<select name="type"><option value="text" <?=$isSelect?'':'selected'?>>自由填写 · 求职者输入文字</option><option value="select" <?=$isSelect?'selected':''?>>单选 · 求职者选择一个答案</option></select></label></div>
-    <label data-appendix-options <?=$isSelect?'':'hidden'?>>可选择的答案<small>每行一个答案，至少填写两个。例如：是、否、不提供。</small><textarea name="options" rows="4" placeholder="是&#10;否&#10;不提供" <?=$isSelect?'required':'disabled'?>><?=e(implode("\n",$options))?></textarea></label>
+    <label data-appendix-options <?=$isSelect?'':'hidden'?>>可选择的答案<small>每行一个答案，至少填写两个。例如：是、否、不提供。</small><textarea name="options" rows="4" placeholder="是&#10;否" <?=$isSelect?'required':'disabled'?>><?=e(implode("\n",$options))?></textarea></label>
     <label>题目下方的提示 <em>选填</em><textarea name="help" rows="2" maxlength="1000" placeholder="例如：填写兄弟姐妹人数时，不含本人。"><?=e($editing['help'])?></textarea></label>
     <label>额外补充输入框的名称 <em>选填</em><small>需要求职者另外补充文字时填写；留空则不显示额外输入框。</small><input name="supplement" maxlength="300" placeholder="例如：请补充说明具体情况" value="<?=e($editing['supplement'])?>"></label>
     <div class="appendix-field-pair appendix-settings-row"><label>显示顺序<small>数字越小，越靠前。</small><input type="number" name="sort" min="0" max="99999" step="1" value="<?=e((string)$editing['sort'])?>" required></label>

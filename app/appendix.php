@@ -14,6 +14,12 @@ function appendix_schema(PDO $pdo): void {
         status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','submitted','skipped')),
         created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')), completed_at TEXT
     )");
+    // Remove the retired option from current questions; completed submissions retain their snapshots.
+    foreach($pdo->query('SELECT id,options_json,help FROM appendix_question')->fetchAll(PDO::FETCH_ASSOC) as $row){
+        $options=json_decode($row['options_json'],true)?:[];$clean=array_values(array_filter($options,fn($v)=>trim($v)!=='不提供'));
+        $help=str_replace('自愿填写，可选择不提供。','请根据实际情况作答。',$row['help']);
+        if($options!==$clean||$help!==$row['help'])$pdo->prepare('UPDATE appendix_question SET options_json=?,help=? WHERE id=?')->execute([json_encode($clean,JSON_UNESCAPED_UNICODE),$help,$row['id']]);
+    }
     // An import marker prevents deleted/edited questions from being restored on later requests.
     $st=$pdo->query("SELECT value FROM app_setting WHERE key='appendix_import_20261008'");
     if($st->fetchColumn()!==false)return;
@@ -33,7 +39,14 @@ function appendix_questions(PDO $pdo): array {
 
 function appendix_attempt(PDO $pdo,int $answerId): array {
     $find=$pdo->prepare('SELECT * FROM appendix_submission WHERE answer_id=?');$find->execute([$answerId]);
-    if($row=$find->fetch(PDO::FETCH_ASSOC))return $row;
+    if($row=$find->fetch(PDO::FETCH_ASSOC)){
+        if($row['status']==='pending'){
+            $questions=json_decode($row['questions_json'],true);
+            foreach($questions as &$q){$q['options_json']=json_encode(array_values(array_filter(json_decode($q['options_json'],true)?:[],fn($v)=>trim($v)!=='不提供')),JSON_UNESCAPED_UNICODE);$q['help']=str_replace('自愿填写，可选择不提供。','请根据实际情况作答。',$q['help']);}unset($q);
+            $row['questions_json']=json_encode($questions,JSON_UNESCAPED_UNICODE);
+            $pdo->prepare("UPDATE appendix_submission SET questions_json=? WHERE answer_id=? AND status='pending'")->execute([$row['questions_json'],$answerId]);
+        }return $row;
+    }
     $snapshot=json_encode(appendix_questions($pdo),JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
     $pdo->prepare('INSERT OR IGNORE INTO appendix_submission(answer_id,questions_json) VALUES(?,?)')->execute([$answerId,$snapshot]);
     $find->execute([$answerId]);return $find->fetch(PDO::FETCH_ASSOC);
@@ -57,7 +70,7 @@ function appendix_complete(PDO $pdo,int $answerId,array $questions,array $input,
             if($value==='')throw new InvalidArgumentException('请填写“'.$q['title'].'”后再提交。');
             $note=$q['supplement']!==''?appendix_text($item['note']??''):'';
             $options=json_decode($q['options_json'],true,512,JSON_THROW_ON_ERROR);
-            if($value!==''&&$options&&!in_array($value,$options,true))throw new InvalidArgumentException('“'.$q['title'].'”的选项无效，请重新选择。');
+            if($options&&($value==='不提供'||!in_array($value,$options,true)))throw new InvalidArgumentException('“'.$q['title'].'”的选项无效，请重新选择。');
             if($value==='不提供')$note='';
             if($value!==''||$note!=='')$responses[(string)$q['id']]=['value'=>$value,'note'=>$note];
         }

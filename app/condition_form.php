@@ -1,5 +1,27 @@
 <?php
 require_once __DIR__.'/condition_order.php';
+function condition_text_config(PDO $pdo,string $code): array {
+    $st=$pdo->prepare('SELECT value FROM app_setting WHERE key=?');$st->execute(['condition_text:'.$code]);
+    $config=json_decode((string)$st->fetchColumn(),true);
+    return is_array($config)?$config:['question'=>'','required'=>false];
+}
+function save_condition_text(PDO $pdo,string $code,mixed $question,bool $required): void {
+    $st=$pdo->prepare("SELECT 1 FROM scoring_standard WHERE dim_code=? AND category!='basic_quality' AND status!='retired'");$st->execute([$code]);
+    if(!$st->fetchColumn())throw new RuntimeException('基本条件维度不存在');
+    if(!is_string($question)||strlen($question)>2000)throw new RuntimeException('文本问题格式不正确或过长');
+    $question=trim($question);
+    $pdo->prepare("INSERT INTO app_setting(key,value,label) VALUES(?,?,'基本条件文本问题') ON CONFLICT(key) DO UPDATE SET value=excluded.value")->execute(['condition_text:'.$code,json_encode(['question'=>$question,'required'=>$question!==''&&$required],JSON_UNESCAPED_UNICODE)]);
+}
+function condition_text_responses(array $data,array $groups): array {
+    $answers=[];
+    foreach($groups as $code=>$rows){$config=$rows[0]['text_question']??[];$question=$config['question']??'';if($question==='')continue;
+        $value=$data['condition_text'][$code]??'';
+        if(!is_string($value)||strlen($value)>8000)throw new InvalidArgumentException('文本回答格式不正确或过长：'.$question);
+        $value=trim($value);if(!empty($config['required'])&&$value==='')throw new InvalidArgumentException('请填写：'.$question);
+        $answers[$code]=['dimension'=>$rows[0]['dim_name'],'question'=>$question,'required'=>!empty($config['required']),'value'=>$value];
+    }
+    return $answers;
+}
 // Match explicit identity dimensions, not incidental words in job qualifications.
 function condition_is_job_related(array $rows): bool {
     // if(in_array($rows[0]['dim_code']??'',['age','health','politics','gender','blood_type','marital_status','religion','ethnicity'],true))return false;
@@ -15,12 +37,14 @@ function condition_is_job_related(array $rows): bool {
 function document_condition_groups(PDO $pdo): array {
     $st=$pdo->query("SELECT s.* FROM scoring_standard s WHERE s.status='published' AND s.category!='basic_quality' AND s.version=(SELECT MAX(v.version) FROM scoring_standard v WHERE v.dim_code=s.dim_code AND v.status='published' AND v.category!='basic_quality') ORDER BY s.sort,s.id");$groups=[];
     foreach($st->fetchAll(PDO::FETCH_ASSOC) as $row)$groups[$row['dim_code']][]=$row;
+    foreach($groups as $code=>&$rows)$rows[0]['text_question']=condition_text_config($pdo,$code);unset($rows);
     return order_condition_groups($pdo,array_filter($groups,'condition_is_job_related'));
 }
 function condition_maxima(array $groups): array {
     $maxima=[];foreach($groups as $code=>$rows)$maxima[$code]=max(array_map(fn($row)=>(float)$row['tier_value'],$rows));return $maxima;
 }
 function validate_document_conditions(array $data,array $groups): void {
+    condition_text_responses($data,$groups);
     if(!$groups)throw new InvalidArgumentException('暂无已启用的岗位相关基本条件题目，请联系 HR。');
     foreach($groups as $code=>$rows){$answer=$data['conditions'][$code]??null;
         if(!is_string($answer)||!in_array($answer,array_column($rows,'tier_label'),true))throw new InvalidArgumentException('请完成基本条件：'.$rows[0]['dim_name']);
@@ -28,5 +52,5 @@ function validate_document_conditions(array $data,array $groups): void {
 }
 function render_document_conditions(array $groups): void {
     $rawMax=rtrim(rtrim(number_format(array_sum(condition_maxima($groups)),2,'.',''),'0'),'.');
-    ?><section class="document-conditions"><h3>基本条件测评</h3><p>按实际情况选择，每项只取一档；工作履历在全部经历中选择最高一档，不重复累加。工具能力由本人自评，本部分原始满分<?=e($rawMax)?>分，折算为50分。</p><?php if(!$groups):?><div class="form-error">暂无已启用的岗位相关基本条件题目，请联系 HR。</div><?php endif;?><div class="two"><?php foreach($groups as $code=>$rows):?><label><?=e($rows[0]['dim_name'])?><select name="conditions[<?=e($code)?>]" required><option value="" disabled hidden <?=empty($_POST['conditions'][$code])?'selected':''?>>请选择符合自身情况的一项</option><?php foreach($rows as $row):?><option value="<?=e($row['tier_label'])?>" <?=($_POST['conditions'][$code]??null)===$row['tier_label']?'selected':''?>><?=e($row['tier_label'])?></option><?php endforeach;?></select></label><?php endforeach;?></div></section><?php
+    ?><section class="document-conditions"><h3>基本条件测评</h3><p>按实际情况选择，每项只取一档；工作履历在全部经历中选择最高一档，不重复累加。工具能力由本人自评，本部分原始满分<?=e($rawMax)?>分，折算为50分。</p><?php if(!$groups):?><div class="form-error">暂无已启用的岗位相关基本条件题目，请联系 HR。</div><?php endif;?><div class="two"><?php foreach($groups as $code=>$rows):?><label><?=e($rows[0]['dim_name'])?><select name="conditions[<?=e($code)?>]" required><option value="" disabled hidden <?=empty($_POST['conditions'][$code])?'selected':''?>>请选择符合自身情况的一项</option><?php foreach($rows as $row):?><option value="<?=e($row['tier_label'])?>" <?=($_POST['conditions'][$code]??null)===$row['tier_label']?'selected':''?>><?=e($row['tier_label'])?></option><?php endforeach;?></select></label><?php $text=$rows[0]['text_question']??[];if(($text['question']??'')!==''):?><label class="condition-text-answer"><?=e($text['question'])?> <small><?=!empty($text['required'])?'必填':'选填'?> · 不计分</small><textarea name="condition_text[<?=e($code)?>]" rows="3" maxlength="2000" <?=!empty($text['required'])?'required':''?> placeholder="请填写您的回答"><?=e(is_string($_POST['condition_text'][$code]??null)?$_POST['condition_text'][$code]:'')?></textarea></label><?php endif;endforeach;?></div></section><?php
 }
