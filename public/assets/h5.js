@@ -110,7 +110,9 @@ document.querySelectorAll('[data-condition-text]').forEach(box => {
     if (clear) { input.value = ''; input.setCustomValidity(''); box.querySelectorAll('.field-error').forEach(el => el.remove()); input.removeAttribute('aria-invalid'); }
     box.hidden = !question.question; input.disabled = !question.question; input.required = !!question.question && !!question.required;
     box.querySelector('[data-text-title]').textContent = question.question || '';
-    box.querySelector('[data-text-hint]').textContent = (question.required ? '必填' : '选填') + ' · 不计分';
+    box.querySelector('[data-text-hint]').textContent = question.required ? '必填' : '选填';
+    box.querySelector('[data-text-required]').hidden = !question.required;
+    box.classList.toggle('is-required', !!question.required);
   };
   select.addEventListener('change', () => sync(true)); sync();
 });
