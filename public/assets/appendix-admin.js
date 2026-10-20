@@ -64,7 +64,7 @@
     if (Number(question.enabled) !== 1) body.append(node('p', '此题已停用，求职者当前不会看到。', 'appendix-preview-status'));
     const field = node('fieldset', undefined, 'appendix-item');
     const legend = node('legend', question.title);
-    legend.append(node('small', '选填'));
+    legend.append(node('small', '必填'));
     field.append(legend);
     if (question.help) field.append(node('p', question.help));
     const values = JSON.parse(question.options_json || '[]');
@@ -73,14 +73,14 @@
       values.forEach(value => {
         const label = node('label');
         const input = node('input');
-        input.type = 'radio';input.name = 'appendix-preview-answer';input.value = value;
+        input.type = 'radio';input.required = true;input.name = 'appendix-preview-answer';input.value = value;
         label.append(input, node('span', value));choices.append(label);
       });
       field.append(choices);
     } else {
       const input = node('textarea');
-      input.rows = 3;input.maxLength = 2000;
-      input.placeholder = '自愿填写，也可留空或填写不提供';
+      input.rows = 3;input.maxLength = 2000;input.required = true;
+      input.placeholder = '请填写您的回答';
       input.setAttribute('aria-label', question.title);
       field.append(input);
     }

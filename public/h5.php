@@ -15,6 +15,11 @@ if($m==='apply'){
  $st=$pdo->prepare("SELECT * FROM post WHERE q_apply_token=? AND status='recruiting'");$st->execute([$t]);$post=$st->fetch();
  if(!$post){h5_header('应聘登记');?><div class="h5-empty"><b>该应聘入口已失效</b><p>请联系集团人力资源部门。</p></div><?php h5_footer();exit;}
  if($step==='appendix')appendix_h5($pdo,$post,$t);
+ if($step==='done' && ($appendixAnswerId=(int)($_SESSION['apply_results'][(int)$post['id']]??0))){
+  appendix_schema($pdo);$appendixAttempt=appendix_attempt($pdo,$appendixAnswerId);
+  if($appendixAttempt['status']==='pending' && json_decode($appendixAttempt['questions_json'],true))redirect('/h5.php?m=apply&t='.urlencode($t).'&step=appendix');
+ }
+
  if(in_array($step,['form','submit'],true)&&isset($_SESSION['apply_auth'])&&!assessment_profile_valid($_SESSION['apply_auth']['profile']??[])){unset($_SESSION['apply_auth']);redirect('/h5.php?m=apply&t='.urlencode($t));}
  // Old sessions have no trustworthy version; never silently submit against today's paper.
  if(in_array($step,['form','submit'],true)&&isset($_SESSION['apply_auth'])&&empty($_SESSION['apply_auth']['paper']['question_set_id'])){

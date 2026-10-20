@@ -45,6 +45,7 @@ function appendix_text(mixed $value,int $limit=2000): string {
 }
 
 function appendix_complete(PDO $pdo,int $answerId,array $questions,array $input,bool $skip): void {
+    if($skip && $questions)throw new InvalidArgumentException('请完成全部附录题目后提交，不能跳过。');
     $responses=[];
     if(!$skip){
         $raw=$input['appendix']??[];
@@ -53,6 +54,7 @@ function appendix_complete(PDO $pdo,int $answerId,array $questions,array $input,
             $item=$raw[$q['id']]??[];
             if(!is_array($item))throw new InvalidArgumentException('附录答案格式不正确');
             $value=appendix_text($item['value']??'');
+            if($value==='')throw new InvalidArgumentException('请填写“'.$q['title'].'”后再提交。');
             $note=$q['supplement']!==''?appendix_text($item['note']??''):'';
             $options=json_decode($q['options_json'],true,512,JSON_THROW_ON_ERROR);
             if($value!==''&&$options&&!in_array($value,$options,true))throw new InvalidArgumentException('“'.$q['title'].'”的选项无效，请重新选择。');
@@ -86,10 +88,10 @@ function appendix_h5(PDO $pdo,array $post,string $token): never {
             redirect($done);
         }
     }catch(InvalidArgumentException $e){$error=$e->getMessage();}
-    catch(Throwable $e){error_log('Appendix unavailable: '.$e->getMessage());$error='附录暂时无法保存，您的测评成绩已保存，可直接查看成绩。';$questions=[];}
+    catch(Throwable $e){error_log('Appendix unavailable: '.$e->getMessage());$error='附录暂时无法保存，请刷新页面后重试或联系 HR。';$questions=[];}
     h5_header('附录信息');
     echo '<link rel="stylesheet" href="/assets/appendix.css?v='.asset_mtime('appendix.css').'">';
-    ?><section class="h5-card appendix-intro"><span class="appendix-kicker">测评已提交 · 附录选填</span><h1>补充信息</h1><p>所有题目均为选填，您可留空、选择“不提供”或直接跳过。不计分，不影响测评结果、面试安排或录用判断。</p><a href="<?=e($done)?>">不填写，直接查看成绩 →</a></section>
+    ?><section class="h5-card appendix-intro"><span class="appendix-kicker">测评已保存 · 附录必填</span><h1>补充信息</h1><p>请逐题完成全部附录题目，填写完整后方可提交。附录不计入测评分数。</p></section>
     <form class="h5-card appendix-form" method="post" action="?m=apply&amp;t=<?=e($token)?>&amp;step=appendix">
     <input type="hidden" name="csrf" value="<?=csrf()?>">
     <input type="hidden" name="appendix_answer_id" value="<?=$answerId?>">
@@ -99,9 +101,9 @@ function appendix_h5(PDO $pdo,array $post,string $token): never {
         $item=is_array($_POST['appendix'][$q['id']]??null)?$_POST['appendix'][$q['id']]:[];
         $value=is_string($item['value']??null)?$item['value']:'';$note=is_string($item['note']??null)?$item['note']:'';
         $options=json_decode($q['options_json'],true);
-    ?><fieldset class="appendix-item"><legend><span><?=$i+1?></span> <?=e($q['title'])?> <small>选填</small></legend><p><?=e($q['help'])?></p>
-    <?php if($options):?><div class="appendix-options"><?php foreach($options as $option):?><label><input type="radio" name="appendix[<?=$q['id']?>][value]" value="<?=e($option)?>" <?=$value===$option?'checked':''?>><span><?=e($option)?></span></label><?php endforeach;?></div>
-    <?php else:?><textarea name="appendix[<?=$q['id']?>][value]" rows="3" maxlength="2000" aria-label="<?=e($q['title'])?>" placeholder="自愿填写，也可留空或填写不提供"><?=e($value)?></textarea><?php endif;
+    ?><fieldset class="appendix-item"><legend><span><?=$i+1?></span> <?=e($q['title'])?> <small>必填</small></legend><p><?=e($q['help'])?></p>
+    <?php if($options):?><div class="appendix-options"><?php foreach($options as $option):?><label><input type="radio" name="appendix[<?=$q['id']?>][value]" required value="<?=e($option)?>" <?=$value===$option?'checked':''?>><span><?=e($option)?></span></label><?php endforeach;?></div>
+    <?php else:?><textarea name="appendix[<?=$q['id']?>][value]" required rows="3" maxlength="2000" aria-label="<?=e($q['title'])?>" placeholder="请填写您的回答"><?=e($value)?></textarea><?php endif;
     if($q['supplement']!==''):?><label class="appendix-note"><?=e($q['supplement'])?><textarea name="appendix[<?=$q['id']?>][note]" rows="2" maxlength="2000" placeholder="补充说明（选填）"><?=e($note)?></textarea></label><?php endif;?></fieldset><?php endforeach;?>
-    <div class="appendix-actions"><button type="submit" class="btn secondary" name="intent" value="skip" formnovalidate>跳过，查看成绩</button><button type="submit" class="btn primary" name="intent" value="submit">提交并查看成绩</button></div></form><?php h5_footer();exit;
+    <div class="appendix-actions"><button type="submit" class="btn primary" name="intent" value="submit">提交并查看成绩</button></div></form><?php h5_footer();exit;
 }
