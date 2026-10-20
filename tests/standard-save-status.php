@@ -17,11 +17,12 @@ foreach(['standard_group_save'=>'edu','standard_custom_group_save'=>'custom_test
   $pdo->exec('CREATE TABLE scoring_standard(id INTEGER PRIMARY KEY,category TEXT,dim_code TEXT,dim_name TEXT,tier_label TEXT,match_type TEXT,match_rule TEXT,tier_value REAL,version INTEGER,status TEXT,sort INTEGER)');
   $pdo->exec('CREATE TABLE app_setting(key TEXT PRIMARY KEY,value TEXT,label TEXT)');
   $pdo->prepare("INSERT INTO scoring_standard VALUES(1,'education',?,'学历','本科','eq','{}',2,3,?,1)")->execute([$code,$status]);
-  $_POST=['dim_code'=>$code,'rule_id'=>[1],'tier_value'=>[2.5],'new_label'=>['硕士'],'new_value'=>[3],'condition_text_present'=>1,'condition_text_question'=>[1=>'本科专业说明'],'condition_text_required'=>[1=>1],'new_text_question'=>['研究方向'],'new_text_required'=>[0=>1]];
+  $_POST=['dim_code'=>$code,'rule_id'=>[1],'tier_value'=>[2.5],'new_label'=>['硕士'],'new_value'=>[3],'dimension_name'=>'学历要求','condition_text_present'=>1,'condition_text_question'=>[1=>'本科专业说明'],'condition_text_required'=>[1=>1],'new_text_question'=>['研究方向'],'new_text_required'=>[0=>1]];
   try{eval($prelude.$handler);}catch(SavedRedirect $e){}
   $rows=$pdo->query('SELECT tier_value,status,version FROM scoring_standard ORDER BY id')->fetchAll();
   if(count($rows)!==2||$rows[0]['tier_value']!=2.5||$rows[1]['tier_value']!=3)throw new Exception('Scores not saved');
   foreach($rows as $row)if($row['status']!==$status||$row['version']!==3)throw new Exception('State/version changed');
+  if($pdo->query("SELECT COUNT(*) FROM scoring_standard WHERE dim_name='学历要求'")->fetchColumn()!=2)throw new Exception('Rename did not cover existing and new tiers');
   $config=condition_text_config($pdo,$code);if(($config['tiers']['本科']['question']??'')!=='本科专业说明'||($config['tiers']['硕士']['question']??'')!=='研究方向'||empty($config['tiers']['硕士']['required']))throw new Exception('Combined follow-up save failed');
   $_POST=['dim_code'=>$code,'rule_id'=>[999],'tier_value'=>[4]];
   try{eval($prelude.$handler);throw new Exception('Invalid ID accepted');}catch(RuntimeException $e){if($pdo->inTransaction())$pdo->rollBack();}

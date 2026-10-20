@@ -720,6 +720,13 @@ function initStandardEditModals() {
 function initGroupedStandardTiers() {
   document.querySelectorAll('form.dimension-score-card').forEach(form => {
     const list = form.querySelector('.dimension-score-list'), footer = form.querySelector('footer'); if (!list || !footer) return;
+    form.querySelector('[data-dimension-name-edit]')?.addEventListener('click', event => {
+      const editor=form.querySelector('.dimension-name-editor'), input=editor.querySelector('input');
+      const opening=editor.hidden;editor.hidden=!opening;input.disabled=!opening;
+      event.currentTarget.textContent=opening?'取消编辑':'编辑';
+      event.currentTarget.setAttribute('aria-expanded',String(opening));
+      if(opening){input.focus();input.select();}else input.value=input.defaultValue;
+    });
     const saveButton = footer.querySelector('.btn.primary'); if (saveButton) saveButton.textContent = '保存';
     if ((form.querySelector('[name="dim_code"]')?.value || '').startsWith('custom_')) form.action='?page=standards&action=standard_custom_group_save';
     form.querySelector('button[name="op"][value="publish"]')?.setAttribute('formaction','?page=standards&action=standard_dimension_publish');

@@ -1,5 +1,12 @@
 <?php
 require_once __DIR__.'/condition_order.php';
+function rename_condition_dimension(PDO $pdo,string $code,mixed $name): void {
+    if(!is_string($name)||trim($name)===''||strlen($name)>600)throw new RuntimeException('请填写有效的维度名称（不超过 200 字）');
+    $name=trim($name);
+    $check=$pdo->prepare("SELECT 1 FROM scoring_standard WHERE dim_code<>? AND dim_name=? AND status!='retired' LIMIT 1");$check->execute([$code,$name]);
+    if($check->fetchColumn())throw new RuntimeException('已存在同名评分维度，请使用其他名称');
+    $pdo->prepare("UPDATE scoring_standard SET dim_name=? WHERE dim_code=? AND status!='retired'")->execute([$name,$code]);
+}
 function condition_text_config(PDO $pdo,string $code): array {
     $st=$pdo->prepare('SELECT value FROM app_setting WHERE key=?');$st->execute(['condition_text:'.$code]);
     $config=json_decode((string)$st->fetchColumn(),true);
