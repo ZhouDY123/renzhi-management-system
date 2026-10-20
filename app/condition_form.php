@@ -1,5 +1,12 @@
 <?php
 require_once __DIR__.'/condition_order.php';
+function save_condition_tier_order(PDO $pdo,string $code,mixed $order,array $newIds): void {
+    if(!is_array($order))throw new RuntimeException('档位顺序格式不正确');
+    $st=$pdo->prepare("SELECT id,sort FROM scoring_standard WHERE dim_code=? AND status!='retired'");$st->execute([$code]);$rows=$st->fetchAll(PDO::FETCH_ASSOC);$ids=array_map('intval',array_column($rows,'id'));$sorted=[];
+    foreach($order as $token){if(!is_string($token)||!preg_match('/^(existing|new):(\d+)$/D',$token,$m))throw new RuntimeException('档位顺序无效');$id=$m[1]==='new'?($newIds[(int)$m[2]]??null):(int)$m[2];if($id!==null)$sorted[]=$id;}
+    if(count($sorted)!==count($ids)||count(array_unique($sorted))!==count($sorted)||array_diff($sorted,$ids))throw new RuntimeException('档位已变化，请刷新后重试');
+    $base=$rows?min(array_column($rows,'sort')):0;$update=$pdo->prepare('UPDATE scoring_standard SET sort=? WHERE id=? AND dim_code=?');foreach($sorted as $index=>$id)$update->execute([$base+$index,$id,$code]);
+}
 function rename_condition_dimension(PDO $pdo,string $code,mixed $name): void {
     if(!is_string($name)||trim($name)===''||strlen($name)>600)throw new RuntimeException('请填写有效的维度名称（不超过 200 字）');
     $name=trim($name);

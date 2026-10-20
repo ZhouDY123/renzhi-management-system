@@ -745,7 +745,29 @@ function initGroupedStandardTiers() {
     add.addEventListener('click', () => { const row=document.createElement('div'); row.className='dimension-score-row new-tier-row'; row.innerHTML=numericDimension?'<div class="range-inputs"><label class="range-title">档位标题（可自定义）<input name="new_label[]" placeholder="填写区间后自动生成"></label><label>最小值<input name="new_min[]" type="number" required></label><label>最大值（不含）<input name="new_max[]" type="number" required></label></div><label>分值<input name="new_value[]" type="number" min="0" step="0.01" value="0"></label>':'<div><label>答案或条件<input name="new_label[]" placeholder="例如：优秀（未填写则不新增）"></label></div><label>分值<input name="new_value[]" type="number" min="0" step="0.01" value="0"></label>'; const index=followupIndex++;const followup=document.createElement('details');followup.className='tier-followup';followup.innerHTML=`<summary>＋追问</summary><div><label>追问内容 <small>选择此项后显示，不计分；留空则取消</small><textarea name="new_text_question[${index}]" rows="2" maxlength="500" placeholder="请输入追问内容"></textarea></label><label class="tier-followup-required"><input type="checkbox" name="new_text_required[${index}]" value="1"> 必填</label></div>`;row.append(followup);row.dataset.followupIndex=String(index);list.append(row);bindFollowup(row); addRemove(row, true); row.querySelector('input')?.focus(); });
     form.addEventListener('submit', () => { list.querySelectorAll('.new-tier-row').forEach((row,index) => { const text=row.querySelector('.tier-followup textarea'), required=row.querySelector('.tier-followup input'); if(text)text.name=`new_text_question[${index}]`;if(required)required.name=`new_text_required[${index}]`; }); });
     if (numericDimension) form.addEventListener('submit', () => { const code=form.querySelector('[name="dim_code"]')?.value; const unit=code==='age'?'岁':(code?.includes('co')||code?.includes('years')?'年':''); const suffix={group_co:'集团公司工作履历',listed_co:'上市公司工作履历',private_co:'非上市公司工作履历',work_years:'参加工作年限',prof_years:'从事专业年限'}[code]||''; list.querySelectorAll('.new-tier-row').forEach(row => { const min=row.querySelector('[name="new_min[]"]')?.value, max=row.querySelector('[name="new_max[]"]')?.value, label=row.querySelector('[name="new_label[]"]'); if(min!==''&&max!==''&&label&&!label.value.trim())label.value=`${min}至${max}${unit}${suffix}`; }); });
-    function addRemove(row, isNew) { const button=document.createElement('button'); button.type='button'; button.className='remove-tier'; button.textContent='删除'; button.addEventListener('click', () => { if (isNew) { row.remove(); return; } const id=row.querySelector('[name="rule_id[]"]')?.value; if (id && !row.querySelector('[name="remove_id[]"]')) { const marker=document.createElement('input'); marker.type='hidden'; marker.name='remove_id[]'; marker.value=id; row.append(marker); } row.classList.add('is-removed'); }); row.append(button); }
+    form.addEventListener('submit', () => {
+      form.querySelectorAll('[name="tier_order[]"]').forEach(input => input.remove());
+      let newIndex=0;
+      list.querySelectorAll('.dimension-score-row').forEach(row => {
+        if(row.classList.contains('is-removed'))return;
+        const id=row.querySelector('[name="rule_id[]"]')?.value;
+        const input=document.createElement('input');input.type='hidden';input.name='tier_order[]';input.value=id?`existing:${id}`:`new:${newIndex++}`;form.append(input);
+      });
+    });
+    function syncTierMoves() {
+      const rows=[...list.querySelectorAll('.dimension-score-row:not(.is-removed)')];
+      rows.forEach((row,index)=>{row.querySelector('[data-tier-up]').disabled=index===0;row.querySelector('[data-tier-down]').disabled=index===rows.length-1;});
+    }
+    const tierObserver=new MutationObserver(syncTierMoves);tierObserver.observe(list,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+    syncTierMoves();
+    function addRemove(row, isNew) {
+      const moves=document.createElement('div');moves.className='tier-order-actions';
+      for(const [direction,label] of [['up','上移'],['down','下移']]){
+        const move=document.createElement('button');move.type='button';move.textContent=label;move.dataset[direction==='up'?'tierUp':'tierDown']='';
+        move.addEventListener('click',()=>{const rows=[...list.querySelectorAll('.dimension-score-row:not(.is-removed)')],index=rows.indexOf(row),other=rows[index+(direction==='up'?-1:1)];if(!other)return;if(direction==='up')list.insertBefore(row,other);else list.insertBefore(other,row);syncTierMoves();move.focus();});moves.append(move);
+      }
+      row.append(moves);
+ const button=document.createElement('button'); button.type='button'; button.className='remove-tier'; button.textContent='删除'; button.addEventListener('click', () => { if (isNew) { row.remove(); return; } const id=row.querySelector('[name="rule_id[]"]')?.value; if (id && !row.querySelector('[name="remove_id[]"]')) { const marker=document.createElement('input'); marker.type='hidden'; marker.name='remove_id[]'; marker.value=id; row.append(marker); } row.classList.add('is-removed'); }); row.append(button); }
   });
 }
 
