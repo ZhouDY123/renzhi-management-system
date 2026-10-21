@@ -1,17 +1,51 @@
 <?php
 require_once __DIR__.'/condition_order.php';
-function condition_categories(): array {return ['education'=>'教育经历','work'=>'工作履历','skills'=>'技能'];}
+function condition_categories(?PDO $pdo=null): array {
+    $pdo=$pdo??db();
+    $raw=$pdo->query("SELECT value FROM app_setting WHERE key='condition_categories'")->fetchColumn();
+    return $raw===false?['education'=>'教育经历','work'=>'工作履历','skills'=>'技能']:(json_decode($raw,true)?:[]);
+}
 function condition_category(PDO $pdo,array $rule): string {
+    $categories=condition_categories($pdo);
     $st=$pdo->prepare('SELECT value FROM app_setting WHERE key=?');$st->execute(['condition_category:'.$rule['dim_code']]);$saved=$st->fetchColumn();
-    if(isset(condition_categories()[$saved]))return $saved;
-    $name=$rule['dim_name'];
-    if(preg_match('/学历|学位|毕业|院校|学校|奖学金|教育|所学专业/u',$name))return 'education';
-    if(preg_match('/工作|履历|任职|公司|行业|从业|管理经验|从事专业|年限/u',$name))return 'work';
-    return 'skills';
+    if(isset($categories[$saved]))return $saved;
+    $name=$rule['dim_name'];$key='skills';
+    if(preg_match('/学历|学位|毕业|院校|学校|奖学金|教育|所学专业/u',$name))$key='education';
+    elseif(preg_match('/工作|履历|任职|公司|行业|从业|管理经验|从事专业|年限/u',$name))$key='work';
+    return isset($categories[$key])?$key:(string)array_key_first($categories);
 }
 function save_condition_category(PDO $pdo,string $code,mixed $category): void {
-    if(!is_string($category)||!isset(condition_categories()[$category]))throw new RuntimeException('请选择有效的维度分类');
+    if(!is_string($category)||!isset(condition_categories($pdo)[$category]))throw new RuntimeException('请选择有效的维度分类');
     $pdo->prepare("INSERT INTO app_setting(key,value,label) VALUES(?,?,'基本条件分类') ON CONFLICT(key) DO UPDATE SET value=excluded.value")->execute(['condition_category:'.$code,$category]);
+}
+function maintain_condition_category(PDO $pdo,string $operation,array $input): void {
+    $pdo->beginTransaction();
+    try{
+        $categories=condition_categories($pdo);$id=(string)($input['category_id']??'');
+        if($operation!=='create'&&!isset($categories[$id]))throw new RuntimeException('分类已变化，请刷新后重试');
+        if($operation==='delete'){
+            if(count($categories)<=1)throw new RuntimeException('请至少保留一个分类');
+            $target=(string)($input['target_category']??'');
+            $rows=$pdo->query("SELECT dim_code,dim_name FROM scoring_standard WHERE category!='basic_quality' GROUP BY dim_code")->fetchAll(PDO::FETCH_ASSOC);
+            foreach($rows as $row){
+                $current=condition_category($pdo,$row);
+                if($current===$id){
+                    if($target===$id||!isset($categories[$target]))throw new RuntimeException('请选择题目转入的分类');
+                    $current=$target;
+                }
+                save_condition_category($pdo,$row['dim_code'],$current);
+            }
+            unset($categories[$id]);
+        }elseif(in_array($operation,['create','edit'],true)){
+            $name=trim((string)($input['category_name']??''));
+            if($name===''||preg_match_all('/./us',$name)>20)throw new RuntimeException('分类名称请填写 1–20 个字');
+            foreach($categories as $key=>$label)if($label===$name&&($operation==='create'||$key!==$id))throw new RuntimeException('分类名称已存在');
+            if($operation==='create')$id='cat_'.bin2hex(random_bytes(8));
+            $categories[$id]=$name;
+        }else throw new RuntimeException('无效操作');
+        $pdo->prepare("INSERT INTO app_setting(key,value,label) VALUES('condition_categories',?,'基本条件分类目录') ON CONFLICT(key) DO UPDATE SET value=excluded.value")->execute([json_encode($categories,JSON_UNESCAPED_UNICODE)]);
+        $pdo->commit();
+    }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
 function edit_condition_tiers(PDO $pdo,string $code,array $input): void {
     $labels=$input['edit_tier_label']??[];if(!is_array($labels))throw new RuntimeException('档位数据无效');
