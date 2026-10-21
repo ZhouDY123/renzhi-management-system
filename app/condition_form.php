@@ -1,5 +1,18 @@
 <?php
 require_once __DIR__.'/condition_order.php';
+function condition_categories(): array {return ['education'=>'教育经历','work'=>'工作履历','skills'=>'技能'];}
+function condition_category(PDO $pdo,array $rule): string {
+    $st=$pdo->prepare('SELECT value FROM app_setting WHERE key=?');$st->execute(['condition_category:'.$rule['dim_code']]);$saved=$st->fetchColumn();
+    if(isset(condition_categories()[$saved]))return $saved;
+    $name=$rule['dim_name'];
+    if(preg_match('/学历|学位|毕业|院校|学校|奖学金|教育|所学专业/u',$name))return 'education';
+    if(preg_match('/工作|履历|任职|公司|行业|从业|管理经验|从事专业|年限/u',$name))return 'work';
+    return 'skills';
+}
+function save_condition_category(PDO $pdo,string $code,mixed $category): void {
+    if(!is_string($category)||!isset(condition_categories()[$category]))throw new RuntimeException('请选择有效的维度分类');
+    $pdo->prepare("INSERT INTO app_setting(key,value,label) VALUES(?,?,'基本条件分类') ON CONFLICT(key) DO UPDATE SET value=excluded.value")->execute(['condition_category:'.$code,$category]);
+}
 function edit_condition_tiers(PDO $pdo,string $code,array $input): void {
     $labels=$input['edit_tier_label']??[];if(!is_array($labels))throw new RuntimeException('档位数据无效');
     $find=$pdo->prepare("SELECT * FROM scoring_standard WHERE id=? AND dim_code=? AND status!='retired'");

@@ -818,26 +818,22 @@ function initStandardTabs() {
 
 function initStandardDimensionSearch() {
   document.querySelectorAll('[data-standard-search]').forEach(input => {
-    const scope = input.dataset.standardSearch;
-    const panel = document.querySelector(`[data-standard-panel="${scope}"]`);
-    const clear = document.querySelector(`[data-standard-search-clear="${scope}"]`);
-    const result = document.querySelector(`[data-standard-search-result="${scope}"]`);
-    if (!panel) return;
-    const apply = () => {
-      const keyword = input.value.trim().toLocaleLowerCase('zh-CN');
-      const cards = [...panel.querySelectorAll('.dimension-score-card')];
-      let visible = 0;
-      cards.forEach(card => {
-        const matched = !keyword || card.textContent.toLocaleLowerCase('zh-CN').includes(keyword);
-        card.hidden = !matched;
-        if (matched) visible += 1;
-      });
-      if (clear) clear.hidden = !input.value;
-      if (result) result.textContent = keyword ? `找到 ${visible} 个匹配维度` : `共 ${cards.length} 个维度`;
+    const scope=input.dataset.standardSearch,panel=document.querySelector(`[data-standard-panel="${scope}"]`);if(!panel)return;
+    const cards=[...panel.querySelectorAll('.dimension-score-card')],tabs=[...panel.querySelectorAll('[data-condition-category]')];
+    const clear=document.querySelector(`[data-standard-search-clear="${scope}"]`),result=document.querySelector(`[data-standard-search-result="${scope}"]`);
+    let category='education';try{category=sessionStorage.getItem('condition-category')||category;}catch{}
+    if(!tabs.some(tab=>tab.dataset.conditionCategory===category))category=tabs[0]?.dataset.conditionCategory||'';
+    const empty=document.createElement('p');empty.className='condition-category-empty';empty.hidden=true;panel.append(empty);
+    const apply=()=>{
+      const keyword=input.value.trim().toLocaleLowerCase('zh-CN');let visible=0,total=0;
+      cards.forEach(card=>{const inCategory=!tabs.length||card.dataset.category===category;if(inCategory)total++;const matched=inCategory&&(!keyword||card.textContent.toLocaleLowerCase('zh-CN').includes(keyword));card.hidden=!matched;if(matched)visible++;});
+      tabs.forEach(tab=>{const active=tab.dataset.conditionCategory===category;tab.classList.toggle('is-active',active);tab.setAttribute('aria-selected',String(active));tab.querySelector('[data-category-count]').textContent=cards.filter(card=>card.dataset.category===tab.dataset.conditionCategory).length;});
+      if(clear)clear.hidden=!input.value;if(result)result.textContent=keyword?`找到 ${visible} 个匹配维度`:`本分类共 ${total} 个维度`;
+      empty.hidden=visible>0;empty.textContent=keyword?'本分类暂无匹配维度':'本分类暂无维度，可点击“新增基本条件维度”添加。';
+      const create=panel.querySelector('.standard-dimension-form')||document.querySelector('.standard-dimension-form');const select=create?.querySelector('[name="dimension_category"]');if(select&&tabs.length)select.value=category;
     };
-    input.addEventListener('input', apply);
-    clear?.addEventListener('click', () => { input.value = ''; apply(); input.focus(); });
-    apply();
+    tabs.forEach(tab=>tab.addEventListener('click',()=>{category=tab.dataset.conditionCategory;try{sessionStorage.setItem('condition-category',category);}catch{}apply();}));
+    input.addEventListener('input',apply);clear?.addEventListener('click',()=>{input.value='';apply();input.focus();});apply();
   });
 }
 
