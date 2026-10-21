@@ -45,7 +45,7 @@ if($page==='standards'&&$action==='condition_order_save'){
  header('Content-Type: application/json; charset=UTF-8');
  if($_SERVER['REQUEST_METHOD']!=='POST'||!can('admin','hr')){http_response_code(403);echo json_encode(['error'=>'无此操作权限']);exit;}
  check_csrf();
- try{save_condition_order($pdo,(array)($_POST['order']??[]),(int)admin_user()['id']);audit('condition_order_save','basic_conditions');echo json_encode(['ok'=>true]);}
+ try{save_condition_order($pdo,(array)($_POST['order']??[]),(int)admin_user()['id'],isset($_POST['category'])?(string)$_POST['category']:null);audit('condition_order_save','basic_conditions');echo json_encode(['ok'=>true]);}
  catch(InvalidArgumentException $e){http_response_code(409);echo json_encode(['error'=>$e->getMessage()],JSON_UNESCAPED_UNICODE);}exit;
 }
 if($page==='appendix'){require ROOT_PATH.'/app/appendix_admin.php';appendix_admin($pdo,$action);}

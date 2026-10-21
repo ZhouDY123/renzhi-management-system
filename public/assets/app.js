@@ -56,19 +56,21 @@ function initConditionOrdering() {
   const cards = [...(panel?.querySelectorAll('.dimension-score-card') || [])];
   if (!cards.length) return;
   const box = document.createElement('details'); box.className = 'condition-order panel';
-  box.innerHTML = '<summary>调整基本条件显示顺序</summary><p>拖动条目调整顺序，也可用上移、下移按钮。保存后同步到答题页，未启用的维度不会出现在答题页。</p><ol></ol><footer><button type="button" class="btn primary">保存顺序</button><span role="status" aria-live="polite"></span></footer>';
-  panel.querySelector('.grouped-standard-intro').after(box);
+  box.innerHTML = '<summary>调整基本条件显示顺序</summary><p>仅调整当前分类下的维度。拖动条目或使用上移、下移，保存后同步到答题页。</p><ol></ol><footer><button type="button" class="btn primary">保存顺序</button><span role="status" aria-live="polite"></span></footer>';
+  panel.querySelector('.condition-category-tabs').after(box);
   const list = box.querySelector('ol'), save = box.querySelector('footer button'), status = box.querySelector('[role=status]');
   const map = new Map(cards.map(card => [card.querySelector('[name=dim_code]').value, card]));
-  let dragging = null, saving = false;
+  let dragging = null, saving = false, category = '';
+  const tabs=[...panel.querySelectorAll('[data-condition-category]')];
   const changed = () => { status.textContent = '顺序已调整，点击保存生效'; };
   const move = (li, direction) => {
     if (saving) return;
-    const sibling = direction < 0 ? li.previousElementSibling : li.nextElementSibling;
+    const items=[...list.children].filter(item=>!item.hidden),index=items.indexOf(li);
+    const sibling=items[index+direction];
     if (sibling) { direction < 0 ? list.insertBefore(li, sibling) : list.insertBefore(sibling, li); changed(); }
   };
   for (const [code, card] of map) {
-    const li = document.createElement('li'); li.dataset.code = code; li.draggable = true;
+    const li = document.createElement('li'); li.dataset.code = code; li.dataset.category=card.dataset.category; li.draggable = true;
     li.innerHTML = '<span class="condition-drag" aria-hidden="true">⠿</span><b></b><button type="button" data-up>上移</button><button type="button" data-down>下移</button>';
     const name = card.querySelector('h2').textContent; li.querySelector('b').textContent = name;
     li.querySelector('[data-up]').setAttribute('aria-label', '上移'+name);
@@ -81,16 +83,24 @@ function initConditionOrdering() {
     li.addEventListener('dragend', () => {li.classList.remove('is-dragging');dragging=null;});
     list.append(li);
   }
+  panel.addEventListener('condition-category-change',event=>{
+    category=event.detail.category;
+    [...list.children].forEach(li=>{li.hidden=li.dataset.category!==category;});
+    const label=tabs.find(tab=>tab.dataset.conditionCategory===category)?.childNodes[0]?.textContent||'';
+    box.querySelector('summary').textContent=`调整「${label}」下的基本条件顺序`;
+    status.textContent='';save.disabled=[...list.children].filter(li=>!li.hidden).length<2;
+  });
   save.addEventListener('click', async () => {
     if(saving)return; saving=true; save.disabled=true; box.querySelectorAll('li button').forEach(b=>b.disabled=true);status.textContent='正在保存…';
-    const data=new URLSearchParams({csrf:cards[0].querySelector('[name=csrf]').value});
-    const order=[...list.children].map(li=>li.dataset.code);order.forEach(code=>data.append('order[]',code));
+    const savedCategory=category;tabs.forEach(tab=>tab.disabled=true);
+    const data=new URLSearchParams({csrf:cards[0].querySelector('[name=csrf]').value,category:savedCategory});
+    const order=[...list.children].filter(li=>li.dataset.category===savedCategory).map(li=>li.dataset.code);order.forEach(code=>data.append('order[]',code));
     try{
       const response=await fetch('?page=standards&action=condition_order_save',{method:'POST',credentials:'same-origin',body:data});
       const result=await response.json();if(!response.ok||!result.ok)throw new Error(result.error||'保存失败，请重试');
       order.forEach(code=>panel.append(map.get(code)));status.textContent='已保存，答题页将按此顺序显示';
     }catch(error){status.textContent=error.message||'网络异常，未保存，请重试';}
-    finally{saving=false;save.disabled=false;box.querySelectorAll('li button').forEach(b=>b.disabled=false);}
+    finally{saving=false;save.disabled=false;tabs.forEach(tab=>tab.disabled=false);box.querySelectorAll('li button').forEach(b=>b.disabled=false);}
   });
 }
 
@@ -831,6 +841,7 @@ function initStandardDimensionSearch() {
       if(clear)clear.hidden=!input.value;if(result)result.textContent=keyword?`找到 ${visible} 个匹配维度`:`本分类共 ${total} 个维度`;
       empty.hidden=visible>0;empty.textContent=keyword?'本分类暂无匹配维度':'本分类暂无维度，可点击“新增基本条件维度”添加。';
       const create=panel.querySelector('.standard-dimension-form')||document.querySelector('.standard-dimension-form');const select=create?.querySelector('[name="dimension_category"]');if(select&&tabs.length)select.value=category;
+      panel.dispatchEvent(new CustomEvent('condition-category-change',{detail:{category}}));
     };
     tabs.forEach(tab=>tab.addEventListener('click',()=>{category=tab.dataset.conditionCategory;try{sessionStorage.setItem('condition-category',category);}catch{}apply();}));
     input.addEventListener('input',apply);clear?.addEventListener('click',()=>{input.value='';apply();input.focus();});apply();
