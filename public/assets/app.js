@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch(() => {});
   }
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initReviewStableScroll(); initInterviewStableScroll(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
+  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initReviewStableScroll(); initInterviewStableScroll(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardCardLayout(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
 });
 
 function initConditionOrdering() {
@@ -1393,4 +1393,29 @@ function initQualityDetails() {
   const host = document.querySelector('.review-detail .dimensions');
   if (!host) return;
   host.hidden = true;
+}
+
+function initStandardCardLayout(){
+ document.querySelectorAll('#standard-conditions .dimension-score-card').forEach(form=>{
+  form.classList.add('a-layout');
+  const header=form.querySelector('header'),actions=form.querySelector('.dimension-actions'),list=form.querySelector('.dimension-score-list');
+  const settings=document.createElement('div');settings.className='dimension-settings-panel';settings.hidden=true;
+  const toggle=document.createElement('button');toggle.type='button';toggle.className='btn secondary dimension-settings-toggle';toggle.textContent='维度设置';toggle.setAttribute('aria-expanded','false');
+  [form.querySelector('[data-dimension-name-edit]'),form.querySelector('.dimension-name-editor'),form.querySelector('.dimension-category-control'),...actions.querySelectorAll('button'),form.querySelector('footer .danger')].filter(Boolean).forEach(el=>settings.append(el));
+  const count=actions.querySelector('span');if(count){header.firstElementChild.append(count);count.classList.add('dimension-count');}
+  actions.append(toggle);header.after(settings);
+  toggle.addEventListener('click',()=>{settings.hidden=!settings.hidden;toggle.setAttribute('aria-expanded',String(!settings.hidden));});
+  const headings=document.createElement('div');headings.className='tier-table-head';headings.innerHTML='<span></span><span>评分档位</span><span>分值</span><span>追问</span><span></span>';list.before(headings);
+  function enhance(row){
+   if(row.dataset.aLayout)return;row.dataset.aLayout='1';
+   const more=document.createElement('button');more.type='button';more.className='tier-more';more.textContent='···';more.setAttribute('aria-label','编辑或删除档位');more.setAttribute('aria-expanded','false');row.append(more);
+   more.addEventListener('click',()=>{const open=row.classList.toggle('tier-actions-open');more.setAttribute('aria-expanded',String(open));});
+   const follow=row.querySelector('button.tier-followup'),text=row.querySelector('.tier-followup-panel textarea'),required=row.querySelector('.tier-followup-required input');
+   const update=()=>{if(follow)follow.textContent=text?.value.trim()?(required?.checked?'已设置 · 必填':'已设置'):'＋ 添加追问';};
+   text?.addEventListener('input',update);required?.addEventListener('change',update);update();
+   const score=row.querySelector(':scope > label');if(score){score.classList.add('tier-score-cell');const input=score.querySelector('input');if(input)input.setAttribute('aria-label','档位分值');}
+  }
+  list.querySelectorAll('.dimension-score-row').forEach(enhance);
+  new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1&&node.matches('.dimension-score-row'))enhance(node);}))).observe(list,{childList:true});
+ });
 }
