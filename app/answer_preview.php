@@ -38,6 +38,14 @@ function render_assessment_answer_preview(array $detail): void {
  <main class="answer-preview answer-document"><header class="answer-preview-heading"><small>三奇（集团）有限公司</small><h1>应 聘 测 评 答 卷</h1><p><?=e($profile['name'])?> · <?=e($detail['post'].($detail['company']?' · '.$detail['company']:''))?></p><p>提交时间：<?=e($detail['submitted'])?></p></header>
  <?php $scores=$detail['result'];$pending=($scores['score_status']??'')!=='completed';?>
  <div class="answer-score-summary"><b>测评总分：<?=$scores?($pending?'待评分':number_format((float)$scores['total_score'],1).' / 100 分'):'未生成'?></b><?php if($scores):?><p>基本条件 <?=number_format((float)$scores['eval_score'],1)?> / 50　 ·　 基本素质 <?=number_format((float)$scores['suzhi_score'],1)?> / 25　 ·　 专业能力 <?=number_format((float)$scores['postq_score'],1)?> / 25</p><?php endif;?></div>
+ <?php render_assessment_answer_sections($detail);?>
+ <p class="answer-preview-note">只读预览 · 展示本次交卷记录</p></main>
+ <script src="/assets/vendor/html2pdf-0.10.1.bundle.min.js" defer></script>
+ <script src="/assets/answer-export.js?v=2" defer></script><?php admin_footer();
+}
+
+function render_assessment_answer_sections(array $detail): void {
+ $snapshot=$detail['snapshot'];$profile=$detail['profile']; ?>
  <section id="answer-profile" class="answer-preview-section"><h2>01　基本信息</h2><dl class="answer-preview-profile"><?php foreach(['name'=>'姓名','mobile'=>'手机号','gender'=>'性别','age'=>'年龄','edu'=>'学历','school_name'=>'毕业学校','major'=>'专业'] as $key=>$label):?><div><dt><?=$label?></dt><dd><?=e(assessment_answer_text($profile[$key]??'')?:'未记录')?></dd></div><?php endforeach;?></dl></section>
  <section id="answer-conditions" class="answer-preview-section"><h2>02　基本条件</h2><?php
  $groups=$snapshot['condition_questions']??[];$followups=$snapshot['condition_text_responses']??[];$shown=[];
@@ -49,7 +57,5 @@ function render_assessment_answer_preview(array $detail): void {
  </section>
  <?php foreach(['base'=>['03','基本素质'],'post'=>['04','专业题目']] as $scope=>[$number,$label]):?><section id="answer-<?=$scope?>" class="answer-preview-section"><h2><?=$number?>　<?=$label?></h2><?php $count=0;foreach($detail['questions'] as $question){if($question['question_type']!==$scope)continue;$count++;$value=$question['answer_val']??'';$decoded=json_decode($value,true);if(is_array($decoded))$value=$decoded;$options=json_decode($question['options_snapshot']??'[]',true);render_assessment_answer_item($count.'. '.$question['stem_snapshot'],$value,is_array($options)?$options:[], '本题得分 '.$question['score'].' / '.$question['max_score'].($question['score_status']==='manual_pending'?' · 待评分':''));}if(!$count):?><p class="answer-preview-note">本次答卷无此类题目记录。</p><?php endif;?></section><?php endforeach;?>
  <section id="answer-appendix" class="answer-preview-section"><h2>05　附录题目 <small>不计分</small></h2><?php $appendix=$detail['appendix'];if(empty($appendix['questions'])):?><p class="answer-preview-note"><?=e($appendix['state']['description']??'暂无附录记录')?></p><?php else:foreach($appendix['questions'] as $question){render_assessment_answer_item($question['section'].' · '.$question['title'],$question['value'],$question['options']??[],$question['note']!==''?'补充说明：'.$question['note']:null);}endif;?></section>
- <p class="answer-preview-note">只读预览 · 展示本次交卷记录</p></main>
- <script src="/assets/vendor/html2pdf-0.10.1.bundle.min.js" defer></script>
- <script src="/assets/answer-export.js?v=2" defer></script><?php admin_footer();
-}
+
+<?php }
