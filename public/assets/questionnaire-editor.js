@@ -19,7 +19,7 @@
   }catch(e){status.textContent=e.message;error.textContent=e.message;error.hidden=false;return false;}
   finally{setBusy(false);}
  }
- function open(row=null){if(busy)return;editing=row;input.setCustomValidity('');input.value=row?row.querySelector('input').value:'';error.hidden=true;document.getElementById('questionnaire-dialog-title').textContent=row?'编辑题目':'新增题目';row?.querySelector('details').removeAttribute('open');dialog.showModal();input.focus();}
+ function open(row=null){if(busy)return;editing=row;input.setCustomValidity('');input.value=row?row.querySelector('input').value:'';error.hidden=true;document.getElementById('questionnaire-dialog-title').textContent=row?'编辑题目':'新增题目';dialog.showModal();input.focus();}
  add.addEventListener('click',()=>{if(list.children.length>=60){status.textContent='最多添加 60 道题目';return;}open();});
  dialog.querySelectorAll('[data-close-question]').forEach(button=>button.addEventListener('click',()=>{if(!busy)dialog.close();}));
  dialog.addEventListener('cancel',event=>{if(busy)event.preventDefault();});
@@ -34,8 +34,13 @@
   if(busy)return;const edit=event.target.closest('[data-edit-question]');if(edit){open(edit.closest('article'));return;}
   const remove=event.target.closest('[data-remove-question]');if(!remove)return;
   if(list.children.length===1){status.textContent='请至少保留一道题目';return;}
-  const row=remove.closest('article'),index=[...list.children].indexOf(row),questions=values();questions.splice(index,1);
-  if(await save(questions)){const next=row.nextElementSibling||row.previousElementSibling;row.remove();update();next.querySelector('[data-edit-question]').focus();}
+  const row=remove.closest('article');
+  showConfirm({title:'确认删除这道题目？',description:'删除后将自动保存，新打开的问卷不再显示此题。已提交记录保留原内容。',actionLabel:'确认删除',onConfirm:async()=>{
+   if(busy||!row.isConnected)return;
+   if(list.children.length===1){status.textContent='请至少保留一道题目';return;}
+   const questions=values(),index=[...list.children].indexOf(row);questions.splice(index,1);
+   if(await save(questions)){const next=row.nextElementSibling||row.previousElementSibling;row.remove();update();next.querySelector('[data-edit-question]').focus();}
+  }});
  });
  async function saveOrder(before){if(before.every((row,i)=>list.children[i]===row))return;if(!await save(values()))list.append(...before);update();}
  list.addEventListener('dragstart',event=>{if(busy||!event.target.matches('.questionnaire-drag')){event.preventDefault();return;}originalOrder=[...list.children];dragged=event.target.closest('article');event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain','question');dragged.classList.add('is-dragging');});

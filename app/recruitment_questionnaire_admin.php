@@ -33,7 +33,7 @@ function render_recruitment_questionnaire_admin(PDO $pdo): void {
   <?php if($error):?><div class="form-error" role="alert"><?=e($error)?></div><?php endif;?>
   <div data-question-list><?php foreach($questions as $index=>$question):?>
    <article class="questionnaire-edit-row">
-    <div class="questionnaire-row-summary"><button type="button" class="questionnaire-drag" draggable="true" aria-label="拖动排序，也可按上下方向键调整" title="拖动排序 / 上下方向键">⠿</button><span class="questionnaire-number" data-question-number><?=sprintf('%02d',$index+1)?></span><span class="questionnaire-stem" data-question-stem><?=e($question)?></span><small class="questionnaire-type">文本 · 必填</small><button type="button" class="questionnaire-edit-toggle" data-edit-question aria-haspopup="dialog">编辑</button><details class="questionnaire-more"><summary aria-label="更多操作" title="更多操作">···</summary><div><button type="button" data-remove-question>删除题目</button></div></details></div>
+    <div class="questionnaire-row-summary"><button type="button" class="questionnaire-drag" draggable="true" aria-label="拖动排序，也可按上下方向键调整" title="拖动排序 / 上下方向键">⠿</button><span class="questionnaire-number" data-question-number><?=sprintf('%02d',$index+1)?></span><span class="questionnaire-stem" data-question-stem><?=e($question)?></span><small class="questionnaire-type">文本 · 必填</small><button type="button" class="questionnaire-edit-toggle" data-edit-question aria-haspopup="dialog">编辑</button><button type="button" class="questionnaire-delete" data-remove-question aria-haspopup="dialog">删除</button></div>
     <input type="hidden" name="questions[]" value="<?=e($question)?>">
    </article>
   <?php endforeach;?></div>
@@ -46,6 +46,6 @@ function render_recruitment_questionnaire_admin(PDO $pdo): void {
    <div class="questionnaire-dialog-footer"><button type="button" class="btn secondary" data-close-question>取消</button><button type="submit" class="btn primary">保存题目</button></div>
   </form>
  </dialog>
- <script src="/assets/questionnaire-editor.js?v=3" defer></script>
+ <script src="/assets/questionnaire-editor.js?v=4" defer></script>
  <?php admin_footer();
 }
