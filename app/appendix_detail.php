@@ -19,7 +19,7 @@ function appendix_record_detail(PDO $pdo,int $answerId): ?array {
         $answers=json_decode($row['responses_json']??'{}',true)?:[];
         foreach(json_decode($row['questions_json']??'[]',true)?:[] as $q){
             $value=$answers[$q['id']]??[];
-            $questions[]=['section'=>$q['section'],'title'=>$q['title'],'value'=>$value['value']??'','note'=>$value['note']??''];
+            $questions[]=['section'=>$q['section'],'title'=>$q['title'],'options'=>json_decode($q['options_json']??'[]',true)?:[],'value'=>$value['value']??'','note'=>$value['note']??''];
         }
     }
     return ['answer_id'=>(int)$row['id'],'name'=>$row['name'],'post_name'=>$row['post_name'],'submit_at'=>$row['submit_at'],'completed_at'=>$row['completed_at'],'state'=>$state,'questions'=>$questions];
