@@ -24,5 +24,11 @@ ob_start();render_final_review($pdo,$selected,[$selected],[],'筛选词',7);$wor
 foreach(['data-final-review-workspace','final-overview','view=report','target="_blank"','final-review.js','post_id=7','id=1'] as $text)if(!str_contains($workspace,$text))throw new Exception('Workspace missing '.$text);
 if(str_contains($workspace,'onclick="window.print()"')||str_contains($html,'data-final-review-workspace'))throw new Exception('Mixed report/workspace modes');
 if(defined('FINAL_REVIEW_VISUAL')&&!$requestedReport)$html=$workspace;
+foreach([null,0,'0','',5] as $years){
+ $sample=$selected;$sample['work_years']=$years;
+ foreach(['','report'] as $view){$_GET['view']=$view;ob_start();render_final_review($pdo,$sample,[$sample],[],'',0);$output=ob_get_clean();
+ if(str_contains($output,' 年经验')!==($years===5))throw new Exception('Unsourced experience visible or recorded years missing');
+ }
+}
 $selected['interview_done']=0;ob_start();render_final_review($pdo,$selected,[$selected],[],'',0);$pending=ob_get_clean();if(str_contains($pending,'name="op"'))throw new Exception('Premature decision controls');
 if(!defined('FINAL_REVIEW_VISUAL'))echo "PASS: interview isolation, weighted/legacy scores, missing submissions, questionnaire snapshots, escaped content, complete answers and decision gating\n";
