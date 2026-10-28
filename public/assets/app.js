@@ -651,7 +651,7 @@ function initInterviewRecommendationTags() {
 }
 
 function initTalentResumePreview() {
-  document.querySelectorAll('.talent-card .resume-preview').forEach(link => { link.textContent = '简历预览'; link.addEventListener('click', async event => {
+  document.querySelectorAll('.talent-card .resume-preview, .final-profile-actions .resume-preview').forEach(link => { link.addEventListener('click', async event => {
     event.preventDefault();
     const candidateId = new URL(link.href).searchParams.get('resume_id');
     if (!candidateId) return;
@@ -675,14 +675,25 @@ function showTalentResume(resume) {
   const score = value => Number(value || 0).toFixed(1);
   const age = resume.age !== null && resume.age !== undefined ? Number(resume.age) : resume.birth_date ? Math.max(0, new Date().getFullYear() - Number(String(resume.birth_date).slice(0, 4))) : '—';
   const overlay = document.createElement('div'); overlay.className = 'modal-overlay resume-overlay'; overlay.setAttribute('aria-hidden', 'true');
-  overlay.innerHTML = '<section class="modal-dialog resume-dialog" role="dialog" aria-modal="true" aria-labelledby="resume-title"><div class="modal-top"><div><small>人才简历</small><h2 id="resume-title"></h2></div><button type="button" class="modal-close" data-dialog-close aria-label="关闭预览">×</button></div><div class="resume-body"><header class="resume-hero"><i></i><div><b></b><span></span><small></small></div><strong><em></em><small>综合评分</small></strong></header><section class="resume-score-grid"></section><section class="resume-section"><h3>基本资料</h3><div class="resume-facts basic"></div></section><section class="resume-section"><h3>教育与职业</h3><div class="resume-facts career"></div></section><section class="resume-section"><h3>履历与能力</h3><div class="resume-facts ability"></div></section></div></section>';
+  overlay.innerHTML = '<section class="modal-dialog resume-dialog" role="dialog" aria-modal="true" aria-labelledby="resume-title"><div class="modal-top"><div><h2 id="resume-title"></h2></div><button type="button" class="modal-close" data-dialog-close aria-label="关闭预览">×</button></div><div class="resume-body"><header class="resume-hero"><div><span></span><small></small></div><strong><em></em><small>综合评分</small></strong></header><section class="resume-score-grid"></section><section class="resume-section"><h3>基本资料</h3><div class="resume-facts basic"></div></section><section class="resume-section"><h3>教育与职业</h3><div class="resume-facts career"></div></section><section class="resume-section"><h3>履历与能力</h3><div class="resume-facts ability"></div></section></div></section>';
   const text = (selector, value) => { overlay.querySelector(selector).textContent = value || '—'; };
-  text('#resume-title', `${resume.name || '人才'}的简历`); text('.resume-hero i', String(resume.name || '人').slice(0, 1)); text('.resume-hero b', resume.name); text('.resume-hero span', `应聘岗位：${resume.post_name || '—'}`); text('.resume-hero small', resume.mobile || '—'); text('.resume-hero strong em', score(resume.total_score));
-  const makeFacts = (target, items) => items.forEach(([label, value]) => { const item = document.createElement('div'); const name = document.createElement('span'); const detail = document.createElement('b'); name.textContent = label; detail.textContent = value || '—'; item.append(name, detail); overlay.querySelector(target).append(item); });
+  text('#resume-title', `${resume.name || '人才'}的简历`); text('.resume-hero span', `应聘岗位：${resume.post_name || '—'}`); text('.resume-hero small', resume.mobile || '—'); text('.resume-hero strong em', score(resume.total_score));
+  const hasValue = value => value !== null && value !== undefined && String(value).trim() !== '' && String(value).trim() !== '—';
+  const years = value => Number(value) > 0 ? `${value} 年` : null;
+  const makeFacts = (target, items) => {
+    const container = overlay.querySelector(target);
+    items.filter(([,value]) => hasValue(value)).forEach(([label, value]) => {
+      const item = document.createElement('div'), name = document.createElement('span'), detail = document.createElement('b');
+      name.textContent = label; detail.textContent = value;
+      if (String(value).length > 30 || String(value).includes('\n')) item.classList.add('resume-fact-wide');
+      item.append(name, detail); container.append(item);
+    });
+    if (!container.children.length) container.closest('.resume-section')?.remove();
+  };
   makeFacts('.resume-score-grid', [['基本条件', `${score(resume.eval_score)} / 50`], ['基本素质', `${score(resume.suzhi_score)} / 25`], ['专业能力', `${score(resume.postq_score)} / 25`]]);
-  makeFacts('.resume-facts.basic', [['性别', resume.gender], ['年龄', age === '—' ? age : `${age} 岁`], ['出生日期', resume.birth_date], ['健康状况', resume.health], ['政治面貌', resume.politics]]);
-  makeFacts('.resume-facts.career', [['学历', resume.edu], ['毕业学校', resume.school_name], ['院校层次', resume.school_tier], ['所学专业', resume.major], ['意向职位', resume.intent_post_name], ['职称', resume.title], ...(Number(resume.work_years)>0 ? [['工作年限', `${resume.work_years} 年`]] : []), ['从事专业年限', resume.prof_years === null || resume.prof_years === undefined ? '—' : `${resume.prof_years} 年`]]);
-  makeFacts('.resume-facts.ability', [['集团公司工作年限', resume.group_co_years === null || resume.group_co_years === undefined ? '—' : `${resume.group_co_years} 年`], ['上市公司工作年限', resume.listed_co_years === null || resume.listed_co_years === undefined ? '—' : `${resume.listed_co_years} 年`], ['非上市公司工作年限', resume.private_co_years === null || resume.private_co_years === undefined ? '—' : `${resume.private_co_years} 年`], ['工作背景', resume.work_bg], ['计算机能力', resume.computer_skill], ['外语能力', resume.language]]);
+  makeFacts('.resume-facts.basic', [['性别', resume.gender], ['年龄', Number(age) > 0 ? `${age} 岁` : null], ['出生日期', resume.birth_date], ['健康状况', resume.health], ['政治面貌', resume.politics]]);
+  makeFacts('.resume-facts.career', [['学历', resume.edu], ['毕业学校', resume.school_name], ['院校层次', resume.school_tier], ['所学专业', resume.major], ['意向职位', resume.intent_post_name], ['职称', resume.title], ...(Number(resume.work_years)>0 ? [['工作年限', `${resume.work_years} 年`]] : []), ['从事专业年限', years(resume.prof_years)]]);
+  makeFacts('.resume-facts.ability', [['集团公司工作年限', years(resume.group_co_years)], ['上市公司工作年限', years(resume.listed_co_years)], ['非上市公司工作年限', years(resume.private_co_years)], ['工作背景', resume.work_bg], ['计算机能力', resume.computer_skill], ['外语能力', resume.language]]);
   document.body.append(overlay);
   const close = () => { closeDialog(overlay); setTimeout(() => overlay.remove(), 180); };
   overlay.querySelector('[data-dialog-close]').addEventListener('click', close); overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
