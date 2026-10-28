@@ -34,9 +34,10 @@ function render_assessment_answer_preview(array $detail): void {
  $snapshot=$detail['snapshot'];$profile=$detail['profile'];
  $_GET['standalone']='1';
  admin_header($profile['name'].'-答题详情','preregister');?>
- <div class="answer-document-toolbar"><a class="btn secondary" href="?page=preregister">返回测评记录</a><span></span><button type="button" class="btn secondary" onclick="window.print()">打印</button><button type="button" class="btn primary" onclick="document.getElementById('answer-pdf-help').showModal()">导出 PDF</button></div>
- <dialog id="answer-pdf-help" class="answer-pdf-help"><h2>导出 PDF</h2><p>在接下来的窗口中，将目标打印机选择为“另存为 PDF”或“Microsoft Print to PDF”，然后保存文件。</p><p>建议使用 A4 纸张，并关闭页眉和页脚。</p><div><button type="button" class="btn secondary" onclick="this.closest('dialog').close()">取消</button><button type="button" class="btn primary" onclick="this.closest('dialog').close();window.print()">继续导出</button></div></dialog>
+ <div class="answer-document-toolbar"><a class="btn secondary" href="?page=preregister">返回测评记录</a><span></span><button type="button" class="btn secondary" onclick="window.print()">打印</button><a class="btn primary" href="?page=preregister&amp;answer_id=<?=$detail['id']?>&amp;download=pdf">导出 PDF</a></div>
  <main class="answer-preview answer-document"><header class="answer-preview-heading"><small>三奇（集团）有限公司</small><h1>应 聘 测 评 答 卷</h1><p><?=e($profile['name'])?> · <?=e($detail['post'].($detail['company']?' · '.$detail['company']:''))?></p><p>提交时间：<?=e($detail['submitted'])?></p></header>
+ <?php $scores=$detail['result'];$pending=($scores['score_status']??'')!=='completed';?>
+ <div class="answer-score-summary"><b>测评总分：<?=$scores?($pending?'待评分':number_format((float)$scores['total_score'],1).' / 100 分'):'未生成'?></b><?php if($scores):?><p>基本条件 <?=number_format((float)$scores['eval_score'],1)?> / 50　 ·　 基本素质 <?=number_format((float)$scores['suzhi_score'],1)?> / 25　 ·　 专业能力 <?=number_format((float)$scores['postq_score'],1)?> / 25</p><?php endif;?></div>
  <section id="answer-profile" class="answer-preview-section"><h2>01　基本信息</h2><dl class="answer-preview-profile"><?php foreach(['name'=>'姓名','mobile'=>'手机号','gender'=>'性别','age'=>'年龄','edu'=>'学历','school_name'=>'毕业学校','major'=>'专业'] as $key=>$label):?><div><dt><?=$label?></dt><dd><?=e(assessment_answer_text($profile[$key]??'')?:'未记录')?></dd></div><?php endforeach;?></dl></section>
  <section id="answer-conditions" class="answer-preview-section"><h2>02　基本条件</h2><?php
  $groups=$snapshot['condition_questions']??[];$followups=$snapshot['condition_text_responses']??[];$shown=[];
