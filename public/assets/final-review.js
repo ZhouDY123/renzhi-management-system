@@ -1,5 +1,14 @@
 (() => {
  const report=document.querySelector('.final-review-tabbed');if(!report)return;
+ const decision=report.querySelector('.final-decision'),workspace=report.closest('main.workspace');
+ function placeDecision(){
+  const left=workspace?Math.max(0,workspace.getBoundingClientRect().left):0;
+  report.style.setProperty('--decision-left',left+'px');
+  report.style.setProperty('--decision-height',decision.getBoundingClientRect().height+'px');
+ }
+ report.classList.add('has-fixed-decision');
+ const decisionObserver=new ResizeObserver(placeDecision);decisionObserver.observe(decision);if(workspace)decisionObserver.observe(workspace);
+ window.addEventListener('resize',placeDecision);placeDecision();
  const nav=report.querySelector('.final-report-nav');
  const panels=[...report.querySelectorAll('.final-report-content>.final-report-section')];
  const tabs=[...nav.querySelectorAll('a')].filter(a=>panels.some(p=>'#'+p.id===a.hash));
