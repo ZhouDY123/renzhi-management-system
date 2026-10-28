@@ -1401,9 +1401,10 @@ function initStandardCardLayout(){
   const header=form.querySelector('header'),actions=form.querySelector('.dimension-actions'),list=form.querySelector('.dimension-score-list');
   const settings=document.createElement('div');settings.className='dimension-settings-panel';settings.hidden=true;
   const toggle=document.createElement('button');toggle.type='button';toggle.className='btn secondary dimension-settings-toggle';toggle.textContent='维度设置';toggle.setAttribute('aria-expanded','false');
-  [form.querySelector('[data-dimension-name-edit]'),form.querySelector('.dimension-name-editor'),form.querySelector('.dimension-category-control'),form.querySelector('.condition-bonus-editor'),...actions.querySelectorAll('button'),form.querySelector('footer .danger')].filter(Boolean).forEach(el=>settings.append(el));
+  [form.querySelector('[data-dimension-name-edit]'),form.querySelector('.dimension-name-editor'),form.querySelector('.dimension-category-control'),...actions.querySelectorAll('button'),form.querySelector('footer .danger')].filter(Boolean).forEach(el=>settings.append(el));
   const count=actions.querySelector('span');if(count){header.firstElementChild.append(count);count.classList.add('dimension-count');}
   actions.append(toggle);header.after(settings);
+  const bonus=form.querySelector('.condition-bonus-editor');if(bonus)list.after(bonus);
   toggle.addEventListener('click',()=>{settings.hidden=!settings.hidden;toggle.setAttribute('aria-expanded',String(!settings.hidden));});
   const headings=document.createElement('div');headings.className='tier-table-head';headings.innerHTML='<span></span><span>评分档位</span><span>分值</span><span>追问</span><span></span>';list.before(headings);
   function enhance(row){

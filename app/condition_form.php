@@ -120,7 +120,7 @@ function condition_is_job_related(array $rows): bool {
 function document_condition_groups(PDO $pdo): array {
     $st=$pdo->query("SELECT s.* FROM scoring_standard s WHERE s.status='published' AND s.category!='basic_quality' AND s.version=(SELECT MAX(v.version) FROM scoring_standard v WHERE v.dim_code=s.dim_code AND v.status='published' AND v.category!='basic_quality') ORDER BY s.sort,s.id");$groups=[];
     foreach($st->fetchAll(PDO::FETCH_ASSOC) as $row)$groups[$row['dim_code']][]=$row;
-    foreach($groups as $code=>&$rows){$config=condition_text_config($pdo,$code);$rows[0]['text_question']=isset($config['tiers'])?$config:['tiers'=>[]];$rows[0]['bonus_options']=condition_bonus_eligible($rows[0])?condition_bonus_config($pdo,$code):[];}unset($rows);
+    foreach($groups as $code=>&$rows){$config=condition_text_config($pdo,$code);$rows[0]['text_question']=isset($config['tiers'])?$config:['tiers'=>[]];$rows[0]['bonus_options']=condition_bonus_config($pdo,$code);}unset($rows);
     return order_condition_groups($pdo,array_filter($groups,'condition_is_job_related'));
 }
 function condition_maxima(array $groups): array {
