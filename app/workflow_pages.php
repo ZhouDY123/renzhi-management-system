@@ -35,15 +35,6 @@ function render_talent_workflow(string $page, PDO $pdo): bool {
             header('Cache-Control: no-store');
             $detail=assessment_answer_detail($pdo,(int)$_GET['answer_id']);
             if(!$detail){http_response_code(404);admin_header('答题详情','preregister');echo '<section class="panel empty-state">该测评记录不存在或已删除。</section>';admin_footer();return true;}
-            if(($_GET['download']??'')==='pdf'){
-                require_once __DIR__.'/answer_pdf.php';
-                ob_start();render_assessment_answer_preview($detail);$html=ob_get_clean();
-                $pdf=assessment_pdf_from_html($html);
-                $filename=preg_replace('/[\\\\\/\x00-\x1F\x7F]/u','_', $detail['profile']['name']).'-测评答卷-'.$detail['id'].'.pdf';
-                header('Content-Type: application/pdf');header('X-Content-Type-Options: nosniff');
-                header("Content-Disposition: attachment; filename=assessment-".$detail['id'].".pdf; filename*=UTF-8''".rawurlencode($filename));
-                header('Content-Length: '.strlen($pdf));echo $pdf;return true;
-            }
             render_assessment_answer_preview($detail);return true;
         }
         if(isset($_GET['appendix_id'])){
