@@ -28,9 +28,10 @@ function render_assessment_answer_item(string $title,mixed $value,array $options
 }
 function render_assessment_answer_preview(array $detail): void {
  $snapshot=$detail['snapshot'];$profile=$detail['profile'];
- admin_header('答题详情','preregister');?>
- <main class="answer-preview"><header class="answer-preview-heading"><div><small>测评记录 / 答题详情</small><h1><?=e($profile['name'])?>的答卷</h1><p><?=e($detail['post'].($detail['company']?' · '.$detail['company']:''))?> · <?=e($detail['submitted'])?></p></div><a class="btn secondary" href="?page=preregister">返回测评记录</a></header>
- <nav class="answer-preview-nav"><a href="#answer-profile">基本信息</a><a href="#answer-conditions">基本条件</a><a href="#answer-base">基本素质</a><a href="#answer-post">专业题目</a><a href="#answer-appendix">附录题目</a></nav>
+ $_GET['standalone']='1';
+ admin_header($profile['name'].'-答题详情','preregister');?>
+ <div class="answer-document-toolbar"><a class="btn secondary" href="?page=preregister">返回测评记录</a><span>打印窗口中选择“另存为 PDF”即可导出</span><button type="button" class="btn primary" onclick="window.print()">打印 / 导出 PDF</button></div>
+ <main class="answer-preview answer-document"><header class="answer-preview-heading"><small>三奇（集团）有限公司</small><h1>应 聘 测 评 答 卷</h1><p><?=e($profile['name'])?> · <?=e($detail['post'].($detail['company']?' · '.$detail['company']:''))?></p><p>提交时间：<?=e($detail['submitted'])?></p></header>
  <section id="answer-profile" class="answer-preview-section"><h2>01　基本信息</h2><dl class="answer-preview-profile"><?php foreach(['name'=>'姓名','mobile'=>'手机号','gender'=>'性别','age'=>'年龄','edu'=>'学历','school_name'=>'毕业学校','major'=>'专业'] as $key=>$label):?><div><dt><?=$label?></dt><dd><?=e(assessment_answer_text($profile[$key]??'')?:'未记录')?></dd></div><?php endforeach;?></dl></section>
  <section id="answer-conditions" class="answer-preview-section"><h2>02　基本条件</h2><?php
  $groups=$snapshot['condition_questions']??[];
