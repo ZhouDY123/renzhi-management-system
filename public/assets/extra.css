@@ -515,3 +515,5 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
  .answer-document .answer-preview-question{break-inside:avoid-page;page-break-inside:avoid}.answer-document .answer-preview-value p{overflow:visible;white-space:normal;overflow-wrap:anywhere}
 }
 @media print{.answer-document>.answer-preview-note{display:none!important}.answer-document .answer-preview-section{margin-bottom:20px}.answer-document .answer-preview-question{padding-bottom:18px}.answer-document .answer-preview-value p{min-height:0}}
+
+.answer-document .answer-preview-followup{margin:-10px 0 20px 14px;padding-left:14px;border-left:1px solid #aaa}.answer-document .answer-preview-followup .answer-preview-question{padding-bottom:0}.answer-document .answer-preview-followup h3{font-size:15px}.answer-document .answer-question-group{margin:0 0 8px}@media print{.answer-document .answer-question-group{break-inside:avoid-page;page-break-inside:avoid}.answer-document .answer-preview-followup{margin-bottom:14px}}
