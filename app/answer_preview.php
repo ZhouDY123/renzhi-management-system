@@ -22,8 +22,8 @@ function assessment_answer_text(mixed $value): string {
  return (string)$value;
 }
 function render_assessment_answer_item(string $title,mixed $value,array $options=[],?string $hint=null): void {
- $text=assessment_answer_text($value);?>
- <article class="answer-preview-question"><h3><?=e($title)?></h3><?php if($options):?><div class="answer-preview-options"><?php foreach($options as $option):$label=assessment_answer_text($option);$selected=is_array($value)?in_array($label,$value,true):$label===$text;?><span class="<?=$selected?'selected':''?>"><?=$selected?'✓ ':''?><?=e($label)?></span><?php endforeach;?></div><?php endif;?><div class="answer-preview-value"><small>应聘者回答</small><p><?=nl2br(e($text!==''?$text:'未填写'))?></p></div><?php if($hint):?><p class="answer-preview-note"><?=e($hint)?></p><?php endif;?></article>
+ $text=assessment_answer_text($value);$labels=array_map('assessment_answer_text',$options);$picked=is_array($value)?array_map('assessment_answer_text',$value):[$text];$answerShown=$text!==''&&$labels&&!array_diff($picked,$labels);?>
+ <article class="answer-preview-question"><h3><?=e($title)?></h3><?php if($options):?><div class="answer-preview-options"><?php foreach($options as $option):$label=assessment_answer_text($option);$selected=is_array($value)?in_array($label,$value,true):$label===$text;?><span class="<?=$selected?'selected':''?>"><?=$selected?'✓ ':''?><?=e($label)?></span><?php endforeach;?></div><?php endif;?><?php if(!$answerShown):?><div class="answer-preview-value"><small>应聘者回答</small><p><?=nl2br(e($text!==''?$text:'未填写'))?></p></div><?php endif;?><?php if($hint):?><p class="answer-preview-note"><?=e($hint)?></p><?php endif;?></article>
  <?php
 }
 function render_assessment_answer_preview(array $detail): void {
