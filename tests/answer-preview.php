@@ -13,7 +13,7 @@ $pdo->prepare("INSERT INTO appendix_submission(answer_id,questions_json,response
 $d=assessment_answer_detail($pdo,1);if($d['profile']['name']!=='交卷姓名'||$d['post']!=='交卷岗位')throw new Exception('Live data replaced snapshot');
 ob_start();render_assessment_answer_preview($d);$html=ob_get_clean();
 foreach(['交卷姓名','专业快照','学校快照','学历快照','硕士','额外条件','追问快照','素质题快照','专业题快照','附录题快照','附录回答快照','补充说明快照','&lt;script&gt;'] as $text)if(!str_contains($html,$text))throw new Exception('Missing '.$text);
-if(strpos($html,'追问快照')>strpos($html,'额外加分 · 额外条件'))throw new Exception('Follow-up not directly below parent');
+if(strpos($html,'追问快照')>strpos($html,'补充条件：'))throw new Exception('Follow-up not directly below parent');
 if(substr_count($html,'>本科</p>')!==0)throw new Exception('Selected answer repeated');
 if(str_contains($html,'<script>危险内容'))throw new Exception('Unescaped answer');
 if(assessment_answer_detail($pdo,999)!==null)throw new Exception('Missing ID accepted');
