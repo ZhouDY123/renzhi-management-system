@@ -56,12 +56,11 @@ function initConditionOrdering() {
   const cards = [...(panel?.querySelectorAll('.dimension-score-card') || [])];
   if (!cards.length) return;
   const box = document.createElement('details'); box.className = 'condition-order panel';
-  box.innerHTML = '<summary>调整基本条件显示顺序</summary><p>仅调整当前分类下的维度。拖动条目或使用上移、下移，保存后同步到答题页。</p><ol></ol><footer><button type="button" class="btn primary">保存顺序</button><span role="status" aria-live="polite"></span></footer>';
-  panel.querySelector('.condition-category-tabs').after(box);
+  box.innerHTML = '<summary>调整基本条件显示顺序</summary><p>调整全部基本条件的顺序。拖动条目或使用上移、下移，保存后同步到答题页。</p><ol></ol><footer><button type="button" class="btn primary">保存顺序</button><span role="status" aria-live="polite"></span></footer>';
+  const intro=panel.querySelector('.grouped-standard-intro');if(intro)intro.after(box);else panel.prepend(box);
   const list = box.querySelector('ol'), save = box.querySelector('footer button'), status = box.querySelector('[role=status]');
   const map = new Map(cards.map(card => [card.querySelector('[name=dim_code]').value, card]));
-  let dragging = null, saving = false, category = '';
-  const tabs=[...panel.querySelectorAll('[data-condition-category]')];
+  let dragging = null, saving = false;
   const changed = () => { status.textContent = '顺序已调整，点击保存生效'; };
   const move = (li, direction) => {
     if (saving) return;
@@ -70,7 +69,7 @@ function initConditionOrdering() {
     if (sibling) { direction < 0 ? list.insertBefore(li, sibling) : list.insertBefore(sibling, li); changed(); }
   };
   for (const [code, card] of map) {
-    const li = document.createElement('li'); li.dataset.code = code; li.dataset.category=card.dataset.category; li.draggable = true;
+    const li = document.createElement('li'); li.dataset.code = code; li.draggable = true;
     li.innerHTML = '<span class="condition-drag" aria-hidden="true">⠿</span><b></b><button type="button" data-up>上移</button><button type="button" data-down>下移</button>';
     const name = card.querySelector('h2').textContent; li.querySelector('b').textContent = name;
     li.querySelector('[data-up]').setAttribute('aria-label', '上移'+name);
@@ -83,24 +82,16 @@ function initConditionOrdering() {
     li.addEventListener('dragend', () => {li.classList.remove('is-dragging');dragging=null;});
     list.append(li);
   }
-  panel.addEventListener('condition-category-change',event=>{
-    category=event.detail.category;
-    [...list.children].forEach(li=>{li.hidden=li.dataset.category!==category;});
-    const label=tabs.find(tab=>tab.dataset.conditionCategory===category)?.childNodes[0]?.textContent||'';
-    box.querySelector('summary').textContent=`调整「${label}」下的基本条件顺序`;
-    status.textContent='';save.disabled=[...list.children].filter(li=>!li.hidden).length<2;
-  });
   save.addEventListener('click', async () => {
     if(saving)return; saving=true; save.disabled=true; box.querySelectorAll('li button').forEach(b=>b.disabled=true);status.textContent='正在保存…';
-    const savedCategory=category;tabs.forEach(tab=>tab.disabled=true);
-    const data=new URLSearchParams({csrf:cards[0].querySelector('[name=csrf]').value,category:savedCategory});
-    const order=[...list.children].filter(li=>li.dataset.category===savedCategory).map(li=>li.dataset.code);order.forEach(code=>data.append('order[]',code));
+    const data=new URLSearchParams({csrf:cards[0].querySelector('[name=csrf]').value});
+    const order=[...list.children].map(li=>li.dataset.code);order.forEach(code=>data.append('order[]',code));
     try{
       const response=await fetch('?page=standards&action=condition_order_save',{method:'POST',credentials:'same-origin',body:data});
       const result=await response.json();if(!response.ok||!result.ok)throw new Error(result.error||'保存失败，请重试');
       order.forEach(code=>panel.append(map.get(code)));status.textContent='已保存，答题页将按此顺序显示';
     }catch(error){status.textContent=error.message||'网络异常，未保存，请重试';}
-    finally{saving=false;save.disabled=false;tabs.forEach(tab=>tab.disabled=false);box.querySelectorAll('li button').forEach(b=>b.disabled=false);}
+    finally{saving=false;save.disabled=false;box.querySelectorAll('li button').forEach(b=>b.disabled=false);}
   });
 }
 
@@ -827,25 +818,17 @@ function initStandardTabs() {
 }
 
 function initStandardDimensionSearch() {
-  document.querySelectorAll('[data-standard-search]').forEach(input => {
-    const scope=input.dataset.standardSearch,panel=document.querySelector(`[data-standard-panel="${scope}"]`);if(!panel)return;
-    const cards=[...panel.querySelectorAll('.dimension-score-card')],tabs=[...panel.querySelectorAll('[data-condition-category]')];
-    const clear=document.querySelector(`[data-standard-search-clear="${scope}"]`),result=document.querySelector(`[data-standard-search-result="${scope}"]`);
-    let category='education';try{category=sessionStorage.getItem('condition-category')||category;}catch{}
-    if(!tabs.some(tab=>tab.dataset.conditionCategory===category))category=tabs[0]?.dataset.conditionCategory||'';
-    const empty=document.createElement('p');empty.className='condition-category-empty';empty.hidden=true;panel.append(empty);
-    const apply=()=>{
-      const keyword=input.value.trim().toLocaleLowerCase('zh-CN');let visible=0,total=0;
-      cards.forEach(card=>{const inCategory=!tabs.length||card.dataset.category===category;if(inCategory)total++;const matched=inCategory&&(!keyword||card.textContent.toLocaleLowerCase('zh-CN').includes(keyword));card.hidden=!matched;if(matched)visible++;});
-      tabs.forEach(tab=>{const active=tab.dataset.conditionCategory===category;tab.classList.toggle('is-active',active);tab.setAttribute('aria-selected',String(active));tab.querySelector('[data-category-count]').textContent=cards.filter(card=>card.dataset.category===tab.dataset.conditionCategory).length;});
-      if(clear)clear.hidden=!input.value;if(result)result.textContent=keyword?`找到 ${visible} 个匹配维度`:`本分类共 ${total} 个维度`;
-      empty.hidden=visible>0;empty.textContent=keyword?'本分类暂无匹配维度':'本分类暂无维度，可点击“新增基本条件维度”添加。';
-      const create=panel.querySelector('.standard-dimension-form')||document.querySelector('.standard-dimension-form');const select=create?.querySelector('[name="dimension_category"]');if(select&&tabs.length)select.value=category;
-      panel.dispatchEvent(new CustomEvent('condition-category-change',{detail:{category}}));
-    };
-    tabs.forEach(tab=>tab.addEventListener('click',()=>{category=tab.dataset.conditionCategory;try{sessionStorage.setItem('condition-category',category);}catch{}apply();}));
-    input.addEventListener('input',apply);clear?.addEventListener('click',()=>{input.value='';apply();input.focus();});apply();
-  });
+ document.querySelectorAll('[data-standard-search]').forEach(input=>{
+  const scope=input.dataset.standardSearch,panel=document.querySelector(`[data-standard-panel="${scope}"]`);if(!panel)return;
+  const cards=[...panel.querySelectorAll('.dimension-score-card')],clear=document.querySelector(`[data-standard-search-clear="${scope}"]`),result=document.querySelector(`[data-standard-search-result="${scope}"]`);
+  const empty=document.createElement('p');empty.className='condition-category-empty';empty.hidden=true;panel.append(empty);
+  const apply=()=>{const keyword=input.value.trim().toLocaleLowerCase('zh-CN');let visible=0;
+   cards.forEach(card=>{const matched=!keyword||card.textContent.toLocaleLowerCase('zh-CN').includes(keyword);card.hidden=!matched;if(matched)visible++;});
+   if(clear)clear.hidden=!input.value;if(result)result.textContent=keyword?`找到 ${visible} 个匹配维度`:`共 ${cards.length} 个维度`;
+   empty.hidden=visible>0;empty.textContent=keyword?'暂无匹配维度':'暂无维度，可点击“新增基本条件维度”添加。';
+  };
+  input.addEventListener('input',apply);clear?.addEventListener('click',()=>{input.value='';apply();input.focus();});apply();
+ });
 }
 
 function initStandardDimensionCreate() {
@@ -1401,7 +1384,7 @@ function initStandardCardLayout(){
   const header=form.querySelector('header'),actions=form.querySelector('.dimension-actions'),list=form.querySelector('.dimension-score-list');
   const settings=document.createElement('div');settings.className='dimension-settings-panel';settings.hidden=true;
   const toggle=document.createElement('button');toggle.type='button';toggle.className='btn secondary dimension-settings-toggle';toggle.textContent='维度设置';toggle.setAttribute('aria-expanded','false');
-  [form.querySelector('[data-dimension-name-edit]'),form.querySelector('.dimension-name-editor'),form.querySelector('.dimension-category-control'),...actions.querySelectorAll('button'),form.querySelector('footer .danger')].filter(Boolean).forEach(el=>settings.append(el));
+  [form.querySelector('[data-dimension-name-edit]'),form.querySelector('.dimension-name-editor'),...actions.querySelectorAll('button'),form.querySelector('footer .danger')].filter(Boolean).forEach(el=>settings.append(el));
   const count=actions.querySelector('span');if(count){header.firstElementChild.append(count);count.classList.add('dimension-count');}
   actions.append(toggle);header.after(settings);
   const bonus=form.querySelector('.condition-bonus-editor');if(bonus)list.after(bonus);

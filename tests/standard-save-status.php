@@ -24,7 +24,7 @@ foreach(['standard_group_save'=>'edu','standard_custom_group_save'=>'custom_test
   foreach($rows as $row)if($row['status']!==$status||$row['version']!==3)throw new Exception('State/version changed');
   if($pdo->query("SELECT COUNT(*) FROM scoring_standard WHERE dim_name='学历要求'")->fetchColumn()!=2)throw new Exception('Rename did not cover existing and new tiers');
   if($pdo->query('SELECT id FROM scoring_standard ORDER BY sort,id')->fetchAll(PDO::FETCH_COLUMN)!==[2,1])throw new Exception('Mixed new/existing tier order not saved');
-  if(condition_category($pdo,['dim_code'=>$code,'dim_name'=>'学历要求'])!=='work')throw new Exception('Category not persisted');
+  if(condition_category($pdo,['dim_code'=>$code,'dim_name'=>'学历要求'])==='work')throw new Exception('Removed category control still persisted');
   if($pdo->query("SELECT COUNT(*) FROM scoring_standard WHERE category!='education'")->fetchColumn()!=0)throw new Exception('Display category changed scoring category');
   $config=condition_text_config($pdo,$code);if(($config['tiers']['本科及以上']['question']??'')!=='本科专业说明'||($config['tiers']['硕士']['question']??'')!=='研究方向'||empty($config['tiers']['硕士']['required']))throw new Exception('Combined follow-up save failed');
   $_POST=['dim_code'=>$code,'rule_id'=>[999],'tier_value'=>[4]];
