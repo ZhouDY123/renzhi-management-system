@@ -1,4 +1,5 @@
 <?php
+$requestedReport=($_GET['view']??'')==='report';
 ob_start();require __DIR__.'/answer-preview.php';ob_end_clean();require_once __DIR__.'/../app/final_review.php';
 function csrf(){return 'fixture';}function review_label($v){return $v;}
 $pdo->exec("INSERT INTO user(id,username,password_hash,real_name,role) VALUES(1,'one','x','面试官甲','interviewer'),(2,'two','x','面试官乙','interviewer'),(3,'three','x','未提交面试官','interviewer');
@@ -14,8 +15,14 @@ $sessions=final_review_interviews($pdo,1);
 if(count($sessions)!==1||$sessions[0]['submitted']!==2||count($sessions[0]['reviewers'])!==3||abs($sessions[0]['average']-73.33)>.01)throw new Exception('Scope, completion or weighted score incorrect');
 $pdo->prepare('UPDATE answer SET candidate_snapshot=? WHERE id=1')->execute([json_encode($snap)]);
 $selected=['id'=>1,'answer_id'=>1,'name'=>'示例候选人','post_name'=>'GEO建设专员 · 示例公司','mobile'=>'13800000000','edu'=>'本科','work_years'=>1,'total_score'=>80.2,'eval_score'=>30.2,'suzhi_score'=>25,'postq_score'=>25,'interview_done'=>1];
+$_GET['view']='report';
 ob_start();render_final_review($pdo,$selected,[$selected],[],'',0);$html=ob_get_clean();
 foreach(['提交时问卷原题','&lt;b&gt;问卷原答&lt;/b&gt;','&lt;script&gt;评价转义&lt;/script&gt;','未提交','73.33','历史优势','未记录','追问快照','专业题快照','附录回答快照','final-decision','打印评审报告'] as $text)if(!str_contains($html,$text))throw new Exception('Missing '.$text);
 if(str_contains($html,'不应显示的其他问卷')||str_contains($html,'<script>评价转义'))throw new Exception('Data isolation or escaping failed');
+unset($_GET['view']);
+ob_start();render_final_review($pdo,$selected,[$selected],[],'筛选词',7);$workspace=ob_get_clean();
+foreach(['data-final-review-workspace','final-overview','view=report','target="_blank"','final-review.js','post_id=7','id=1'] as $text)if(!str_contains($workspace,$text))throw new Exception('Workspace missing '.$text);
+if(str_contains($workspace,'onclick="window.print()"')||str_contains($html,'data-final-review-workspace'))throw new Exception('Mixed report/workspace modes');
+if(defined('FINAL_REVIEW_VISUAL')&&!$requestedReport)$html=$workspace;
 $selected['interview_done']=0;ob_start();render_final_review($pdo,$selected,[$selected],[],'',0);$pending=ob_get_clean();if(str_contains($pending,'name="op"'))throw new Exception('Premature decision controls');
 if(!defined('FINAL_REVIEW_VISUAL'))echo "PASS: interview isolation, weighted/legacy scores, missing submissions, questionnaire snapshots, escaped content, complete answers and decision gating\n";
