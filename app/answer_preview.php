@@ -34,7 +34,7 @@ function render_assessment_answer_preview(array $detail): void {
  $snapshot=$detail['snapshot'];$profile=$detail['profile'];
  $_GET['standalone']='1';
  admin_header($profile['name'].'-答题详情','preregister');?>
- <div class="answer-document-toolbar"><a class="btn secondary" href="?page=preregister">返回测评记录</a><span></span><button type="button" class="btn secondary" onclick="window.print()">打印</button><button type="button" class="btn primary" id="answer-export-pdf" data-filename="<?=e($profile['name'].'-测评答卷-'.$detail['id'].'.pdf')?>" data-auto-export="<?=(($_GET['download']??'')==='pdf')?'1':'0'?>">导出 PDF</button><small id="answer-export-status" role="status" aria-live="polite"></small></div>
+ <div class="answer-document-toolbar"><a class="btn secondary" href="?page=preregister">返回测评记录</a><span></span><button type="button" class="btn secondary" id="answer-print">打印</button><button type="button" class="btn primary" id="answer-export-pdf" data-filename="<?=e($profile['name'].'-测评答卷-'.$detail['id'].'.pdf')?>" data-auto-export="<?=(($_GET['download']??'')==='pdf')?'1':'0'?>">导出 PDF</button><small id="answer-export-status" role="status" aria-live="polite"></small></div>
  <main class="answer-preview answer-document"><header class="answer-preview-heading"><small>三奇（集团）有限公司</small><h1>应 聘 测 评 答 卷</h1><p><?=e($profile['name'])?> · <?=e($detail['post'].($detail['company']?' · '.$detail['company']:''))?></p><p>提交时间：<?=e($detail['submitted'])?></p></header>
  <?php $scores=$detail['result'];$pending=($scores['score_status']??'')!=='completed';?>
  <div class="answer-score-summary"><b>测评总分：<?=$scores?($pending?'待评分':number_format((float)$scores['total_score'],1).' / 100 分'):'未生成'?></b><?php if($scores):?><p>基本条件 <?=number_format((float)$scores['eval_score'],1)?> / 50　 ·　 基本素质 <?=number_format((float)$scores['suzhi_score'],1)?> / 25　 ·　 专业能力 <?=number_format((float)$scores['postq_score'],1)?> / 25</p><?php endif;?></div>
@@ -51,5 +51,5 @@ function render_assessment_answer_preview(array $detail): void {
  <section id="answer-appendix" class="answer-preview-section"><h2>05　附录题目 <small>不计分</small></h2><?php $appendix=$detail['appendix'];if(empty($appendix['questions'])):?><p class="answer-preview-note"><?=e($appendix['state']['description']??'暂无附录记录')?></p><?php else:foreach($appendix['questions'] as $question){render_assessment_answer_item($question['section'].' · '.$question['title'],$question['value'],$question['options']??[],$question['note']!==''?'补充说明：'.$question['note']:null);}endif;?></section>
  <p class="answer-preview-note">只读预览 · 展示本次交卷记录</p></main>
  <script src="/assets/vendor/html2pdf-0.10.1.bundle.min.js" defer></script>
- <script src="/assets/answer-export.js?v=1" defer></script><?php admin_footer();
+ <script src="/assets/answer-export.js?v=2" defer></script><?php admin_footer();
 }

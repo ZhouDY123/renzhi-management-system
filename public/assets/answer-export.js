@@ -4,6 +4,19 @@
   const source = document.querySelector('.answer-document');
   const status = document.getElementById('answer-export-status');
   if (!button || !source) return;
+  // A newly opened/reloaded answer starts at page one, including BFCache restores.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  const showFirstPage = () => {
+    if (location.hash) history.replaceState(history.state, '', location.pathname + location.search);
+    window.scrollTo({top: 0, left: 0, behavior: 'instant'});
+  };
+  showFirstPage();
+  window.addEventListener('pageshow', showFirstPage);
+  document.getElementById('answer-print')?.addEventListener('click', async () => {
+    await document.fonts.ready;
+    showFirstPage();
+    window.print();
+  });
   async function download() {
     if (button.disabled) return;
     button.disabled = true;
@@ -103,6 +116,9 @@
         trimmed.height = bottom;
         trimmed.getContext('2d').drawImage(canvas, 0, 0);
         return this.set({canvas: trimmed});
+      }).toPdf().get('pdf').then(function(pdf) {
+        pdf.setDisplayMode('fullwidth', 'continuous', 'UseNone');
+        pdf.setPage(1);
       }).save();
       status.textContent = 'PDF 已生成';
     } catch (error) {
