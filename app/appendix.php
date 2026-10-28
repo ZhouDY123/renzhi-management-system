@@ -109,13 +109,13 @@ function appendix_h5(PDO $pdo,array $post,string $token): never {
     catch(Throwable $e){error_log('Appendix unavailable: '.$e->getMessage());$error='附录暂时无法保存，请刷新页面后重试或联系 HR。';$questions=[];}
     h5_header('附录信息');
     echo '<link rel="stylesheet" href="/assets/appendix.css?v='.asset_mtime('appendix.css').'">';
-    ?><section class="h5-card appendix-intro"><span class="appendix-kicker">测评已保存 · 附录必填</span><h1>补充信息</h1><p>请逐题完成全部附录题目，填写完整后方可提交。附录不计入测评分数。</p></section>
+    ?><section class="h5-card appendix-intro"><span class="appendix-kicker">测评已保存 · 附录必填</span><h1>补充信息</h1><p>请逐题完成全部附录题目，填写完整后方可提交。</p></section>
     <form class="h5-card appendix-form" method="post" action="?m=apply&amp;t=<?=e($token)?>&amp;step=appendix">
     <input type="hidden" name="csrf" value="<?=csrf()?>">
     <input type="hidden" name="appendix_answer_id" value="<?=$answerId?>">
     <?php if($error):?><div class="form-error" role="alert"><?=e($error)?></div><?php endif;
     render_appendix_fields($questions);?>
-    <div class="appendix-actions"><button type="submit" class="btn primary" name="intent" value="submit">提交并查看成绩</button></div></form><?php h5_footer();exit;
+    <div class="appendix-actions"><button type="submit" class="btn primary" name="intent" value="submit">提交信息</button></div></form><?php h5_footer();exit;
 }
 
 function render_appendix_fields(array $questions): void {
