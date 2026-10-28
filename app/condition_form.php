@@ -103,7 +103,7 @@ function condition_text_responses(array $data,array $groups): array {
         $value=trim($value);if(!empty($config['required'])&&$value==='')throw new InvalidArgumentException('请填写：'.$question);
         $answers[$code]=['dimension'=>$rows[0]['dim_name'],'option'=>$data['conditions'][$code]??'','question'=>$question,'required'=>!empty($config['required']),'value'=>$value];
     }
-    return $answers;
+    return array_merge($answers,condition_bonus_text_responses($data,$groups));
 }
 // Match explicit identity dimensions, not incidental words in job qualifications.
 function condition_is_job_related(array $rows): bool {

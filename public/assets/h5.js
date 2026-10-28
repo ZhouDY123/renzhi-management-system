@@ -116,3 +116,11 @@ document.querySelectorAll('[data-condition-text]').forEach(box => {
   };
   select.addEventListener('change', () => sync(true)); sync();
 });
+
+// Bonus follow-ups belong to each checked bonus, independently of tier questions.
+document.querySelectorAll('[data-bonus-choice]').forEach(choice=>{
+ const box=choice.closest('.bonus-answer-item').querySelector('.bonus-text-answer');if(!box)return;
+ const input=box.querySelector('textarea');
+ const sync=()=>{box.hidden=!choice.checked;input.disabled=!choice.checked;input.required=choice.checked&&input.dataset.required==='1';if(!choice.checked){input.value='';input.setCustomValidity('');input.removeAttribute('aria-invalid');box.querySelectorAll('.field-error').forEach(el=>el.remove());}};
+ choice.addEventListener('change',sync);sync();
+});

@@ -1421,4 +1421,15 @@ function initStandardCardLayout(){
  });
 }
 document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.post-order ol').forEach(list=>{let dragged=null;list.querySelectorAll('li').forEach(row=>{row.addEventListener('dragstart',e=>{dragged=row;row.classList.add('is-post-dragging');e.dataTransfer.setData('text/plain','post');});row.addEventListener('dragover',e=>{if(!dragged||dragged===row)return;e.preventDefault();const rect=row.getBoundingClientRect();const after=e.clientX>rect.left+rect.width/2;list.insertBefore(dragged,after?row.nextSibling:row);});row.addEventListener('drop',e=>e.preventDefault());row.addEventListener('dragend',()=>{row.classList.remove('is-post-dragging');dragged=null;});row.querySelectorAll('[data-post-move]').forEach(button=>button.onclick=()=>{const other=button.dataset.postMove==='-1'?row.previousElementSibling:row.nextElementSibling;if(other)button.dataset.postMove==='-1'?list.insertBefore(row,other):list.insertBefore(other,row);});});});});
-document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.condition-bonus-editor').forEach(editor=>{editor.addEventListener('click',event=>{if(event.target.closest('[data-remove-bonus]'))event.target.closest('.bonus-edit-row').remove();if(event.target.closest('[data-add-bonus]')){const row=document.createElement('div');row.className='bonus-edit-row';row.innerHTML='<input type="hidden" name="bonus_id[]" value=""><input name="bonus_label[]" placeholder="加分条件" maxlength="200" aria-label="加分条件"><input name="bonus_score[]" type="number" min="0.01" max="50" step="0.01" value="1" aria-label="加分值"><button type="button" data-remove-bonus>删除</button>';editor.querySelector('[data-bonus-rows]').append(row);row.querySelector('[name="bonus_label[]"]').focus();}});});});
+document.addEventListener('DOMContentLoaded',()=>{
+ document.querySelectorAll('.condition-bonus-editor').forEach(editor=>{
+  const update=row=>{const question=row.querySelector('textarea').value.trim(),required=row.querySelector('[name="bonus_required[]"]').value==='1';row.querySelector('[data-bonus-followup]').textContent=question?(required?'已设置 · 必填':'已设置追问'):'＋追问';};
+  editor.addEventListener('click',event=>{
+   const row=event.target.closest('.bonus-edit-row');
+   if(event.target.closest('[data-remove-bonus]'))row.remove();
+   if(event.target.closest('[data-bonus-followup]')){const panel=row.querySelector('.bonus-followup-editor');panel.hidden=!panel.hidden;row.querySelector('[data-bonus-followup]').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)panel.querySelector('textarea').focus();}
+   if(event.target.closest('[data-add-bonus]')){const row=editor.querySelector('[data-bonus-template]').content.firstElementChild.cloneNode(true);editor.querySelector('[data-bonus-rows]').append(row);row.querySelector('[name="bonus_label[]"]').focus();}
+  });
+  ['input','change'].forEach(type=>editor.addEventListener(type,event=>{const row=event.target.closest('.bonus-edit-row');if(row)update(row);}));
+ });
+});

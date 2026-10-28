@@ -478,3 +478,18 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 .condition-bonus-editor p{margin:13px 0 0;font-size:11px}
 .condition-bonus-editor [data-bonus-rows]:empty:after{content:'暂无加分项，点击右上角添加';display:block;padding:15px 0 2px;font-size:12px;color:#9aa9bd}
 @media(max-width:640px){#standard-conditions .a-layout .condition-bonus-editor{padding:18px 16px}}
+
+.condition-bonus-editor .bonus-edit-row,.condition-bonus-editor .bonus-column-labels{grid-template-columns:minmax(0,1fr) 64px 86px 32px}
+.condition-bonus-editor [data-bonus-followup]{color:#567bc4;white-space:nowrap;padding:5px 0;font-size:11px}
+.bonus-followup-editor{grid-column:1/-1;min-width:0;padding:14px;background:#f1f5fc;border:1px solid #e0e8f5;border-radius:9px}
+.bonus-followup-editor[hidden],.bonus-text-answer[hidden]{display:none!important}
+.bonus-followup-editor label{display:block;font-size:12px;color:#506786}.bonus-followup-editor small{font-size:11px;font-weight:400;color:#8b9bb1}
+.bonus-followup-editor textarea{display:block;width:100%;box-sizing:border-box;padding:10px;margin-top:8px;border:1px solid #d7e2f2;border-radius:7px;resize:vertical;font:inherit;background:#fff}
+.bonus-followup-editor .bonus-required-control{display:flex;align-items:center;gap:12px;margin-top:10px}.bonus-required-control select{width:90px;padding:6px;border:1px solid #d7e2f2;border-radius:6px;background:#fff;color:#506786}
+.condition-bonus-fields .bonus-text-answer{margin:8px 0 14px;padding:12px;background:#fff;border:1px solid #e0e9f6;border-left:3px solid #a9c8f2;border-radius:8px}
+.condition-bonus-fields .bonus-text-answer label{display:block!important;margin:0}
+.bonus-text-answer textarea{display:block;width:100%;box-sizing:border-box;min-height:85px;padding:10px;margin-top:9px;border:1px solid #d4dfef;border-radius:7px;font:inherit;font-size:16px;resize:vertical}
+.bonus-text-answer .condition-followup-heading small{font-size:11px;white-space:nowrap;color:#8795a9}
+@media(max-width:640px){.condition-bonus-editor .bonus-edit-row,.condition-bonus-editor .bonus-column-labels{grid-template-columns:minmax(0,1fr) 52px 70px 28px;gap:5px}}
+.condition-bonus-fields .bonus-text-answer .condition-followup-heading{display:flex;justify-content:flex-start;text-align:left}.condition-bonus-fields .bonus-text-answer .condition-required-star{flex:0 0 auto}.condition-bonus-fields .bonus-text-answer .condition-followup-heading>span:not(.condition-required-star){flex:1;text-align:left}.condition-bonus-fields .bonus-text-answer .condition-followup-heading>small{flex:none}
+.condition-bonus-editor [data-remove-bonus]{padding:5px 0;white-space:nowrap}
