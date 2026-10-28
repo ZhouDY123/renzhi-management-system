@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__.'/post_management.php';
 function assessment_profile(array $input): array {
     $input=is_array($input['profile']??null)?$input['profile']:[];
     return ['gender'=>trim((string)($input['gender']??'')), 'age'=>filter_var($input['age']??'',FILTER_VALIDATE_INT), 'edu'=>trim((string)($input['edu']??'')), 'major'=>trim((string)($input['major']??'')), 'school_name'=>trim((string)($input['school_name']??''))];
@@ -48,6 +49,7 @@ function show_assessment_cooldown(string $next): never {
 // Public entry: registration rows are created by the application, not by HR.
 if($m==='apply'&&$t==='unified'){
     $rows=$pdo->query("SELECT p.* FROM post p WHERE p.status='recruiting' AND EXISTS(SELECT 1 FROM question_set qs WHERE qs.post_id=p.id AND qs.status='published') ORDER BY p.id DESC")->fetchAll();
+    $rows=ordered_recruitment_posts($pdo,$rows);
     h5_header('岗位测评'); ?>
     <div class="h5-title"><small>在线应聘</small><h1>请选择应聘岗位</h1><p>选择岗位并填写个人信息，即可开始测评。</p></div>
     <section class="h5-card candidates">

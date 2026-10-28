@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__.'/condition_order.php';
+require_once __DIR__.'/condition_bonus.php';
 function condition_categories(?PDO $pdo=null): array {
     $pdo=$pdo??db();
     $raw=$pdo->query("SELECT value FROM app_setting WHERE key='condition_categories'")->fetchColumn();
@@ -119,7 +120,7 @@ function condition_is_job_related(array $rows): bool {
 function document_condition_groups(PDO $pdo): array {
     $st=$pdo->query("SELECT s.* FROM scoring_standard s WHERE s.status='published' AND s.category!='basic_quality' AND s.version=(SELECT MAX(v.version) FROM scoring_standard v WHERE v.dim_code=s.dim_code AND v.status='published' AND v.category!='basic_quality') ORDER BY s.sort,s.id");$groups=[];
     foreach($st->fetchAll(PDO::FETCH_ASSOC) as $row)$groups[$row['dim_code']][]=$row;
-    foreach($groups as $code=>&$rows){$config=condition_text_config($pdo,$code);$rows[0]['text_question']=isset($config['tiers'])?$config:['tiers'=>[]];}unset($rows);
+    foreach($groups as $code=>&$rows){$config=condition_text_config($pdo,$code);$rows[0]['text_question']=isset($config['tiers'])?$config:['tiers'=>[]];$rows[0]['bonus_options']=condition_bonus_eligible($rows[0])?condition_bonus_config($pdo,$code):[];}unset($rows);
     return order_condition_groups($pdo,array_filter($groups,'condition_is_job_related'));
 }
 function condition_maxima(array $groups): array {
@@ -127,6 +128,7 @@ function condition_maxima(array $groups): array {
 }
 function validate_document_conditions(array $data,array $groups): void {
     condition_text_responses($data,$groups);
+    selected_condition_bonuses($data,$groups);
     if(!$groups)throw new InvalidArgumentException('暂无已启用的岗位相关基本条件题目，请联系 HR。');
     foreach($groups as $code=>$rows){$answer=$data['conditions'][$code]??null;
         if(!is_string($answer)||!in_array($answer,array_column($rows,'tier_label'),true))throw new InvalidArgumentException('请完成基本条件：'.$rows[0]['dim_name']);
@@ -134,5 +136,5 @@ function validate_document_conditions(array $data,array $groups): void {
 }
 function render_document_conditions(array $groups): void {
     $rawMax=rtrim(rtrim(number_format(array_sum(condition_maxima($groups)),2,'.',''),'0'),'.');
-    ?><section class="document-conditions"><h3>基本条件测评</h3><p>按实际情况选择，每项只取一档；工作履历在全部经历中选择最高一档，不重复累加。工具能力由本人自评，本部分原始满分<?=e($rawMax)?>分，折算为50分。</p><?php if(!$groups):?><div class="form-error">暂无已启用的岗位相关基本条件题目，请联系 HR。</div><?php endif;?><div class="two"><?php foreach($groups as $code=>$rows):?><div class="condition-field"><label><?=e($rows[0]['dim_name'])?><select name="conditions[<?=e($code)?>]" required><option value="" disabled hidden <?=empty($_POST['conditions'][$code])?'selected':''?>>请选择符合自身情况的一项</option><?php foreach($rows as $row):?><option value="<?=e($row['tier_label'])?>" <?=($_POST['conditions'][$code]??null)===$row['tier_label']?'selected':''?>><?=e($row['tier_label'])?></option><?php endforeach;?></select></label><?php $config=$rows[0]['text_question']??[];$text=selected_condition_text($rows,$_POST['conditions'][$code]??null);?><label class="condition-text-answer" data-condition-text="<?=e($code)?>" data-config="<?=e(json_encode($config,JSON_UNESCAPED_UNICODE))?>" <?=empty($text['question'])?'hidden':''?>><span class="condition-followup-heading"><span class="condition-required-star" data-text-required aria-hidden="true" <?=empty($text['required'])?'hidden':''?>>*</span><span data-text-title><?=e($text['question']??'')?></span> <small data-text-hint><?=!empty($text['required'])?'必填':'选填'?></small></span><textarea name="condition_text[<?=e($code)?>]" rows="3" maxlength="2000" <?=empty($text['question'])?'disabled':(!empty($text['required'])?'required':'')?> placeholder="请填写您的回答"><?=e(is_string($_POST['condition_text'][$code]??null)?$_POST['condition_text'][$code]:'')?></textarea><small class="condition-followup-note">补充说明，不计入测评分数</small></label></div><?php endforeach;?></div></section><?php
+    ?><section class="document-conditions"><h3>基本条件测评</h3><p>按实际情况选择，每项只取一档；工作履历在全部经历中选择最高一档，不重复累加。工具能力由本人自评，本部分原始满分<?=e($rawMax)?>分，折算为50分。</p><?php if(!$groups):?><div class="form-error">暂无已启用的岗位相关基本条件题目，请联系 HR。</div><?php endif;?><div class="two"><?php foreach($groups as $code=>$rows):?><div class="condition-field"><label><?=e($rows[0]['dim_name'])?><select name="conditions[<?=e($code)?>]" required><option value="" disabled hidden <?=empty($_POST['conditions'][$code])?'selected':''?>>请选择符合自身情况的一项</option><?php foreach($rows as $row):?><option value="<?=e($row['tier_label'])?>" <?=($_POST['conditions'][$code]??null)===$row['tier_label']?'selected':''?>><?=e($row['tier_label'])?></option><?php endforeach;?></select></label><?php $config=$rows[0]['text_question']??[];$text=selected_condition_text($rows,$_POST['conditions'][$code]??null);?><label class="condition-text-answer" data-condition-text="<?=e($code)?>" data-config="<?=e(json_encode($config,JSON_UNESCAPED_UNICODE))?>" <?=empty($text['question'])?'hidden':''?>><span class="condition-followup-heading"><span class="condition-required-star" data-text-required aria-hidden="true" <?=empty($text['required'])?'hidden':''?>>*</span><span data-text-title><?=e($text['question']??'')?></span> <small data-text-hint><?=!empty($text['required'])?'必填':'选填'?></small></span><textarea name="condition_text[<?=e($code)?>]" rows="3" maxlength="2000" <?=empty($text['question'])?'disabled':(!empty($text['required'])?'required':'')?> placeholder="请填写您的回答"><?=e(is_string($_POST['condition_text'][$code]??null)?$_POST['condition_text'][$code]:'')?></textarea><small class="condition-followup-note">补充说明，不计入测评分数</small></label><?php render_condition_bonus_fields($code,$rows[0]);?></div><?php endforeach;?></div></section><?php
 }

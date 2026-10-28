@@ -11,10 +11,11 @@ function calculate_eval_score(array $candidate, int $answerId, ?array $groups=nu
         $score=(float)$matched['tier_value'];$raw+=$score;
         $details[]=[$code,$rules[0]['dim_name'],$matched['tier_label'],$score];
     }
+    $bonus=0;foreach(selected_condition_bonuses($candidate,$groups) as $item){$bonus+=(float)$item['score'];$details[]=[$item['code'].':'.$item['id'],$item['dimension'].'加分（折算后）',$item['label'],(float)$item['score']];}
     $pdo->prepare('DELETE FROM eval_score_detail WHERE answer_id=?')->execute([$answerId]);
     $ins=$pdo->prepare('INSERT INTO eval_score_detail(answer_id,dim_code,dim_name,matched_tier,score) VALUES(?,?,?,?,?)');
     foreach($details as $detail)$ins->execute([$answerId,...$detail]);
-    return $max>0?round(min(50,$raw/$max*50),1):0;
+    return round(min(50,($max>0?$raw/$max*50:0)+$bonus),1);
 }
 function rule_matches(mixed $value,string $type,string $json): bool {
     $r=json_decode($json,true);if(!is_array($r))return false;
