@@ -12,4 +12,6 @@ foreach(["status!='stop'"=>[4,1,2],"status='recruiting'"=>[4,2]] as $filter=>$ex
 }
 save_recruitment_post_order($pdo,[2,1,4,3]);
 if(array_column(ordered_recruitment_posts($pdo,$rows),'id')!==[2,4])throw new Exception('Updated order was not applied');
+$papers=[['id'=>90,'post_id'=>4,'version'=>2],['id'=>70,'post_id'=>4,'version'=>1],['id'=>80,'post_id'=>2,'version'=>3],['id'=>60,'post_id'=>2,'version'=>1]];
+if(array_column(ordered_recruitment_posts($pdo,$papers,'post_id'),'id')!==[80,60,90,70])throw new Exception('Paper options must follow post order while retaining version order');
 echo "PASS: saved post ordering, invalid order rejection, new post append, filtered options and subsequent reorder\n";
