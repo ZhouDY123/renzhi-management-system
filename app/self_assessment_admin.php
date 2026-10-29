@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/post_management.php';
 
 function handle_basic_rating_action(PDO $pdo,string $action): void {
     if(!in_array($action,['basic_rating_save','basic_rating_toggle','basic_rating_delete'],true))return;
@@ -24,7 +25,7 @@ function handle_basic_rating_action(PDO $pdo,string $action): void {
 
 function render_basic_rating_editor(PDO $pdo): void {
     $edit=null;if(isset($_GET['basic_edit'])){$st=$pdo->prepare("SELECT * FROM question_base WHERE id=? AND group_type='suzhi'");$st->execute([(int)$_GET['basic_edit']]);$edit=$st->fetch()?:null;}
-    $posts=$pdo->query("SELECT id,name,company FROM post ORDER BY id")->fetchAll();
+    $posts=ordered_recruitment_posts($pdo,$pdo->query('SELECT id,name,company FROM post')->fetchAll());
     $filter=(string)($_GET['basic_post']??'');
     $sql="SELECT q.*,p.name post_name,p.company post_company FROM question_base q LEFT JOIN post p ON p.id=q.post_id WHERE q.group_type='suzhi'";
     $args=[];if($filter==='unassigned')$sql.=' AND q.post_id IS NULL';elseif(ctype_digit($filter)&& (int)$filter>0){$sql.=' AND q.post_id=?';$args[]=(int)$filter;}
