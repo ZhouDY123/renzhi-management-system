@@ -1415,7 +1415,49 @@ function initStandardCardLayout(){
   new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1&&node.matches('.dimension-score-row'))enhance(node);}))).observe(list,{childList:true});
  });
 }
-document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.post-order ol').forEach(list=>{let dragged=null;list.querySelectorAll('li').forEach(row=>{row.addEventListener('dragstart',e=>{dragged=row;row.classList.add('is-post-dragging');e.dataTransfer.setData('text/plain','post');});row.addEventListener('dragover',e=>{if(!dragged||dragged===row)return;e.preventDefault();const rect=row.getBoundingClientRect();const after=e.clientX>rect.left+rect.width/2;list.insertBefore(dragged,after?row.nextSibling:row);});row.addEventListener('drop',e=>e.preventDefault());row.addEventListener('dragend',()=>{row.classList.remove('is-post-dragging');dragged=null;});row.querySelectorAll('[data-post-move]').forEach(button=>button.onclick=()=>{const other=button.dataset.postMove==='-1'?row.previousElementSibling:row.nextElementSibling;if(other)button.dataset.postMove==='-1'?list.insertBefore(row,other):list.insertBefore(other,row);});});});});
+function initPostOrderSorting() {
+  document.querySelectorAll('.post-order ol').forEach(list => {
+    let drag = null;
+    // Pointer sorting avoids native text drags and browser drag-to-search gestures.
+    list.addEventListener('dragstart', event => event.preventDefault());
+    list.addEventListener('pointerdown', event => {
+      const row = event.target.closest('li');
+      if (!row || row.parentElement !== list || event.target.closest('button') || event.button !== 0 || !event.isPrimary) return;
+      drag = { row, pointerId: event.pointerId, x: event.clientX, y: event.clientY, active: false };
+      list.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+    list.addEventListener('pointermove', event => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      event.preventDefault();
+      if (!drag.active && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 6) return;
+      drag.active = true;
+      drag.row.classList.add('is-post-dragging');
+      const bounds = list.getBoundingClientRect();
+      if (event.clientY < bounds.top + 30) list.scrollTop -= 16;
+      else if (event.clientY > bounds.bottom - 30) list.scrollTop += 16;
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.post-order li');
+      if (!target || target === drag.row || target.parentElement !== list) return;
+      const rect = target.getBoundingClientRect();
+      const after = event.clientX > rect.left + rect.width / 2;
+      list.insertBefore(drag.row, after ? target.nextSibling : target);
+    });
+    const finish = event => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const pointerId = drag.pointerId;
+      drag.row.classList.remove('is-post-dragging');
+      drag = null;
+      if (list.hasPointerCapture(pointerId)) list.releasePointerCapture(pointerId);
+    };
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => list.addEventListener(type, finish));
+    list.querySelectorAll('[data-post-move]').forEach(button => button.addEventListener('click', () => {
+      const row = button.closest('li');
+      const other = button.dataset.postMove === '-1' ? row.previousElementSibling : row.nextElementSibling;
+      if (other) button.dataset.postMove === '-1' ? list.insertBefore(row, other) : list.insertBefore(other, row);
+    }));
+  });
+}
+document.addEventListener('DOMContentLoaded', initPostOrderSorting);
 document.addEventListener('DOMContentLoaded',()=>{
  document.querySelectorAll('.condition-bonus-editor').forEach(editor=>{
   const update=row=>{const question=row.querySelector('textarea').value.trim(),required=row.querySelector('[name="bonus_required[]"]').value==='1';row.querySelector('[data-bonus-followup]').textContent=question?(required?'已设置 · 必填':'已设置追问'):'＋追问';};

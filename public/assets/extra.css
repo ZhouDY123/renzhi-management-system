@@ -566,3 +566,5 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 .notification-close{flex:none;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:#6b7c91;font-size:22px;cursor:pointer}.notification-close:hover{background:#edf2f8}
 @media(max-width:560px){.notification-stack{top:16px;right:16px}}
 @media print{.notification-stack{display:none}}
+/* Keep post sorting inside the page instead of starting browser text gestures. */
+.post-order li{user-select:none;-webkit-user-select:none;touch-action:none;-webkit-user-drag:none}.post-order li *{-webkit-user-drag:none}.post-order li.is-post-dragging{cursor:grabbing}
