@@ -170,7 +170,20 @@ function seed(PDO $pdo): void {
 function e(?string $value): string { return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8'); }
 function csrf(): string { if(empty($_SESSION['csrf'])) $_SESSION['csrf']=bin2hex(random_bytes(24)); return $_SESSION['csrf']; }
 function check_csrf(): void { if(!hash_equals($_SESSION['csrf']??'', $_POST['csrf']??'')) { http_response_code(419); exit('请求已过期，请返回重试'); } }
-function redirect(string $url): never { header('Location: '.$url); exit; }
+function redirect(string $url): never {
+    // Keep only validated list context when a standards mutation returns to its list.
+    if (($_SERVER['REQUEST_METHOD']??'')==='POST' && ($_GET['page']??'')==='standards' && str_starts_with($url,'/index.php?')) {
+        parse_str((string)parse_url($url,PHP_URL_QUERY),$query);
+        if (($query['page']??'')==='standards') {
+            $section=$_POST['return_section']??'';
+            if (is_string($section)&&in_array($section,['conditions','suzhi'],true)) $query['section']=$section;
+            $post=$_POST['return_basic_post']??'';
+            if (!isset($query['basic_post'])&&is_string($post)&&($post==='unassigned'||ctype_digit($post))) $query['basic_post']=$post;
+            $url='/index.php?'.http_build_query($query);
+        }
+    }
+    header('Location: '.$url); exit;
+}
 function admin_user(): ?array { $u=$_SESSION['admin']??null;if($u&&($u['role']??'')==='leader'){unset($_SESSION['admin']);return null;}return $u; }
 function require_admin(): void { if(!admin_user()) redirect('/index.php?page=login'); }
 function can(string ...$roles): bool { $u=admin_user(); return $u&&($u['role']==='admin'||in_array($u['role'],$roles,true)); }

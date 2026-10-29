@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  initNotifications();
   initConditionOrdering();
   document.querySelectorAll('.session-qr-links').forEach(group => {
     const links = group.querySelectorAll('a');
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch(() => {});
   }
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initReviewStableScroll(); initInterviewStableScroll(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardCardLayout(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog();
+  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initReviewStableScroll(); initInterviewStableScroll(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardCardLayout(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog(); initStandardViewState();
 });
 
 function initConditionOrdering() {
@@ -89,8 +90,8 @@ function initConditionOrdering() {
     try{
       const response=await fetch('?page=standards&action=condition_order_save',{method:'POST',credentials:'same-origin',body:data});
       const result=await response.json();if(!response.ok||!result.ok)throw new Error(result.error||'保存失败，请重试');
-      order.forEach(code=>panel.append(map.get(code)));status.textContent='已保存，答题页将按此顺序显示';
-    }catch(error){status.textContent=error.message||'网络异常，未保存，请重试';}
+      order.forEach(code=>panel.append(map.get(code)));status.textContent='';showNotification('顺序已保存，答题页将按此顺序显示');
+    }catch(error){status.textContent='';showNotification(error.message||'网络异常，未保存，请重试','error');}
     finally{saving=false;save.disabled=false;box.querySelectorAll('li button').forEach(b=>b.disabled=false);}
   });
 }
@@ -190,12 +191,12 @@ function openDialog(overlay, preferred) {
   previousFocus = document.activeElement; activeOverlay = overlay;
   overlay.classList.add('open'); overlay.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open'); document.querySelector('.shell')?.setAttribute('inert', '');
-  requestAnimationFrame(() => (preferred || overlay.querySelector(focusables))?.focus());
+  requestAnimationFrame(() => (preferred || overlay.querySelector(focusables))?.focus({preventScroll:true}));
 }
 function closeDialog(overlay) {
   overlay.classList.remove('open'); overlay.setAttribute('aria-hidden', 'true');
   if (!document.querySelector('.modal-overlay.open')) { document.body.classList.remove('modal-open'); document.querySelector('.shell')?.removeAttribute('inert'); }
-  activeOverlay = document.querySelector('.modal-overlay.open'); previousFocus?.focus();
+  activeOverlay = document.querySelector('.modal-overlay.open'); previousFocus?.focus({preventScroll:true});
 }
 function restoreQuestionOptionsField() {
   const form = activeOverlay?.querySelector('form.question-editor');
@@ -288,7 +289,7 @@ function initFormValidation() {
         const msg = document.createElement('small'); msg.className = 'field-error'; msg.id = `${id}-error`;
         msg.textContent = field.validity.valueMissing ? '请填写此项后再继续。' : '填写格式不正确，请检查后重试。';
         field.setAttribute('aria-describedby', msg.id); field.insertAdjacentElement('afterend', msg);
-      }); invalid[0].focus(); return;
+      }); if (new URLSearchParams(location.search).get('page') === 'standards') showNotification('请检查标出的必填项或填写格式。','error'); invalid[0].focus(); return;
     }
     const btn = e.submitter;
     if (form.querySelector('[data-save-continue]')) {
@@ -312,10 +313,10 @@ function showConfirm({title, description, actionLabel, onConfirm}) {
 }
 
 function initConfirmations() {
-  document.querySelectorAll('form[data-confirm-message]').forEach(form => {
-    const description = form.dataset.confirmMessage || '此操作会改变当前数据，是否继续？';
+  document.querySelectorAll('form[data-confirm-message],form:has(button[data-confirm-message])').forEach(form => {
     form.addEventListener('submit', e => {
-      if (form.dataset.confirmed === '1') return; e.preventDefault(); e.stopImmediatePropagation();
+      const description = e.submitter?.dataset.confirmMessage || form.dataset.confirmMessage;
+      if (!description || form.dataset.confirmed === '1') return; e.preventDefault(); e.stopImmediatePropagation();
       const label = e.submitter?.textContent.trim() || '确认操作';
       showConfirm({title: label, description, actionLabel: label, onConfirm: () => { form.dataset.confirmed = '1'; form.dataset.confirmPending = '1'; form.requestSubmit(e.submitter); }});
     }, true);
@@ -1376,8 +1377,8 @@ function initTablePagination() {
   const isInterviewResults = new URLSearchParams(location.search).get('page') === 'interview_results';
   document.querySelectorAll('.table-wrap table').forEach((table, index)=>{
     const rows=[...table.tBodies].flatMap(body=>[...body.rows]), size=isInterviewResults?10:12; if(rows.length<=size)return; let page=1; const pages=Math.ceil(rows.length/size),label=isInterviewResults?'面试官评分明细':'表格',nav=document.createElement('nav');nav.className='table-pagination';nav.setAttribute('aria-label',`${label}分页`);nav.innerHTML='<span></span><div><button type="button" class="btn secondary" data-prev>上一页</button><b></b><button type="button" class="btn secondary" data-next>下一页</button></div>';table.closest('.table-wrap').append(nav);
-    const render=()=>{const start=(page-1)*size;rows.forEach((row,i)=>row.hidden=i<start||i>=start+size);nav.querySelector('span').textContent=`${label}：第 ${start+1}–${Math.min(start+size,rows.length)} 条，共 ${rows.length} 条`;nav.querySelector('b').textContent=`${page} / ${pages}`;nav.querySelector('[data-prev]').disabled=page===1;nav.querySelector('[data-next]').disabled=page===pages;};
-    nav.querySelector('[data-prev]').addEventListener('click',()=>{page--;render();table.scrollIntoView({behavior:'smooth',block:'start'});});nav.querySelector('[data-next]').addEventListener('click',()=>{page++;render();table.scrollIntoView({behavior:'smooth',block:'start'});});render();
+    const render=()=>{nav.dataset.page=String(page);const start=(page-1)*size;rows.forEach((row,i)=>row.hidden=i<start||i>=start+size);nav.querySelector('span').textContent=`${label}：第 ${start+1}–${Math.min(start+size,rows.length)} 条，共 ${rows.length} 条`;nav.querySelector('b').textContent=`${page} / ${pages}`;nav.querySelector('[data-prev]').disabled=page===1;nav.querySelector('[data-next]').disabled=page===pages;};
+    nav.querySelector('[data-prev]').addEventListener('click',()=>{page--;render();table.scrollIntoView({behavior:'smooth',block:'start'});});nav.querySelector('[data-next]').addEventListener('click',()=>{page++;render();table.scrollIntoView({behavior:'smooth',block:'start'});});nav.addEventListener('restore-page',event=>{page=Math.max(1,Math.min(pages,Number(event.detail)||1));render();});render();
   });
 }
 
@@ -1427,3 +1428,68 @@ document.addEventListener('DOMContentLoaded',()=>{
   ['input','change'].forEach(type=>editor.addEventListener(type,event=>{const row=event.target.closest('.bonus-edit-row');if(row)update(row);}));
  });
 });
+
+function showNotification(message, type = 'ok') {
+  let stack = document.querySelector('.notification-stack');
+  if (!stack) { stack = document.createElement('div'); stack.className = 'notification-stack'; document.body.append(stack); }
+  const notice = document.createElement('section'); notice.className = `app-notification${type === 'error' ? ' is-error' : ''}`;
+  const content = document.createElement('div'); content.setAttribute('role', type === 'error' ? 'alert' : 'status'); content.setAttribute('aria-atomic', 'true');
+  const title = document.createElement('strong'); title.textContent = type === 'error' ? '操作未完成' : '操作成功';
+  const text = document.createElement('p'); text.textContent = message; content.append(title, text);
+  const close = document.createElement('button'); close.type = 'button'; close.className = 'notification-close'; close.setAttribute('aria-label', '关闭通知'); close.textContent = '×';
+  notice.append(content, close); stack.append(notice);
+  let timer; const pause = () => clearTimeout(timer), dismiss = () => { pause(); notice.remove(); if (!stack.children.length) stack.remove(); };
+  const resume = () => { pause(); if (type !== 'error' && !notice.matches(':hover,:focus-within')) timer = setTimeout(dismiss, 8000); };
+  close.addEventListener('click', dismiss); notice.addEventListener('mouseenter', pause); notice.addEventListener('mouseleave', resume);
+  notice.addEventListener('focusin', pause); notice.addEventListener('focusout', () => setTimeout(resume, 0)); resume();
+}
+
+function initNotifications() {
+  document.querySelectorAll('.content > .flash').forEach(flash => {
+    showNotification(flash.textContent.trim(), flash.classList.contains('error') ? 'error' : 'ok'); flash.remove();
+  });
+}
+
+function initStandardViewState() {
+  const query = new URLSearchParams(location.search), key = 'standards-return-view';
+  const read = () => { try { return JSON.parse(sessionStorage.getItem(key)); } catch { return null; } };
+  const clear = () => { try { sessionStorage.removeItem(key); } catch {} };
+  if (query.get('page') !== 'standards') { clear(); return; }
+  const saved = read(); clear();
+  const section = () => document.querySelector('[data-standard-show].is-active')?.dataset.standardShow || 'conditions';
+  const snapshot = () => ({time:Date.now(), section:section(), y:window.scrollY,
+    filter:document.querySelector('.rating-post-filter select')?.value || '',
+    searches:[...document.querySelectorAll('[data-standard-search]')].map(input=>[input.dataset.standardSearch,input.value]),
+    pages:[...document.querySelectorAll('.table-pagination')].map(nav=>Number(nav.dataset.page)||1),
+    orderingOpen:!!document.querySelector('.condition-order')?.open});
+  const remember = () => { const state = snapshot(); try { sessionStorage.setItem(key, JSON.stringify(state)); } catch {} return state; };
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href]'); if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0 || link.target === '_blank') return;
+    const url = new URL(link.href, location.href);
+    if (url.origin !== location.origin || url.searchParams.get('page') !== 'standards' || !['edit','basic_edit'].some(name=>url.searchParams.has(name))) return;
+    const state = remember(); url.searchParams.set('section', state.section);
+    if (state.filter) url.searchParams.set('basic_post', state.filter);
+    link.href = url.toString();
+  }, true);
+  document.addEventListener('submit', event => {
+    const form = event.target;
+    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || form.method.toLowerCase() !== 'post') return;
+    const url = new URL(event.submitter?.getAttribute('formaction') || form.action, location.href);
+    if (url.origin !== location.origin || url.searchParams.get('page') !== 'standards') return;
+    const state = remember();
+    for (const [name,value] of [['return_section',state.section],['return_basic_post',state.filter]]) {
+      let input = form.elements.namedItem(name); if (!input) { input=document.createElement('input');input.type='hidden';input.name=name;form.append(input); } input.value=value;
+    }
+  });
+  if (!saved || Date.now()-saved.time > 5*60*1000 || !['conditions','suzhi'].includes(saved.section)) return;
+  document.querySelector(`[data-standard-show="${saved.section}"]`)?.click();
+  for (const [scope,value] of saved.searches || []) {
+    const input=[...document.querySelectorAll('[data-standard-search]')].find(input=>input.dataset.standardSearch===scope);
+    if (input) { input.value=value; input.dispatchEvent(new Event('input',{bubbles:true})); }
+  }
+  const ordering=document.querySelector('.condition-order'); if (ordering) ordering.open=!!saved.orderingOpen;
+  document.querySelectorAll('.table-pagination').forEach((nav,index)=>nav.dispatchEvent(new CustomEvent('restore-page',{detail:saved.pages?.[index] || 1})));
+  const restore = () => window.scrollTo({top:Math.max(0,Number(saved.y)||0),left:0,behavior:'instant'});
+  requestAnimationFrame(()=>requestAnimationFrame(restore));
+  if (document.readyState !== 'complete') window.addEventListener('load',restore,{once:true});
+}

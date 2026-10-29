@@ -560,3 +560,9 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 /* 窄屏下先换行分配表单，并为题库操作按钮保留实际可用宽度。 */
 @media(max-width:1100px){.qr-center{grid-template-columns:minmax(0,1fr)}.session-card .assign-row{grid-template-columns:minmax(0,1fr)}.session-card .assign-row form{min-width:0}}
 @media(max-width:1000px){.basic-rating-library.table-wrap th,.basic-rating-library.table-wrap td{padding:10px 6px}}
+.notification-stack{position:fixed;top:88px;right:24px;z-index:3000;display:grid;gap:12px;width:min(380px,calc(100vw - 32px));pointer-events:none}
+.app-notification{display:flex;align-items:flex-start;gap:14px;padding:18px 16px 18px 20px;border:1px solid #cce5dc;border-left:4px solid #147a64;border-radius:12px;background:#fff;box-shadow:0 8px 30px #10264026;pointer-events:auto;color:#253c55;overflow-wrap:anywhere}
+.app-notification>div{flex:1;min-width:0}.app-notification strong{font-size:15px;color:#147a64}.app-notification p{margin:7px 0 0;font-size:14px;line-height:1.65}.app-notification.is-error{border-color:#eed5d2;border-left-color:#b4473e}.app-notification.is-error strong{color:#b4473e}
+.notification-close{flex:none;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:#6b7c91;font-size:22px;cursor:pointer}.notification-close:hover{background:#edf2f8}
+@media(max-width:560px){.notification-stack{top:16px;right:16px}}
+@media print{.notification-stack{display:none}}
