@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch(() => {});
   }
   document.querySelectorAll('form').forEach(form => { form.noValidate = true; });
-  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initReviewStableScroll(); initInterviewStableScroll(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardCardLayout(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog(); initStandardViewState();
+  initFullMobileNumbers(); initLoginFields(); initSearchFields(); initPasswordToggles(); initSidebarGroups(); initSidebarScrollPosition(); initStandardRuleDefaults(); initFormValidation(); initConfirmations(); initInterviewRegistrationActions(); initInterviewRegistrationStatuses(); initAssessmentBulkRegistration(); initReviewActions(); initReviewStableScroll(); initInterviewStableScroll(); initInterviewSessionControls(); initInterviewSessionPagination(); initRegistrationPaginationFooter(); initInterviewRecommendationTags(); initTalentResumePreview(); initTalentEditLinks(); initStandardEditModals(); initGroupedStandardTiers(); initStandardCardLayout(); initStandardTabs(); initStandardDimensionSearch(); initStandardDimensionCreate(); initQuestionPaperBuilder(); initSearchablePostSelects(); initQuestionArchiveLink(); initPaperArchive(); initDirectQrActions(); initSelectedFields(); initQuestionEditorOptions(); initFormModals(); initPostDuplicateConfirmation(); initQrModals(); initTablePagination(); initQualityDetails(); initUserAccountActions(); initInterviewerProfileFields(); initAuditLog(); initStandardViewState();
 });
 
 function initConditionOrdering() {
@@ -249,6 +249,28 @@ function initSidebarGroups() {
       button.setAttribute('aria-expanded', String(!collapsed)); sessionStorage.setItem(key, collapsed ? 'closed' : 'open');
     });
   });
+}
+
+function initSidebarScrollPosition() {
+  const sidebar = document.querySelector('.sidebar');
+  const nav = sidebar?.querySelector('nav');
+  if (!nav) return;
+  const key = 'sidebar-scroll-position';
+  const remember = () => {
+    try { sessionStorage.setItem(key, JSON.stringify({nav: nav.scrollTop, sidebar: sidebar.scrollTop})); } catch {}
+  };
+  // Restore after menu groups are built, so their collapsed heights are final.
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(key));
+    if (saved) {
+      if (Number.isFinite(saved.nav)) nav.scrollTop = saved.nav;
+      if (Number.isFinite(saved.sidebar)) sidebar.scrollTop = saved.sidebar;
+    }
+  } catch {}
+  nav.addEventListener('scroll', remember, {passive: true});
+  sidebar.addEventListener('scroll', remember, {passive: true});
+  sidebar.addEventListener('click', remember, true);
+  window.addEventListener('pagehide', remember);
 }
 
 function initPasswordToggles() {
