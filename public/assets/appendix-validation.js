@@ -10,7 +10,7 @@
     if (!hint?.matches('[data-appendix-text-error]')) {
       hint = document.createElement('small');
       hint.dataset.appendixTextError = '';
-      hint.className = 'form-error';
+      hint.className = 'appendix-text-error';
       hint.setAttribute('role', 'status');
       field.insertAdjacentElement('afterend', hint);
     }
