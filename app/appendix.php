@@ -71,6 +71,8 @@ function appendix_validate_responses(array $questions,array $input,bool $skip=fa
             $note=$q['supplement']!==''?appendix_text($item['note']??''):'';
             $options=json_decode($q['options_json'],true,512,JSON_THROW_ON_ERROR);
             if($options&&($value==='不提供'||!in_array($value,$options,true)))throw new InvalidArgumentException('“'.$q['title'].'”的选项无效，请重新选择。');
+            if(!$options && preg_match('/\p{L}/u',$value)!==1)throw new InvalidArgumentException('“'.$q['title'].'”请填写文字内容，不能只填空格、符号、数字或表情。');
+            if($q['supplement']!=='' && ($item['note']??'')!=='' && preg_match('/\p{L}/u',$note)!==1)throw new InvalidArgumentException('“'.$q['title'].'”的补充说明请填写文字内容，或留空不填。');
             if($value==='不提供')$note='';
             if($value!==''||$note!=='')$responses[(string)$q['id']]=['value'=>$value,'note'=>$note];
         }
@@ -119,6 +121,7 @@ function appendix_h5(PDO $pdo,array $post,string $token): never {
 }
 
 function render_appendix_fields(array $questions): void {
+    echo '<script src="/assets/appendix-validation.js?v='.asset_mtime('appendix-validation.js').'" defer></script>';
     $section='';foreach($questions as $i=>$q):
         if($q['section']!==$section):$section=$q['section'];?><h2 class="appendix-section"><?=e($section)?></h2><?php endif;
         $item=is_array($_POST['appendix'][$q['id']]??null)?$_POST['appendix'][$q['id']]:[];
@@ -126,6 +129,6 @@ function render_appendix_fields(array $questions): void {
         $options=json_decode($q['options_json'],true);
     ?><fieldset class="appendix-item"><legend><span><?=$i+1?></span> <?=e($q['title'])?> <small>必填</small></legend><p><?=e($q['help'])?></p>
     <?php if($options):?><div class="appendix-options"><?php foreach($options as $option):?><label><input type="radio" name="appendix[<?=$q['id']?>][value]" required value="<?=e($option)?>" <?=$value===$option?'checked':''?>><span><?=e($option)?></span></label><?php endforeach;?></div>
-    <?php else:?><textarea name="appendix[<?=$q['id']?>][value]" required rows="3" maxlength="2000" aria-label="<?=e($q['title'])?>" placeholder="请填写您的回答"><?=e($value)?></textarea><?php endif;
-    if($q['supplement']!==''):?><label class="appendix-note"><?=e($q['supplement'])?><textarea name="appendix[<?=$q['id']?>][note]" rows="2" maxlength="2000" placeholder="补充说明（选填）"><?=e($note)?></textarea></label><?php endif;?></fieldset><?php endforeach;?>
+    <?php else:?><textarea data-appendix-text name="appendix[<?=$q['id']?>][value]" required rows="3" maxlength="2000" aria-label="<?=e($q['title'])?>" placeholder="请填写您的回答"><?=e($value)?></textarea><?php endif;
+    if($q['supplement']!==''):?><label class="appendix-note"><?=e($q['supplement'])?><textarea data-appendix-text name="appendix[<?=$q['id']?>][note]" rows="2" maxlength="2000" placeholder="补充说明（选填）"><?=e($note)?></textarea></label><?php endif;?></fieldset><?php endforeach;?>
 <?php }

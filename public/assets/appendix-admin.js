@@ -78,7 +78,7 @@
       });
       field.append(choices);
     } else {
-      const input = node('textarea');
+      const input = node('textarea'); input.setAttribute('data-appendix-text', '');
       input.rows = 3;input.maxLength = 2000;input.required = true;
       input.placeholder = '请填写您的回答';
       input.setAttribute('aria-label', question.title);
@@ -86,7 +86,7 @@
     }
     if (question.supplement) {
       const label = node('label', question.supplement, 'appendix-note');
-      const input = node('textarea');
+      const input = node('textarea'); input.setAttribute('data-appendix-text', '');
       input.rows = 2;input.maxLength = 2000;input.placeholder = '补充说明（选填）';
       label.append(input);field.append(label);
     }

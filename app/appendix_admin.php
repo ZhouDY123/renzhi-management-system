@@ -82,7 +82,7 @@ function appendix_admin(PDO $pdo,string $action): never {
     </div></div><footer class="appendix-modal-footer"><span>必填 · 不计分</span><button type="button" class="btn secondary" data-appendix-close>取消</button><button type="submit" class="btn secondary" data-save-continue <?= $editing['id']?'hidden':''?>>再添一题</button><button type="submit" class="btn primary">保存题目</button></footer></form></dialog>
     <dialog class="appendix-modal appendix-preview-modal" aria-labelledby="appendix-preview-title">
     <header class="appendix-modal-head"><div><small>求职者视角</small><h2 id="appendix-preview-title">附录题目预览</h2><p>可试填，预览内容不会保存。</p></div><button type="button" data-appendix-preview-close class="appendix-close" aria-label="关闭预览">×</button></header>
-    <div class="appendix-preview-body"></div><footer class="appendix-modal-footer"><span>必填 · 不计分</span><button type="button" class="btn primary" data-appendix-preview-close>关闭预览</button></footer></dialog><script src="/assets/appendix-admin.js?v=<?=asset_mtime('appendix-admin.js')?>" defer></script><?php admin_footer();exit;
+    <div class="appendix-preview-body"></div><footer class="appendix-modal-footer"><span>必填 · 不计分</span><button type="button" class="btn primary" data-appendix-preview-close>关闭预览</button></footer></dialog><script src="/assets/appendix-validation.js?v=<?=asset_mtime('appendix-validation.js')?>" defer></script><script src="/assets/appendix-admin.js?v=<?=asset_mtime('appendix-admin.js')?>" defer></script><?php admin_footer();exit;
 }
 
 function appendix_admin_responses(PDO $pdo): void {
