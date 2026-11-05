@@ -26,7 +26,7 @@ const {execFileSync}=require('node:child_process');
   assert.equal(await group(11).locator('tr:visible').count(),3);
   assert.equal(await group(12).locator('form').count(),0);
   assert.equal(await group(12).locator('.interview-score-value').innerText(),'—');
-  const questionnaire=new URL(await group(12).locator('a').getAttribute('href'));
+  const questionnaire=new URL(await group(12).locator('a[href*=interview_questionnaire]').getAttribute('href'));
   assert.equal(questionnaire.searchParams.get('candidate_id'),'12');
   assert.equal(questionnaire.searchParams.get('standalone'),'1');
   assert(await page.locator('[data-next]').isDisabled());

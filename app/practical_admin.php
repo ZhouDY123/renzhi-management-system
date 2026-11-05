@@ -2,40 +2,41 @@
 require_once __DIR__.'/practical.php';
 function render_practical_admin(PDO $pdo): never {
     if(!can('admin','hr')){http_response_code(403);exit('无此操作权限');}
-    practical_schema($pdo);$sid=(int)($_GET['session_id']??0);$error='';
-    $st=$pdo->prepare('SELECT s.*,p.name post_name FROM interview_session s JOIN post p ON p.id=s.post_id WHERE s.id=?');$st->execute([$sid]);$session=$st->fetch();
-    if(!$session){http_response_code(404);exit('请从面试管理选择已有场次');}
-    $st=$pdo->prepare('SELECT COUNT(*) FROM practical_attempt WHERE session_id=?');$st->execute([$sid]);$locked=(int)$st->fetchColumn()>0;
-    $closed=in_array($session['status'],['done','canceled'],true);
-    if(($_GET['action']??'')==='download'){
-        $st=$pdo->prepare('SELECT f.* FROM practical_file f JOIN practical_attempt a ON a.id=f.attempt_id WHERE a.session_id=? AND f.id=?');$st->execute([$sid,(int)($_GET['file_id']??0)]);$file=$st->fetch();
-        if(!$file){http_response_code(404);exit('成果文件不存在');}practical_download($file);
+    practical_schema($pdo);$postId=(int)($_GET['post_id']??0);$error='';$reopen=false;
+    if(!$postId&&!empty($_GET['session_id'])){
+        $st=$pdo->prepare('SELECT post_id FROM interview_session WHERE id=?');$st->execute([(int)$_GET['session_id']]);
+        redirect('/index.php?page=practical_questions&post_id='.(int)$st->fetchColumn());
     }
+    $posts=ordered_recruitment_posts($pdo,$pdo->query("SELECT id,name || ' · ' || COALESCE(company,'') AS name FROM post")->fetchAll());
+    $selected=null;foreach($posts as $post)if((int)$post['id']===$postId)$selected=$post;
+    if($postId&&!$selected){http_response_code(404);exit('岗位不存在');}
     if($_SERVER['REQUEST_METHOD']==='POST'){
-        check_csrf();
+        check_csrf();$operation=(string)($_POST['operation']??'');
         try {
-            $posted=$_POST['questions']??[];if(!is_array($posted))throw new InvalidArgumentException('题目格式无效');
-            practical_save_config($pdo,$sid,$posted,isset($_POST['enabled']));
-            audit('practical_config_save','session:'.$sid);flash('实操题目与开放状态已保存');redirect('/index.php?page=interview_practical&session_id='.$sid);
-        }catch(Throwable $e){$error=$e instanceof InvalidArgumentException?$e->getMessage():'设置保存失败，请稍后重试';if(!($e instanceof InvalidArgumentException))error_log('Practical admin: '.$e->getMessage());}
+            practical_manage_question($pdo,$postId,$operation,(int)($_POST['question_id']??0),(string)($_POST['stem']??''),(int)($_POST['revision']??0));
+            audit('practical_config_save','post:'.$postId,['operation'=>$operation,'question_id'=>(int)($_POST['question_id']??0)]);
+            flash(['create'=>'实操题目已新增，默认启用','update'=>'实操题目已更新','delete'=>'实操题目已删除，已有答卷和成果不受影响','toggle'=>'题目启用状态已更新'][$operation]);
+            redirect('/index.php?page=practical_questions&post_id='.$postId);
+        }catch(Throwable $e){$error=$e instanceof InvalidArgumentException?$e->getMessage():'保存失败，请稍后重试';$reopen=in_array($operation,['create','update'],true);if(!($e instanceof InvalidArgumentException))error_log('Practical question: '.$e->getMessage());}
     }
-    $qs=practical_questions($pdo,$sid);$st=$pdo->prepare('SELECT enabled FROM practical_exam WHERE session_id=?');$st->execute([$sid]);$enabled=(bool)$st->fetchColumn();
-    $st=$pdo->prepare('SELECT a.*,c.name,c.mobile FROM practical_attempt a JOIN candidate c ON c.id=a.candidate_id WHERE a.session_id=? ORDER BY a.submitted_at DESC,a.id DESC');$st->execute([$sid]);$attempts=$st->fetchAll();
-    $st=$pdo->prepare('SELECT COUNT(*) FROM interview_candidate WHERE session_id=?');$st->execute([$sid]);$assigned=(int)$st->fetchColumn();
-    $submitted=count(array_filter($attempts,fn($a)=>!empty($a['submitted_at'])));
-    if($error&&!$locked&&isset($_POST['questions'])&&is_array($_POST['questions']))$qs=array_map(fn($s)=>['stem'=>is_string($s)?$s:''],array_slice($_POST['questions'],0,30));
-    if(!$qs)$qs=[['stem'=>'']];
-    admin_header('面试实操','interviews');page_head('人才管理 / 面试管理 / 实操配置','面试实操',$session['post_name'].' · '.$session['interview_date'].' '.$session['time_range'],'<a class="btn secondary" href="?page=interviews#session-'.$sid.'">返回面试场次</a><a class="btn primary" href="/practical.php" target="_blank" rel="noopener">打开应聘者入口</a>');
-    ?><link rel="stylesheet" href="/assets/practical.css?v=<?=asset_mtime('practical.css')?>"><script src="/assets/practical.js?v=<?=asset_mtime('practical.js')?>" defer></script>
-    <section class="panel practical-admin-guide"><div><b>应聘者独立入口</b><a href="/practical.php" target="_blank" rel="noopener" data-practical-entry>/practical.php</a><small>无需后台登录。姓名、手机号必须与本场次已安排的应聘者一致。</small></div><div class="practical-admin-stats"><span>已安排 <b><?=$assigned?></b> 人</span><span>已开始 <b><?=count($attempts)?></b> 人</span><span>已提交 <b><?=$submitted?></b> 人</span></div></section>
-    <?php if($error):?><div class="form-error" role="alert"><?=e($error)?></div><?php endif;?>
-    <section class="panel practical-admin-config"><div class="panel-head"><div><h2>本场实操题目</h2><small><?=$locked?'已有应聘者开始作答，题目内容已锁定。可暂停入口，已上传成果仍会保留。':'按题目顺序填写要求，每道题对应一个独立的成果上传区域。'?></small></div><?=status_badge($enabled&&!$closed?'enabled':'disabled')?></div>
-    <form method="post" class="practical-config-form"><input type="hidden" name="csrf" value="<?=csrf()?>"><div data-practical-questions><?php foreach($qs as $i=>$q):?><div class="practical-config-question"><label><b data-question-label>题目 <?=$i+1?></b><textarea name="questions[]" rows="4" maxlength="5000" placeholder="填写题目、操作要求及成果交付要求" <?=$locked||$closed?'readonly':''?> required><?=e($q['stem'])?></textarea></label><?php if(!$locked&&!$closed):?><button type="button" class="table-action danger-text" data-remove-question>移除本题</button><?php endif;?></div><?php endforeach;?></div>
-    <?php if(!$closed):?><div class="practical-config-actions"><?php if(!$locked):?><button type="button" class="btn secondary" data-add-question>＋ 添加一道题</button><?php endif;?><label class="practical-enabled"><input type="checkbox" name="enabled" value="1" <?=$enabled?'checked':''?>>开放本场实操入口</label><button class="btn primary">保存实操设置</button></div><?php else:?><div class="practical-notice">本场次已结束或取消，仅可查看已有题目和成果。</div><?php endif;?></form></section>
-    <section class="panel practical-admin-results"><div class="panel-head"><div><h2>应聘者成果</h2><small>每位应聘者、每一道题的成果单独保存；未确认提交的记录显示为作答中。</small></div></div>
-    <?php if(!$attempts):?><div class="empty-state"><b>暂无实操作答记录</b><p>设置题目并开放入口后，将链接发给本场已安排的应聘者。</p></div><?php endif;?>
-    <?php foreach($attempts as $attempt):$files=practical_files($pdo,(int)$attempt['id']);$questions=json_decode($attempt['questions'],true);?>
-    <details class="practical-result-person"><summary><span><b><?=e($attempt['name'])?></b><small><?=e(substr($attempt['mobile'],0,3).' **** '.substr($attempt['mobile'],-4))?></small></span><span><?=count($files)?> / <?=count($questions)?> 题已上传</span><span class="badge <?=$attempt['submitted_at']?'green':'amber'?>"><?=$attempt['submitted_at']?'已提交':'作答中'?></span></summary><p class="practical-result-time">开始：<?=e($attempt['created_at'])?><?=$attempt['submitted_at']?'　提交：'.e($attempt['submitted_at']):''?></p>
-    <?php foreach($questions as $i=>$q):$file=$files[(int)$q['id']]??null;?><article class="practical-result-question"><h3>题目 <?=$i+1?></h3><p><?=nl2br(e($q['stem']))?></p><?php if($file):?><div><a class="btn secondary" href="?page=interview_practical&amp;session_id=<?=$sid?>&amp;action=download&amp;file_id=<?=(int)$file['id']?>">下载 <?=e($file['original_name'])?></a><small><?=e(practical_size((int)$file['bytes']))?> · <?=e($file['uploaded_at'])?></small></div><?php if($file['note']):?><p class="practical-saved-note">成果说明：<?=nl2br(e($file['note']))?></p><?php endif;?><?php else:?><small>本题尚未上传成果</small><?php endif;?></article><?php endforeach;?></details><?php endforeach;?></section>
+    $qs=$postId?practical_post_questions($pdo,$postId):[];
+    admin_header('实操题目','practical_questions');page_head('题目管理 / 实操题目','实操题目','按岗位维护实操题目，同岗位面试场次共用；新增题目默认启用。');
+    ?><link rel="stylesheet" href="/assets/practical.css?v=<?=asset_mtime('practical.css')?>"><script src="/assets/practical-question-editor.js?v=<?=asset_mtime('practical-question-editor.js')?>" defer></script>
+    <form method="get" class="panel filter-bar practical-post-picker"><input type="hidden" name="page" value="practical_questions"><div class="practical-picker-heading"><span class="practical-picker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="7" width="16" height="13" rx="3"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M4 12h16M10 12v3h4v-3"/></svg></span><div><b>选择岗位</b><small>搜索岗位，查看并维护对应实操题目</small></div></div><label><span class="sr-only">岗位</span><span class="searchable-post-select" data-searchable-post-select><select name="post_id" required><option value="">请选择岗位</option><?php foreach($posts as $post):?><option value="<?=(int)$post['id']?>" <?=(int)$post['id']===$postId?'selected':''?>><?=e($post['name'])?></option><?php endforeach;?></select></span></label><button class="btn primary"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>查看岗位题目</button></form>
+    <?php if($error&&!$reopen):?><div class="form-error" role="alert"><?=e($error)?></div><?php endif;?>
+    <section class="panel practical-bank"><div class="panel-head"><div><h2><?=$selected?e($selected['name']):'岗位实操题目'?></h2><small>共 <?=count($qs)?> 道 · 已启用 <?=count(array_filter($qs,fn($q)=>(int)$q['enabled']===1))?> 道<?php if($selected):?>　题目变更仅影响后续开始作答的应聘者<?php endif;?></small></div><button type="button" class="btn primary" data-practical-create <?=$selected?'':'disabled'?> aria-haspopup="dialog">＋ 新增题目</button></div>
+    <?php if(!$qs):?><div class="empty-state"><b><?=$selected?'暂无实操题目':'请先选择岗位'?></b><p><?=$selected?'点击「新增题目」，填写题目及成果交付要求。':'支持按岗位名称、部门或公司搜索。'?></p></div><?php endif;?>
+    <?php foreach($qs as $i=>$q):?>
+    <article class="practical-bank-question" data-practical-question="<?=(int)$q['id']?>" data-revision="<?=(int)$q['revision']?>"><header><div><span class="practical-question-number">题目 <?=$i+1?></span><?=status_badge((int)$q['enabled']===1?'enabled':'disabled')?></div><div class="practical-bank-actions"><button type="button" class="btn secondary" data-practical-edit aria-haspopup="dialog">编辑</button><form method="post"><input type="hidden" name="csrf" value="<?=csrf()?>"><input type="hidden" name="operation" value="toggle"><input type="hidden" name="question_id" value="<?=(int)$q['id']?>"><input type="hidden" name="revision" value="<?=(int)$q['revision']?>"><button class="btn secondary"><?=(int)$q['enabled']===1?'停用':'启用'?></button></form><form method="post" data-confirm-message="确认删除这道实操题目？已开始的答卷和已上传成果会保留。"><input type="hidden" name="csrf" value="<?=csrf()?>"><input type="hidden" name="operation" value="delete"><input type="hidden" name="question_id" value="<?=(int)$q['id']?>"><input type="hidden" name="revision" value="<?=(int)$q['revision']?>"><button class="btn secondary danger-text">删除</button></form></div></header><p class="practical-bank-text" data-practical-stem><?=e($q['stem'])?></p></article>
+    <?php endforeach;?></section>
+    <dialog class="practical-editor-dialog" id="practical-question-dialog" aria-labelledby="practical-dialog-title" data-reopen="<?=$reopen?'1':'0'?>">
+      <form method="post" id="practical-question-form"><input type="hidden" name="csrf" value="<?=csrf()?>"><input type="hidden" name="operation" value="<?=e($reopen?(string)($_POST['operation']??'create'):'create')?>"><input type="hidden" name="question_id" value="<?=$reopen?(int)($_POST['question_id']??0):0?>"><input type="hidden" name="revision" value="<?=$reopen?(int)($_POST['revision']??0):0?>">
+      <div class="practical-editor-head"><h2 id="practical-dialog-title"><?=$reopen&&($_POST['operation']??'')==='update'?'编辑实操题目':'新增实操题目'?></h2><button type="button" data-practical-close aria-label="关闭弹窗" title="关闭"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+      <div class="practical-editor-body"><p class="muted"><?=e($selected['name']??'')?></p><label for="practical-stem">题目内容</label><textarea id="practical-stem" name="stem" rows="12" maxlength="5000" required placeholder="请输入完整题目内容，可分段填写操作要求、完成步骤和成果交付要求。
+
+每道题对应一个独立的成果文件上传区域。"><?=$reopen?e((string)($_POST['stem']??'')):''?></textarea><div class="practical-editor-help"><span>纯文本 · 保留换行 · 新增默认启用</span><span data-practical-length>0 / 5000</span></div><?php if($error&&$reopen):?><div class="form-error" role="alert"><?=e($error)?></div><?php endif;?></div>
+      <div class="practical-editor-footer"><button type="button" class="btn secondary" data-practical-close>取消</button><button class="btn primary">保存题目</button></div></form>
+    </dialog>
+    <dialog class="practical-discard-dialog" id="practical-question-discard" aria-labelledby="practical-discard-title"><h2 id="practical-discard-title">放弃未保存的修改？</h2><p>关闭后，本次填写的内容不会保存。</p><div><button type="button" class="btn secondary" data-practical-continue>继续填写</button><button type="button" class="btn danger-solid" data-practical-discard>放弃修改</button></div></dialog>
     <?php admin_footer();exit;
 }

@@ -26,6 +26,9 @@ function render_interview_results(array $details): void {
                 <span class="interview-person-session"><?=e($person['interview_date'])?><?=!empty($person['time_range'])?' · '.e($person['time_range']):''?></span>
                 <span class="interview-person-count"><?=$submitted?> 份已提交评分</span>
                 <div class="interview-person-questionnaire"><?php if ($person['questionnaire_submitted']): ?><a class="table-action" href="?page=interview_questionnaire&amp;candidate_id=<?=$assignmentId?>">查看问卷</a><?php else: ?><span class="muted">问卷未提交</span><?php endif; ?></div>
+                <?php if ((int)($person['practical_files_count']??0)>0): ?>
+                <div class="interview-person-questionnaire interview-person-practical"><a class="table-action" href="?page=practical_results&amp;candidate_id=<?=$assignmentId?>">实操成果</a><small class="muted"><?=!empty($person['practical_submitted_at'])?'已提交':'作答中'?> · <?=(int)$person['practical_files_count']?> 份文件</small></div>
+                <?php endif; ?>
               </th>
               <?php endif; ?>
               <td class="interview-reviewer"><?=e($d['real_name']??'')?><?php if (!$d['id']): ?><span class="muted">尚未评分</span><?php endif; ?></td>
@@ -39,7 +42,7 @@ function render_interview_results(array $details): void {
             <?php endforeach; ?>
           </tbody>
           <?php endforeach; ?>
-          <?php if (!$groups): ?><tbody><tr><td colspan="8" class="interview-results-empty"><b>暂无面试评价</b><p>应聘者提交问卷或面试官提交评分后，将在此按人展示。</p></td></tr></tbody><?php endif; ?>
+          <?php if (!$groups): ?><tbody><tr><td colspan="8" class="interview-results-empty"><b>暂无面试评价</b><p>应聘者提交问卷、开始实操或面试官提交评分后，将在此按人展示。</p></td></tr></tbody><?php endif; ?>
         </table>
       </div>
     </section>

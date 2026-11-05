@@ -10,6 +10,42 @@ function practical_schema(PDO $pdo): void {
       CREATE TABLE IF NOT EXISTS practical_attempt(id INTEGER PRIMARY KEY AUTOINCREMENT,session_id INTEGER NOT NULL,candidate_id INTEGER NOT NULL,questions TEXT NOT NULL,submitted_at TEXT,created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),UNIQUE(session_id,candidate_id),FOREIGN KEY(session_id) REFERENCES interview_session(id),FOREIGN KEY(candidate_id) REFERENCES candidate(id));
       CREATE TABLE IF NOT EXISTS practical_file(id INTEGER PRIMARY KEY AUTOINCREMENT,attempt_id INTEGER NOT NULL,question_id INTEGER NOT NULL,storage_key TEXT NOT NULL,original_name TEXT NOT NULL,bytes INTEGER NOT NULL,note TEXT NOT NULL DEFAULT '',uploaded_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),UNIQUE(attempt_id,question_id),FOREIGN KEY(attempt_id) REFERENCES practical_attempt(id));
       CREATE INDEX IF NOT EXISTS practical_question_session ON practical_question(session_id,position)");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS practical_post_question(id INTEGER PRIMARY KEY AUTOINCREMENT,post_id INTEGER NOT NULL,stem TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 1,position INTEGER NOT NULL DEFAULT 0,revision INTEGER NOT NULL DEFAULT 1,FOREIGN KEY(post_id) REFERENCES post(id));
+      CREATE INDEX IF NOT EXISTS practical_post_question_post ON practical_post_question(post_id,position);
+      CREATE TABLE IF NOT EXISTS practical_migration(name TEXT PRIMARY KEY)");
+    if(!$pdo->query("SELECT 1 FROM practical_migration WHERE name='post_question_bank'")->fetchColumn()){
+        $pdo->beginTransaction();
+        try {
+            $claim=$pdo->exec("INSERT OR IGNORE INTO practical_migration(name) VALUES('post_question_bank')");
+            if($claim)$pdo->exec("INSERT INTO practical_post_question(post_id,stem,enabled,position) SELECT s.post_id,q.stem,MAX(COALESCE(pe.enabled,1)),MIN(q.position) FROM practical_question q JOIN interview_session s ON s.id=q.session_id LEFT JOIN practical_exam pe ON pe.session_id=s.id GROUP BY s.post_id,q.stem ORDER BY MIN(q.id)");
+            $pdo->commit();
+        }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+    }
+}
+function practical_post_questions(PDO $pdo,int $postId,bool $activeOnly=false): array {
+    $st=$pdo->prepare('SELECT id,stem,enabled,position,revision FROM practical_post_question WHERE post_id=?'.($activeOnly?' AND enabled=1':'').' ORDER BY position,id');$st->execute([$postId]);return $st->fetchAll(PDO::FETCH_ASSOC);
+}
+function practical_manage_question(PDO $pdo,int $postId,string $operation,int $id=0,string $stem='',int $revision=0): void {
+    if(!in_array($operation,['create','update','delete','toggle'],true))throw new InvalidArgumentException('无效的题目操作');
+    $stem=trim($stem);
+    if(in_array($operation,['create','update'],true)&&($stem===''||practical_length($stem)>5000))throw new InvalidArgumentException('请输入题目内容，每题最多 5000 字');
+    $pdo->beginTransaction();
+    try {
+        $st=$pdo->prepare('SELECT id FROM post WHERE id=?');$st->execute([$postId]);if(!$st->fetchColumn())throw new InvalidArgumentException('请选择有效岗位');
+        if($operation==='create'){
+            $qs=practical_post_questions($pdo,$postId);if(count($qs)>=30)throw new InvalidArgumentException('每个岗位最多维护 30 道实操题目');
+            $position=$qs?max(array_column($qs,'position'))+1:1;
+            $pdo->prepare('INSERT INTO practical_post_question(post_id,stem,enabled,position) VALUES(?,?,1,?)')->execute([$postId,$stem,$position]);
+        }else{
+            $st=$pdo->prepare('SELECT * FROM practical_post_question WHERE id=? AND post_id=?');$st->execute([$id,$postId]);$q=$st->fetch();
+            if(!$q)throw new InvalidArgumentException('题目不存在或不属于当前岗位');
+            if((int)$q['revision']!==$revision)throw new InvalidArgumentException('题目已被更新，请刷新页面后重新操作');
+            if($operation==='delete')$pdo->prepare('DELETE FROM practical_post_question WHERE id=? AND post_id=?')->execute([$id,$postId]);
+            elseif($operation==='toggle')$pdo->prepare('UPDATE practical_post_question SET enabled=1-enabled,revision=revision+1 WHERE id=? AND post_id=?')->execute([$id,$postId]);
+            else $pdo->prepare('UPDATE practical_post_question SET stem=?,revision=revision+1 WHERE id=? AND post_id=?')->execute([$stem,$id,$postId]);
+        }
+        $pdo->commit();
+    }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
 function practical_questions(PDO $pdo,int $sessionId): array {
     $st=$pdo->prepare('SELECT id,stem,position FROM practical_question WHERE session_id=? ORDER BY position,id');$st->execute([$sessionId]);return $st->fetchAll(PDO::FETCH_ASSOC);
@@ -34,18 +70,21 @@ function practical_save_config(PDO $pdo,int $sessionId,array $stems,bool $enable
     } catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
 function practical_sessions(PDO $pdo,string $name,string $mobile): array {
-    $st=$pdo->prepare("SELECT DISTINCT s.id,s.interview_date,s.time_range,s.location,p.name post_name,c.id candidate_id,c.name,c.mobile,a.submitted_at FROM interview_candidate ic JOIN interview_session s ON s.id=ic.session_id JOIN candidate c ON c.id=ic.candidate_id JOIN post p ON p.id=s.post_id JOIN practical_exam pe ON pe.session_id=s.id LEFT JOIN practical_attempt a ON a.session_id=s.id AND a.candidate_id=c.id WHERE c.name=? AND c.mobile=? AND pe.enabled=1 AND s.status IN ('pending','scoring') AND EXISTS(SELECT 1 FROM practical_question q WHERE q.session_id=s.id) ORDER BY s.interview_date DESC,s.id DESC");
+    $st=$pdo->prepare("SELECT DISTINCT s.id,s.interview_date,s.time_range,s.location,p.name post_name,c.id candidate_id,c.name,c.mobile,a.submitted_at FROM interview_candidate ic JOIN interview_session s ON s.id=ic.session_id JOIN candidate c ON c.id=ic.candidate_id JOIN post p ON p.id=s.post_id LEFT JOIN practical_attempt a ON a.session_id=s.id AND a.candidate_id=c.id WHERE c.name=? AND c.mobile=? AND s.status IN ('pending','scoring') AND (a.id IS NOT NULL OR EXISTS(SELECT 1 FROM practical_post_question q WHERE q.post_id=s.post_id AND q.enabled=1)) ORDER BY s.interview_date DESC,s.id DESC");
     $st->execute([$name,$mobile]);return $st->fetchAll(PDO::FETCH_ASSOC);
 }
 function practical_access(PDO $pdo,int $sessionId,int $candidateId): array {
-    $st=$pdo->prepare("SELECT s.*,p.name post_name,c.name candidate_name FROM interview_candidate ic JOIN interview_session s ON s.id=ic.session_id JOIN candidate c ON c.id=ic.candidate_id JOIN post p ON p.id=s.post_id JOIN practical_exam pe ON pe.session_id=s.id WHERE s.id=? AND c.id=? AND pe.enabled=1 AND s.status IN ('pending','scoring')");$st->execute([$sessionId,$candidateId]);$row=$st->fetch(PDO::FETCH_ASSOC);
+    $st=$pdo->prepare("SELECT s.*,p.name post_name,c.name candidate_name FROM interview_candidate ic JOIN interview_session s ON s.id=ic.session_id JOIN candidate c ON c.id=ic.candidate_id JOIN post p ON p.id=s.post_id WHERE s.id=? AND c.id=? AND s.status IN ('pending','scoring')");$st->execute([$sessionId,$candidateId]);$row=$st->fetch(PDO::FETCH_ASSOC);
     if(!$row)throw new InvalidArgumentException('当前场次未开放实操、已结束，或您未被安排在该场次，请联系工作人员。');return $row;
 }
 function practical_start(PDO $pdo,int $sessionId,int $candidateId): array {
     $pdo->beginTransaction();
     try {
-        practical_access($pdo,$sessionId,$candidateId);$qs=practical_questions($pdo,$sessionId);
-        if(!$qs)throw new InvalidArgumentException('本场次尚未设置实操题目');
+        $session=practical_access($pdo,$sessionId,$candidateId);
+        $st=$pdo->prepare('SELECT * FROM practical_attempt WHERE session_id=? AND candidate_id=?');$st->execute([$sessionId,$candidateId]);$existing=$st->fetch(PDO::FETCH_ASSOC);
+        if($existing){$pdo->commit();return $existing;}
+        $qs=practical_post_questions($pdo,(int)$session['post_id'],true);
+        if(!$qs)throw new InvalidArgumentException('本岗位尚未设置已启用的实操题目');
         $pdo->prepare('INSERT OR IGNORE INTO practical_attempt(session_id,candidate_id,questions) VALUES(?,?,?)')->execute([$sessionId,$candidateId,json_encode($qs,JSON_UNESCAPED_UNICODE)]);
         $st=$pdo->prepare('SELECT * FROM practical_attempt WHERE session_id=? AND candidate_id=?');$st->execute([$sessionId,$candidateId]);$attempt=$st->fetch(PDO::FETCH_ASSOC);$pdo->commit();return $attempt;
     }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
@@ -60,9 +99,9 @@ function practical_bytes(string $value): int {
     $value=trim($value);$n=(float)$value;return (int)($n*match(strtolower(substr($value,-1))){'g'=>1073741824,'m'=>1048576,'k'=>1024,default=>1});
 }
 function practical_upload_limit(): int {
-    $limits=[20*1024*1024];foreach(['upload_max_filesize','post_max_size'] as $setting){$n=practical_bytes((string)ini_get($setting));if($n>0)$limits[]=$setting==='post_max_size'?max(1,$n-65536):$n;}return min($limits);
+    $limits=[500*1024*1024];foreach(['upload_max_filesize','post_max_size'] as $setting){$n=practical_bytes((string)ini_get($setting));if($n>0)$limits[]=$setting==='post_max_size'?max(1,$n-65536):$n;}return min($limits);
 }
-function practical_extensions(): array {return ['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','csv','zip','jpg','jpeg','png','mp4'];}
+function practical_extensions(): array {return ['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','csv','zip','jpg','jpeg','png','gif','webp','heic','mp4','mov','m4v','webm','mkv','avi'];}
 function practical_validate_file(array $file): string {
     if(($file['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK)throw new InvalidArgumentException('文件未上传成功，请重新选择；单个文件上限 '.round(practical_upload_limit()/1048576,1).' MB');
     $name=basename(str_replace('\\','/',(string)($file['name']??'')));
@@ -89,6 +128,15 @@ function practical_upload(PDO $pdo,int $attemptId,int $candidateId,int $question
     $attempt=practical_attempt($pdo,$attemptId,$candidateId);
     if(!in_array($questionId,array_map('intval',array_column(json_decode($attempt['questions'],true),'id')),true))throw new InvalidArgumentException('题目不属于当前实操');
     if(practical_length($note)>2000)throw new InvalidArgumentException('成果说明最多 2000 字');
+    if(($file['error']??UPLOAD_ERR_NO_FILE)===UPLOAD_ERR_NO_FILE){
+        $pdo->beginTransaction();
+        try {
+            practical_attempt($pdo,$attemptId,$candidateId);
+            $existing=practical_files($pdo,$attemptId)[$questionId]??null;
+            if(!$existing||!is_file(practical_file_path($existing['storage_key'])))throw new InvalidArgumentException('请先选择本题成果文件');
+            $pdo->prepare('UPDATE practical_file SET note=? WHERE id=?')->execute([$note,$existing['id']]);$pdo->commit();return;
+        }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+    }
     $name=practical_validate_file($file);$key=bin2hex(random_bytes(24)).'.bin';$path=practical_file_path($key);
     if(!is_uploaded_file($file['tmp_name'])||!move_uploaded_file($file['tmp_name'],$path))throw new RuntimeException('文件保存失败，请重新上传');
     $old=null;
