@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     link.target = '_blank';
     link.rel = 'noopener';
   });
-  document.querySelectorAll('.interview-score-grid tbody tr').forEach(row => {
+  document.querySelectorAll(':is(.interview-score-grid,.interview-grouped-grid) tbody tr').forEach(row => {
     const scoreId = row.querySelector('form[action*="score_reset"] input[name="score_id"]')?.value;
     const actions = row.lastElementChild;
     if (!scoreId || !actions || actions.querySelector('[data-review-jump]')) return;
@@ -29,8 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
     link.textContent = '去审核';
     actions.prepend(link);
   });
-  if (document.querySelector('.interview-score-grid')) {
-    document.querySelectorAll('.interview-score-grid form[action*="score_reset"]').forEach(form => {
+  if (document.querySelector('.interview-score-grid,.interview-grouped-grid')) {
+    document.querySelectorAll(':is(.interview-score-grid,.interview-grouped-grid) form[action*="score_reset"]').forEach(form => {
       form.dataset.confirmMessage = '确认重置该条面试评分？当前面试官的评分记录将被清除，需要重新提交评分。';
     });
     fetch('/index.php?page=interview_results&action=review_states', { credentials: 'same-origin' })
@@ -662,7 +662,7 @@ function initInterviewRecommendationTags() {
     const index = headers.findIndex(header => header.textContent.trim() === '录用建议');
     if (index < 0) return;
     table.querySelectorAll('tbody tr').forEach(row => {
-      const cell = row.cells[index]; if (!cell || cell.querySelector('.recommendation-tag')) return;
+      const cell = table.hasAttribute('data-pagination-groups') ? row.querySelector('[data-recommendation]') : row.cells[index]; if (!cell || cell.querySelector('.recommendation-tag')) return;
       const value = cell.textContent.trim(); if (!value) return;
       const tag = document.createElement('span'); tag.className = 'recommendation-tag';
       if (value.includes('不推荐')) tag.classList.add('is-reject');
@@ -1401,7 +1401,8 @@ function initQrModals() {
 function initTablePagination() {
   const isInterviewResults = new URLSearchParams(location.search).get('page') === 'interview_results';
   document.querySelectorAll('.table-wrap table').forEach((table, index)=>{
-    const rows=[...table.tBodies].flatMap(body=>[...body.rows]), size=isInterviewResults?10:12; if(rows.length<=size)return; let page=1; const pages=Math.ceil(rows.length/size),label=isInterviewResults?'面试官评分明细':'表格',nav=document.createElement('nav');nav.className='table-pagination';nav.setAttribute('aria-label',`${label}分页`);nav.innerHTML='<span></span><div><button type="button" class="btn secondary" data-prev>上一页</button><b></b><button type="button" class="btn secondary" data-next>下一页</button></div>';table.closest('.table-wrap').append(nav);
+    const grouped = table.hasAttribute('data-pagination-groups');
+    const rows=grouped?[...table.querySelectorAll('tbody[data-interview-group]')]:[...table.tBodies].flatMap(body=>[...body.rows]), size=isInterviewResults?10:12; if(rows.length<=size)return; let page=1; const pages=Math.ceil(rows.length/size),label=grouped?'面试记录':isInterviewResults?'面试官评分明细':'表格',nav=document.createElement('nav');nav.className='table-pagination';nav.setAttribute('aria-label',`${label}分页`);nav.innerHTML='<span></span><div><button type="button" class="btn secondary" data-prev>上一页</button><b></b><button type="button" class="btn secondary" data-next>下一页</button></div>';table.closest('.table-wrap').append(nav);
     const render=()=>{nav.dataset.page=String(page);const start=(page-1)*size;rows.forEach((row,i)=>row.hidden=i<start||i>=start+size);nav.querySelector('span').textContent=`${label}：第 ${start+1}–${Math.min(start+size,rows.length)} 条，共 ${rows.length} 条`;nav.querySelector('b').textContent=`${page} / ${pages}`;nav.querySelector('[data-prev]').disabled=page===1;nav.querySelector('[data-next]').disabled=page===pages;};
     nav.querySelector('[data-prev]').addEventListener('click',()=>{page--;render();table.scrollIntoView({behavior:'smooth',block:'start'});});nav.querySelector('[data-next]').addEventListener('click',()=>{page++;render();table.scrollIntoView({behavior:'smooth',block:'start'});});nav.addEventListener('restore-page',event=>{page=Math.max(1,Math.min(pages,Number(event.detail)||1));render();});render();
   });

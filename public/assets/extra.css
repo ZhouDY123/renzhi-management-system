@@ -557,6 +557,30 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 .interview-score-grid th:nth-child(8),.interview-score-grid td:nth-child(8){width:80px}
 .interview-score-grid th:nth-child(9),.interview-score-grid td:nth-child(9){width:190px}
 .interview-score-grid th:nth-child(10),.interview-score-grid td:nth-child(10){width:100px}
+
+/* 按应聘者及场次归组，沿用原有面试评分表与推荐标签配色。 */
+.interview-grouped-grid{margin:0 0 30px;overflow:hidden}
+.interview-grouped-grid .panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.interview-grouped-grid .panel-head small{display:block;line-height:1.7;margin-top:5px}
+.interview-group-summary{flex-shrink:0;padding:7px 12px;border:1px solid #dde5ee;border-radius:7px;background:#f5f8fc;color:#41516a;font-size:12px}
+.interview-grouped-grid .interview-score-scroll{padding:0 16px 16px}
+.interview-grouped-grid .interview-group-table{width:100%;min-width:1200px;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:13px}
+.interview-group-table .col-person{width:220px}.interview-group-table .col-reviewer{width:90px}.interview-group-table .col-score{width:120px}.interview-group-table .col-recommendation{width:170px}.interview-group-table .col-comment{width:185px}.interview-group-table .col-time{width:130px}.interview-group-table .col-actions{width:100px}
+.interview-grouped-grid .interview-group-table thead th{padding:13px 14px;background:#f5f8fc;color:#41516a;font-size:12px;font-weight:700;white-space:nowrap;border-top:1px solid #dde5ee;border-bottom:1px solid #dde5ee}
+.interview-grouped-grid .interview-group-table td,.interview-grouped-grid .interview-person{padding:18px 14px;color:#243b60;vertical-align:middle;border-bottom:1px solid #dde5ee;border-right:1px solid #dde5ee;line-height:1.65;white-space:normal;overflow-wrap:anywhere}
+.interview-group-table thead th:first-child{border-left:1px solid #dde5ee;border-top-left-radius:8px}.interview-group-table thead th:last-child{border-right:1px solid #dde5ee;border-top-right-radius:8px}
+.interview-grouped-grid .interview-person{text-align:left;border-left:1px solid #dde5ee;background:#f7faff;font-weight:400;vertical-align:top}
+.interview-grouped-grid .interview-person b{display:block;color:#182b49;font-size:16px;margin-bottom:7px}
+.interview-person-post{display:block;line-height:1.7}.interview-person-session{display:block;color:#72829a;font-size:12px;line-height:1.7;margin-top:9px}.interview-person-count{display:block;color:#41516a;font-size:12px;margin-top:10px}.interview-person-questionnaire{margin-top:10px;font-size:12px}
+.interview-grouped-grid tbody[data-interview-group]:nth-of-type(even) td{background:#fbfcfe}
+.interview-grouped-grid tbody[data-interview-group]+tbody[data-interview-group] tr:first-child>*{border-top:7px solid #f4f7fb}
+.interview-grouped-grid tbody[data-interview-group]:hover td{background:#f7faff}
+.interview-reviewer{font-weight:600}.interview-score-value{white-space:nowrap!important}.interview-score-value strong{color:#1d477f;font-family:Bahnschrift,"DIN Alternate",Consolas,monospace;font-size:16px}.interview-grouped-grid .interview-score-value small{display:inline;font-size:11px;color:#72829a}
+.interview-submitted time span,.interview-submitted time small{display:block;white-space:nowrap;font-variant-numeric:tabular-nums}.interview-submitted time small{color:#72829a;font-size:12px;margin-top:3px}
+.interview-grouped-grid .interview-score-actions{text-align:center}.interview-score-actions form{margin:5px 0 0}.interview-score-actions .table-action,.interview-person-questionnaire .table-action{display:inline-flex;align-items:center;justify-content:center;min-width:56px;min-height:28px;padding:2px 8px;border:1px solid #c9d8f2;border-radius:7px;background:#f4f7ff;color:#2457c5;font-size:12px;font-weight:700}
+.interview-score-actions .danger-text{border-color:#f1c8c5;background:#fff5f4;color:#cf3d35}.interview-score-actions .table-action.is-disabled{border-color:#dde3eb;background:#f4f6f8;color:#9aa7b8!important}
+.interview-grouped-grid .interview-results-empty{text-align:center;padding:46px 20px;border-left:1px solid #dde5ee}.interview-results-empty p{color:#72829a;margin:8px 0 0}
+@media(max-width:720px){.interview-grouped-grid{margin-bottom:22px}.interview-grouped-grid .interview-score-scroll{padding:0 12px 12px}.interview-grouped-grid .panel-head{gap:10px}.interview-group-summary{font-size:12px}.interview-grouped-grid .interview-person{position:sticky;left:0;z-index:1;box-shadow:3px 0 5px rgba(24,43,73,.04)}.interview-group-table .col-person{width:170px}.interview-grouped-grid .interview-group-table{min-width:1150px}.interview-grouped-grid .interview-group-table thead th:first-child{position:sticky;left:0;z-index:2}}
 /* 窄屏下先换行分配表单，并为题库操作按钮保留实际可用宽度。 */
 @media(max-width:1100px){.qr-center{grid-template-columns:minmax(0,1fr)}.session-card .assign-row{grid-template-columns:minmax(0,1fr)}.session-card .assign-row form{min-width:0}}
 @media(max-width:1000px){.basic-rating-library.table-wrap th,.basic-rating-library.table-wrap td{padding:10px 6px}}
