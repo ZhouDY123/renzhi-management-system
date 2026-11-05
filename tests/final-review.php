@@ -1,6 +1,7 @@
 <?php
 $requestedReport=($_GET['view']??'')==='report';
 ob_start();require __DIR__.'/answer-preview.php';ob_end_clean();require_once __DIR__.'/../app/final_review.php';
+function asset_mtime($file){return (int)filemtime(__DIR__.'/../public/assets/'.$file);}
 function csrf(){return 'fixture';}function review_label($v){return $v;}
 $pdo->exec("INSERT INTO user(id,username,password_hash,real_name,role) VALUES(1,'one','x','面试官甲','interviewer'),(2,'two','x','面试官乙','interviewer'),(3,'three','x','未提交面试官','interviewer');
 INSERT INTO candidate(id,name,mobile) VALUES(2,'其他应聘人','13800000002');
@@ -17,7 +18,7 @@ $pdo->prepare('UPDATE answer SET candidate_snapshot=? WHERE id=1')->execute([jso
 $selected=['id'=>1,'answer_id'=>1,'name'=>'示例候选人','post_name'=>'GEO建设专员 · 示例公司','mobile'=>'13800000000','edu'=>'本科','work_years'=>1,'total_score'=>80.2,'eval_score'=>30.2,'suzhi_score'=>25,'postq_score'=>25,'interview_done'=>1];
 $_GET['view']='report';
 ob_start();render_final_review($pdo,$selected,[$selected],[],'',0);$html=ob_get_clean();
-foreach(['提交时问卷原题','&lt;b&gt;问卷原答&lt;/b&gt;','&lt;script&gt;评价转义&lt;/script&gt;','未提交','73.33','历史优势','未记录','追问快照','专业题快照','附录回答快照','打印评审报告'] as $text)if(!str_contains($html,$text))throw new Exception('Missing '.$text);
+foreach(['提交时问卷原题','&lt;b&gt;问卷原答&lt;/b&gt;','&lt;script&gt;评价转义&lt;/script&gt;','未提交','73.33','历史优势','未记录','追问快照','专业题快照','附录回答快照','打印评审报告','final-report-export-pdf','final-report-export.js','示例候选人-GEO建设专员 · 示例公司-人才报告.pdf'] as $text)if(!str_contains($html,$text))throw new Exception('Missing '.$text);
 if(str_contains($html,'不应显示的其他问卷')||str_contains($html,'<script>评价转义'))throw new Exception('Data isolation or escaping failed');
 unset($_GET['view']);
 ob_start();render_final_review($pdo,$selected,[$selected],[],'筛选词',7);$workspace=ob_get_clean();
