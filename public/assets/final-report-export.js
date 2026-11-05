@@ -8,7 +8,7 @@
     if (button.disabled) return;
     button.disabled = true;
     button.textContent = '正在导出…';
-    status.textContent = '';
+    status.textContent = '正在生成文件，请稍候…';status.dataset.state = 'loading';
     let staging;
     try {
       if (typeof html2pdf !== 'function') throw new Error('PDF library unavailable');
@@ -103,13 +103,20 @@
         enableLinks: false,
         image: {type: 'png'},
         html2canvas: {scale: 2, backgroundColor: '#ffffff', logging: false,
-          windowWidth: 1440, scrollY: 0},
+          windowWidth: window.innerWidth, windowHeight: window.innerHeight, scrollX: 0, scrollY: 0},
         jsPDF: {unit: 'pt', format: [width * 0.75, width * 0.75 * 297 / 210],
           orientation: 'portrait', compress: true},
         pagebreak: {mode: ['css'], avoid: ['.answer-pdf-text-line', '.answer-pdf-section-start', '.answer-preview-heading',
           '.final-report-profile', '.final-report-metrics', '.final-report-nav', '.final-score-table', '.final-score-table tr', '.final-reviewer', '.final-reviewer header', '.final-session-heading', '.answer-preview-profile', '.answer-question-group',
           '.answer-preview-question', 'h2', 'h3', '.answer-bonus-line']}
-      }).from(clone).toCanvas().get('canvas').then(function(canvas) {
+      }).from(clone).toContainer().get('container').then(function(container) {
+        // html2pdf normally centers this container. Anchor both the live and
+        // cloned capture at the same origin so viewport width cannot crop it.
+        container.style.position = 'absolute';
+        container.style.left = '0';
+        container.style.top = '0';
+        container.style.margin = '0';
+      }).toCanvas().get('canvas').then(function(canvas) {
         // html2pdf keeps the pre-pagination container height; remove surplus
         // blank canvas at the end so long answers do not add empty PDF pages.
         const context = canvas.getContext('2d');
@@ -133,10 +140,10 @@
         pdf.setDisplayMode('fullwidth', 'continuous', 'UseNone');
         pdf.setPage(1);
       }).save();
-      status.textContent = 'PDF 已生成';
+      status.textContent = 'PDF 已生成';status.dataset.state = 'success';
     } catch (error) {
       console.error('Final report PDF export failed', error);
-      status.textContent = '导出失败，请刷新页面后重试。';
+      status.textContent = '导出失败，请刷新页面后重试。';status.dataset.state = 'error';
     } finally {
       if (staging) staging.remove();
       button.disabled = false;

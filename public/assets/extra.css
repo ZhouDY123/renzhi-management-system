@@ -595,3 +595,14 @@ body.questionnaire-standalone{background:#eef1f5}body.questionnaire-standalone .
 @media print{.notification-stack{display:none}}
 /* Keep post sorting inside the page instead of starting browser text gestures. */
 .post-order li{user-select:none;-webkit-user-select:none;touch-action:none;-webkit-user-drag:none}.post-order li *{-webkit-user-drag:none}.post-order li.is-post-dragging{cursor:grabbing}
+
+/* Report toolbar: back link on the left, related document actions together. */
+.final-report-document .final-report-tools{gap:16px;flex-wrap:wrap;margin-bottom:18px;padding:0 0 2px}
+.final-report-tools>.btn{flex-shrink:0}
+.final-report-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-left:auto;min-width:0}
+.final-report-actions .btn{white-space:nowrap;min-height:42px;border-radius:9px;font-size:13px;padding:10px 18px}
+#final-report-export-status{font-size:12px;line-height:1.7;color:#647b9b;max-width:260px;overflow-wrap:anywhere}
+#final-report-export-status:empty{display:none}
+#final-report-export-status[data-state="success"]{padding:5px 10px;border-radius:6px;background:#eaf6ef;color:#387656}
+#final-report-export-status[data-state="error"]{color:#b54848}
+@media(max-width:650px){.final-report-document .final-report-tools{gap:12px}.final-report-actions{width:100%;margin-left:0;justify-content:flex-start}.final-report-actions .btn{flex:1}#final-report-export-status{flex-basis:100%;max-width:none}}
