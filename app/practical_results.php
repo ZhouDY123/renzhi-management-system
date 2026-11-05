@@ -9,6 +9,7 @@ function render_practical_results(PDO $pdo): never {
     $st=$pdo->prepare('SELECT * FROM practical_attempt WHERE session_id=? AND candidate_id=?');$st->execute([$person['session_id'],$person['candidate_id']]);$attempt=$st->fetch();
     $questions=$attempt?json_decode($attempt['questions'],true):[];
     $files=$attempt?practical_files($pdo,(int)$attempt['id']):[];
+    $answers=$attempt?practical_answers($pdo,(int)$attempt['id']):[];
     if(in_array($_GET['action']??'',['download','preview'],true)){
         $file=null;foreach($files as $row)if((int)$row['id']===(int)($_GET['file_id']??0))$file=$row;
         if(!$file){http_response_code(404);exit('该文件不属于当前应聘者的本场实操');}
@@ -25,14 +26,14 @@ function render_practical_results(PDO $pdo): never {
       <div class="practical-candidate-timeline"><?php if($attempt):?><span>开始作答 <time><?=e($attempt['created_at'])?></time></span><span>提交时间 <time><?=$attempt['submitted_at']?e($attempt['submitted_at']):'尚未提交'?></time></span><?php else:?><span>该应聘者尚未开始本场实操</span><?php endif;?></div>
     </section>
     <script src="/assets/practical-results.js?v=<?=asset_mtime('practical-results.js')?>" defer></script>
-    <section class="panel practical-admin-results practical-results-cards"><div class="panel-head"><div><h2>本场实操成果</h2><small>按题查看成果文件及说明，文件仅对应当前应聘者的本场作答。</small></div></div>
-    <?php if(!$questions):?><div class="empty-state"><b>暂无实操成果</b><p>应聘者进入实操并上传文件后，可在这里查看。</p></div><?php endif;?>
-    <?php foreach($questions as $i=>$q):$file=$files[(int)$q['id']]??null;?>
-    <article class="practical-result-question"><header><h3><span>题目 <?=str_pad((string)($i+1),2,'0',STR_PAD_LEFT)?></span>实操任务</h3><span class="badge <?=$file?'green':'amber'?>"><?=$file?'已上传':'待上传'?></span></header><p class="practical-result-stem"><?=nl2br(e($q['stem']))?></p>
+    <section class="panel practical-admin-results practical-results-cards"><div class="panel-head"><div><h2>本场实操成果</h2><small>按题查看回答及成果文件，文件仅对应当前应聘者的本场作答。</small></div></div>
+    <?php if(!$questions):?><div class="empty-state"><b>暂无实操成果</b><p>应聘者保存回答或提交实操后，可在这里查看。</p></div><?php endif;?>
+    <?php foreach($questions as $i=>$q):$file=$files[(int)$q['id']]??null;$answer=$answers[(int)$q['id']]??'';?>
+    <article class="practical-result-question"><header><h3><span>题目 <?=str_pad((string)($i+1),2,'0',STR_PAD_LEFT)?></span>实操任务</h3><span class="badge <?=$file||$answer!==''?'green':'amber'?>"><?=$file?'已上传':($answer!==''?'已回答':'未填写')?></span></header><p class="practical-result-stem"><?=nl2br(e($q['stem']))?></p>
+    <div class="practical-result-note"><b>回答：</b><p><?= $answer!==''?nl2br(e($answer)):'未填写回答' ?></p></div>
     <?php if($file):$ext=strtolower(pathinfo($file['original_name'],PATHINFO_EXTENSION));$preview=in_array($ext,['png','jpg','jpeg','gif','webp','pdf','txt','csv'],true);$url='?page=practical_results&candidate_id='.$assignmentId.'&file_id='.(int)$file['id'];$kind=in_array($ext,['txt','csv'],true)?'text':($ext==='pdf'?'pdf':'image');?>
       <div class="practical-file-card"><span class="practical-file-icon" aria-hidden="true"><?=e(strtoupper($ext))?></span><div class="practical-file-info"><b><?=e($file['original_name'])?></b><small><?=e(practical_size((int)$file['bytes']))?> <span>·</span> 上传于 <?=e($file['uploaded_at'])?></small><?php if(!$preview):?><small>此格式请下载后查看</small><?php endif;?></div><div class="practical-file-actions"><?php if($preview):?><button type="button" class="btn primary" data-result-preview="<?=e($url.'&action=preview')?>" data-kind="<?=$kind?>" data-filename="<?=e($file['original_name'])?>" aria-haspopup="dialog">预览</button><?php endif;?><a class="btn secondary" href="<?=e($url.'&action=download')?>">下载文件</a></div></div>
-      <?php if($file['note']):?><div class="practical-result-note"><b>成果说明</b><p><?=nl2br(e($file['note']))?></p></div><?php endif;?>
-    <?php else:?><div class="practical-file-empty">暂未上传成果文件</div><?php endif;?>
+    <?php else:?><div class="practical-file-empty">未附成果文件（选传）</div><?php endif;?>
     </article><?php endforeach;?></section>
     <dialog class="practical-preview-dialog" id="practical-preview" aria-labelledby="practical-preview-title"><header><div><small>成果预览</small><h2 id="practical-preview-title"></h2></div><button type="button" data-preview-close aria-label="关闭预览">×</button></header><div class="practical-preview-content" aria-live="polite"></div><footer><span>图片、PDF 和文本支持预览；如显示异常，可下载原文件查看。</span><a class="btn secondary" data-preview-download>下载原文件</a></footer></dialog>
     <?php admin_footer();exit;

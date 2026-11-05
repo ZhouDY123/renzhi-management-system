@@ -54,6 +54,7 @@ const assert=require('node:assert/strict');
   await admin.setViewportSize({width:1440,height:1000});
   console.log('PASS: searchable post picker, default enabled, create, toggle, delete, discard protection and four viewport widths');
   const context=await browser.newContext(),page=await context.newPage();
+  let acceptSubmit=true;const confirmations=[];page.on('dialog',async dialog=>{confirmations.push(dialog.message());if(acceptSubmit)await dialog.accept();else await dialog.dismiss();});
   const pageErrors=[];page.on('pageerror',e=>pageErrors.push(e.message));
   await page.goto(base+'/index.php?page=practical_questions&session_id=1');assert(page.url().includes('page=login'));
   async function verify(p,name,mobile){await p.goto(base+'/practical.php');await p.locator('[name=name]').fill(name);await p.locator('[name=mobile]').fill(mobile);await p.getByRole('button',{name:'验证并进入实操'}).click();await p.waitForLoadState('networkidle');}
@@ -65,9 +66,31 @@ const assert=require('node:assert/strict');
   await admin.goto(bankUrl);
   let csrf=await page.locator('[name=csrf]').first().inputValue(),attempt=await page.locator('[name=attempt_id]').first().inputValue();
   const qids=await page.locator('[name=question_id]').evaluateAll(xs=>xs.map(x=>x.value));
+  if(process.env.TEST_TEXT_SUBMIT==='1'){
+   assert.equal(await page.locator('[name=result_file][required]').count(),0);
+   assert(await page.locator('.practical-upload-form').first().evaluate(form=>form.querySelector('label').classList.contains('practical-answer-label')));
+   const answer='纯文字回答：客户接待流程 <script>alert(1)</script>';
+   await page.locator('[name=note]').first().fill(answer);
+   await page.getByRole('button',{name:'保存本题回答'}).first().click();await page.getByText('已保存回答',{exact:true}).waitFor();
+   await page.reload();assert.equal(await page.locator('[name=note]').first().inputValue(),answer);
+   await admin.goto(base+'/index.php?page=interview_results');
+   await admin.locator('[data-interview-group]').filter({hasText:'陈晓宁'}).getByRole('link',{name:'实操成果',exact:true}).click();
+   assert((await admin.locator('.practical-result-note').first().innerText()).includes(answer));
+   assert.equal(await admin.locator('.practical-file-actions').count(),0);
+   await page.locator('[name=note]').first().fill(answer+' 更新');
+   acceptSubmit=false;await page.getByRole('button',{name:'确认提交全部成果'}).click();assert(confirmations.at(-1).includes('1 道题'));assert.equal(JSON.parse(fixture('inspect')).attempts[0].submitted_at,null);
+   acceptSubmit=true;await page.getByRole('button',{name:'确认提交全部成果'}).click();await page.getByRole('heading',{name:'成果已提交'}).waitFor();
+   assert((await page.locator('.practical-saved-note').innerText()).includes(answer+' 更新'));assert.equal(JSON.parse(fixture('inspect')).files.length,0);
+   const late=await context.request.post(base+'/practical.php?session_id=1&action=upload',{headers:{Accept:'application/json'},form:{csrf,attempt_id:attempt,question_id:qids[0],note:'late'}});assert.equal(late.status(),400);
+   for(const width of [1440,375]){await page.setViewportSize({width,height:1000});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+   const empty=await browser.newPage();empty.on('dialog',d=>d.accept());await verify(empty,'另一应聘者','13800138001');await empty.getByRole('button',{name:'确认提交全部成果'}).click();await empty.getByRole('heading',{name:'成果已提交'}).waitFor();
+   await admin.goto(base+'/index.php?page=interview_results');assert.equal(await admin.locator('[data-interview-group]').filter({hasText:'另一应聘者'}).locator('a[href*=practical_results]').count(),1);
+   assert.deepEqual(pageErrors,[]);assert(!/Fatal error|Warning:|Uncaught/.test(logs),logs);
+   console.log('PASS: answer before optional file, text-only save/reload/admin display/escaping, cancel/confirm, blank submission, submission lock and responsive layout');return;
+  }
   if(process.env.TEST_DIRECT_SUBMIT==='1'){
    const submit=page.getByRole('button',{name:'确认提交全部成果'});
-   assert(await submit.isEnabled());await submit.click();assert((await page.locator('[data-submit-status]').innerText()).includes('请为每道题选择'));
+   assert(await submit.isEnabled());acceptSubmit=false;await submit.click();assert(confirmations.at(-1).includes('未填写回答'));assert.equal(JSON.parse(fixture('inspect')).attempts[0].submitted_at,null);acceptSubmit=true;
    for(let i=0;i<2;i++)await page.locator('[name=result_file]').nth(i).setInputFiles({name:`direct-${i}.txt`,mimeType:'text/plain',buffer:Buffer.from(`result-${i}`)});
    let uploads=0;
    await page.route('**/practical.php?session_id=1&action=upload',route=>{
@@ -98,7 +121,7 @@ const assert=require('node:assert/strict');
    console.log('PASS: direct submit uploads both questions, missing-file feedback, failed upload blocks submission, retry preserves saved file, note-only update');
    return;
   }
-  let response=await context.request.post(base+'/practical.php?session_id=1&action=submit',{form:{csrf,attempt_id:attempt}});assert((await response.text()).includes('请先为每一道题上传成果文件'));
+  let response;
   response=await context.request.post(base+'/practical.php?session_id=1&action=upload',{headers:{Accept:'application/json'},multipart:{csrf,attempt_id:attempt,question_id:'99999',result_file:{name:'wrong.txt',mimeType:'text/plain',buffer:Buffer.from('test')}}});assert.equal(response.status(),400);
   response=await context.request.post(base+'/practical.php?session_id=1&action=upload',{headers:{Accept:'application/json'},multipart:{csrf,attempt_id:attempt,question_id:qids[0],result_file:{name:'unsafe.php',mimeType:'text/plain',buffer:Buffer.from('<?php echo 1;')}}});assert.equal(response.status(),400);
   response=await context.request.post(base+'/practical.php?session_id=1&action=submit',{form:{csrf:'wrong',attempt_id:attempt}});assert.equal(response.status(),419);
@@ -106,15 +129,15 @@ const assert=require('node:assert/strict');
   await page.locator('[name=result_file]').nth(1).setInputFiles({name:'第二题.csv',mimeType:'text/csv',buffer:Buffer.alloc(32*1048576,0x61)});
   await page.locator('[name=result_file]').first().setInputFiles({name:'第一题.txt',mimeType:'text/plain',buffer:Buffer.from('成果一')});
   await page.locator('[name=note]').first().fill('第一题说明');
-  await page.locator('.practical-upload-form').first().getByRole('button',{name:'上传并保存本题成果'}).click();await page.locator('.practical-question').first().locator('.saved').waitFor();
+  await page.locator('.practical-upload-form').first().getByRole('button',{name:'保存本题回答'}).click();await page.locator('.practical-question').first().locator('.saved').waitFor();
   assert.equal(await page.locator('[name=result_file]').nth(1).evaluate(el=>el.files[0].name),'第二题.csv');
-  await page.locator('.practical-upload-form').nth(1).getByRole('button',{name:'上传并保存本题成果'}).click();await page.locator('.practical-question').nth(1).locator('.saved').waitFor();
+  await page.locator('.practical-upload-form').nth(1).getByRole('button',{name:'保存本题回答'}).click();await page.locator('.practical-question').nth(1).locator('.saved').waitFor();
   response=await context.request.post(base+'/practical.php?session_id=1&action=upload',{headers:{Accept:'application/json'},multipart:{csrf,attempt_id:attempt,question_id:qids[0],note:'更新后的说明',result_file:{name:'第一题更新.txt',mimeType:'text/plain',buffer:Buffer.from('成果一（更新）')}}});assert.equal(response.status(),200);
   response=await context.request.post(base+'/practical.php?session_id=1&action=upload',{headers:{Accept:'application/json'},multipart:{csrf,attempt_id:attempt,question_id:qids[0],result_file:{name:'empty.txt',mimeType:'text/plain',buffer:Buffer.alloc(0)}}});assert.equal(response.status(),400);
   response=await context.request.get(base+`/practical.php?session_id=1&action=download&question_id=${qids[0]}`);assert.equal(await response.text(),'成果一（更新）');
   await page.reload();assert.equal(await page.locator('.practical-file-state.saved').count(),2);
   assert.equal(await page.locator('.practical-answer-brand img').evaluate(img=>img.complete && img.naturalWidth>0),true);
-  assert((await page.locator('[data-practical-hero-progress]').innerText()).includes('已保存 2 道成果'));
+  assert((await page.locator('[data-practical-hero-progress]').innerText()).includes('已保存 2 道回答'));
   for(const width of [1440,768,375]){await page.setViewportSize({width,height:1000});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Public page overflow');}
   fs.mkdirSync('output',{recursive:true});await page.screenshot({path:'output/practical-mobile.png',fullPage:true});await page.setViewportSize({width:1280,height:1100});await page.screenshot({path:'output/practical-desktop.png',fullPage:true});
   await admin.reload();await admin.locator('[data-practical-edit]').first().click();

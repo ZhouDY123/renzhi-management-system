@@ -26,7 +26,7 @@ function render_interview_results(array $details): void {
                 <span class="interview-person-session"><?=e($person['interview_date'])?><?=!empty($person['time_range'])?' · '.e($person['time_range']):''?></span>
                 <span class="interview-person-count"><?=$submitted?> 份已提交评分</span>
                 <div class="interview-person-questionnaire"><?php if ($person['questionnaire_submitted']): ?><a class="table-action" href="?page=interview_questionnaire&amp;candidate_id=<?=$assignmentId?>">查看问卷</a><?php else: ?><span class="muted">问卷未提交</span><?php endif; ?></div>
-                <?php if ((int)($person['practical_files_count']??0)>0): ?>
+                <?php if ((int)($person['practical_files_count']??0)>0 || (int)($person['practical_answers_count']??0)>0 || !empty($person['practical_submitted_at'])): ?>
                 <div class="interview-person-questionnaire interview-person-practical"><a class="table-action" href="?page=practical_results&amp;candidate_id=<?=$assignmentId?>">实操成果</a><small class="muted"><?=!empty($person['practical_submitted_at'])?'已提交':'作答中'?> · <?=(int)$person['practical_files_count']?> 份文件</small></div>
                 <?php endif; ?>
               </th>

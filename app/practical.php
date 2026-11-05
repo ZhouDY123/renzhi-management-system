@@ -9,6 +9,7 @@ function practical_schema(PDO $pdo): void {
       CREATE TABLE IF NOT EXISTS practical_question(id INTEGER PRIMARY KEY AUTOINCREMENT,session_id INTEGER NOT NULL,position INTEGER NOT NULL,stem TEXT NOT NULL,FOREIGN KEY(session_id) REFERENCES practical_exam(session_id));
       CREATE TABLE IF NOT EXISTS practical_attempt(id INTEGER PRIMARY KEY AUTOINCREMENT,session_id INTEGER NOT NULL,candidate_id INTEGER NOT NULL,questions TEXT NOT NULL,submitted_at TEXT,created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),UNIQUE(session_id,candidate_id),FOREIGN KEY(session_id) REFERENCES interview_session(id),FOREIGN KEY(candidate_id) REFERENCES candidate(id));
       CREATE TABLE IF NOT EXISTS practical_file(id INTEGER PRIMARY KEY AUTOINCREMENT,attempt_id INTEGER NOT NULL,question_id INTEGER NOT NULL,storage_key TEXT NOT NULL,original_name TEXT NOT NULL,bytes INTEGER NOT NULL,note TEXT NOT NULL DEFAULT '',uploaded_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),UNIQUE(attempt_id,question_id),FOREIGN KEY(attempt_id) REFERENCES practical_attempt(id));
+      CREATE TABLE IF NOT EXISTS practical_response(attempt_id INTEGER NOT NULL,question_id INTEGER NOT NULL,answer TEXT NOT NULL DEFAULT '',PRIMARY KEY(attempt_id,question_id),FOREIGN KEY(attempt_id) REFERENCES practical_attempt(id));
       CREATE INDEX IF NOT EXISTS practical_question_session ON practical_question(session_id,position)");
     $pdo->exec("CREATE TABLE IF NOT EXISTS practical_post_question(id INTEGER PRIMARY KEY AUTOINCREMENT,post_id INTEGER NOT NULL,stem TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 1,position INTEGER NOT NULL DEFAULT 0,revision INTEGER NOT NULL DEFAULT 1,FOREIGN KEY(post_id) REFERENCES post(id));
       CREATE INDEX IF NOT EXISTS practical_post_question_post ON practical_post_question(post_id,position);
@@ -124,17 +125,25 @@ function practical_file_path(string $key): string {
 function practical_files(PDO $pdo,int $attemptId): array {
     $st=$pdo->prepare('SELECT * FROM practical_file WHERE attempt_id=?');$st->execute([$attemptId]);$out=[];foreach($st->fetchAll(PDO::FETCH_ASSOC) as $row)$out[(int)$row['question_id']]=$row;return $out;
 }
+function practical_answers(PDO $pdo,int $attemptId): array {
+    $out=[];foreach(practical_files($pdo,$attemptId) as $qid=>$file)$out[$qid]=$file['note'];
+    $st=$pdo->prepare('SELECT question_id,answer FROM practical_response WHERE attempt_id=?');$st->execute([$attemptId]);
+    foreach($st->fetchAll(PDO::FETCH_ASSOC) as $row)$out[(int)$row['question_id']]=$row['answer'];return $out;
+}
+function practical_save_answer(PDO $pdo,int $attemptId,int $questionId,string $answer): void {
+    $pdo->prepare('INSERT INTO practical_response(attempt_id,question_id,answer) VALUES(?,?,?) ON CONFLICT(attempt_id,question_id) DO UPDATE SET answer=excluded.answer')->execute([$attemptId,$questionId,$answer]);
+}
 function practical_upload(PDO $pdo,int $attemptId,int $candidateId,int $questionId,array $file,string $note): void {
     $attempt=practical_attempt($pdo,$attemptId,$candidateId);
     if(!in_array($questionId,array_map('intval',array_column(json_decode($attempt['questions'],true),'id')),true))throw new InvalidArgumentException('题目不属于当前实操');
-    if(practical_length($note)>2000)throw new InvalidArgumentException('成果说明最多 2000 字');
+    if(practical_length($note)>2000)throw new InvalidArgumentException('回答最多 2000 字');
     if(($file['error']??UPLOAD_ERR_NO_FILE)===UPLOAD_ERR_NO_FILE){
         $pdo->beginTransaction();
         try {
             practical_attempt($pdo,$attemptId,$candidateId);
             $existing=practical_files($pdo,$attemptId)[$questionId]??null;
-            if(!$existing||!is_file(practical_file_path($existing['storage_key'])))throw new InvalidArgumentException('请先选择本题成果文件');
-            $pdo->prepare('UPDATE practical_file SET note=? WHERE id=?')->execute([$note,$existing['id']]);$pdo->commit();return;
+            practical_save_answer($pdo,$attemptId,$questionId,$note);
+            if($existing)$pdo->prepare('UPDATE practical_file SET note=? WHERE id=?')->execute([$note,$existing['id']]);$pdo->commit();return;
         }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     }
     $name=practical_validate_file($file);$key=bin2hex(random_bytes(24)).'.bin';$path=practical_file_path($key);
@@ -145,6 +154,7 @@ function practical_upload(PDO $pdo,int $attemptId,int $candidateId,int $question
         $pdo->beginTransaction();practical_attempt($pdo,$attemptId,$candidateId);
         $old=practical_files($pdo,$attemptId)[$questionId]??null;
         $pdo->prepare("INSERT INTO practical_file(attempt_id,question_id,storage_key,original_name,bytes,note) VALUES(?,?,?,?,?,?) ON CONFLICT(attempt_id,question_id) DO UPDATE SET storage_key=excluded.storage_key,original_name=excluded.original_name,bytes=excluded.bytes,note=excluded.note,uploaded_at=datetime('now','localtime')")->execute([$attemptId,$questionId,$key,$name,$file['size'],$note]);
+        practical_save_answer($pdo,$attemptId,$questionId,$note);
         $pdo->commit();
     }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();@unlink($path);throw $e;}
     if($old)@unlink(practical_file_path($old['storage_key']));
@@ -155,7 +165,7 @@ function practical_submit(PDO $pdo,int $attemptId,int $candidateId): void {
         $attempt=practical_attempt($pdo,$attemptId,$candidateId,false);
         if(!$attempt['submitted_at']){
             $files=practical_files($pdo,$attemptId);
-            foreach(json_decode($attempt['questions'],true) as $q){$file=$files[(int)$q['id']]??null;if(!$file||!is_file(practical_file_path($file['storage_key'])))throw new InvalidArgumentException('请先为每一道题上传成果文件，再提交全部成果');}
+            foreach($files as $file)if(!is_file(practical_file_path($file['storage_key'])))throw new InvalidArgumentException('已保存的成果文件缺失，请重新上传后提交');
             $pdo->prepare("UPDATE practical_attempt SET submitted_at=datetime('now','localtime') WHERE id=? AND submitted_at IS NULL")->execute([$attemptId]);
         }
         $pdo->commit();

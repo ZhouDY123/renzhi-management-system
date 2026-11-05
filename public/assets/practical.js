@@ -5,11 +5,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const finalForm = document.querySelector('.practical-submit');
   const pending = new Set(), savers = new Map(); let uploads = 0, submitting = false;
   function progress() {
-    const saved = cards.filter(card => card.dataset.uploaded === '1').length;
+    const saved = cards.filter(card => card.dataset.answered === '1').length;
     const heroProgress = document.querySelector('[data-practical-hero-progress]');
-    if (heroProgress) heroProgress.textContent = `共 ${cards.length} 道任务 · 已保存 ${saved} 道成果`;
+    if (heroProgress) heroProgress.textContent = `共 ${cards.length} 道任务 · 已保存 ${saved} 道回答`;
     const text = document.querySelector('[data-practical-progress]');
-    if (text) text.textContent = `已上传 ${saved} / ${cards.length} 道题${pending.size ? ` · ${pending.size} 道题有待保存修改` : ''}`;
+    if (text) text.textContent = `已保存 ${saved} / ${cards.length} 道回答${pending.size ? ` · ${pending.size} 道题有待保存修改` : ''}`;
     if (finalForm) finalForm.querySelector('button').disabled = uploads > 0 || submitting;
   }
   document.querySelectorAll('.practical-upload-form').forEach(form => {
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (form.elements.result_file.files.length || note.value !== savedNote) pending.add(form); else pending.delete(form);
       progress();
     };
-    form.elements.result_file.required = card.dataset.uploaded !== '1';
+    form.elements.result_file.required = false;
     form.addEventListener('input', changed);
     form.addEventListener('change', changed);
     const save = async () => {
@@ -54,13 +54,19 @@ document.addEventListener('DOMContentLoaded', () => {
           request.addEventListener('abort', () => reject(new Error('上传已中止，请重新选择文件上传。')));
           request.send(data);
         });
-        const link = document.createElement('a'); link.href = result.url; link.textContent = result.name;
-        const size = result.bytes < 1024 ? `${result.bytes} B` : result.bytes < 1048576 ? `${(result.bytes / 1024).toFixed(1)} KB` : `${(result.bytes / 1048576).toFixed(1)} MB`;
-        const meta = document.createElement('small'); meta.textContent = `${size} · ${result.uploaded_at}`;
-        card.querySelector('.practical-upload-result').replaceChildren(link, meta);
-        card.dataset.uploaded = '1'; card.querySelector('.practical-file-state').textContent = '已上传成果'; card.querySelector('.practical-file-state').classList.add('saved');
+        const resultBox = card.querySelector('.practical-upload-result');
+        if (result.has_file) {
+          const link = document.createElement('a'); link.href = result.url; link.textContent = result.name;
+          const size = result.bytes < 1024 ? `${result.bytes} B` : result.bytes < 1048576 ? `${(result.bytes / 1024).toFixed(1)} KB` : `${(result.bytes / 1048576).toFixed(1)} MB`;
+          const meta = document.createElement('small'); meta.textContent = `${size} · ${result.uploaded_at}`;
+          resultBox.replaceChildren(link, meta);
+        } else resultBox.replaceChildren();
+        const answered = result.has_file || result.answered;
+        card.dataset.uploaded = result.has_file ? '1' : '0'; card.dataset.answered = answered ? '1' : '0';
+        card.querySelector('.practical-file-state').textContent = result.has_file ? '已上传成果' : answered ? '已保存回答' : '待作答';
+        card.querySelector('.practical-file-state').classList.toggle('saved', answered);
         form.elements.result_file.value = ''; form.elements.result_file.required = false; savedNote = note.value;
-        pending.delete(form); status.textContent = '本题成果已保存，可继续完成其他题目。'; return true;
+        pending.delete(form); status.textContent = '本题回答已保存，可继续完成其他题目。'; return true;
       } catch (error) { status.textContent = error.message; return false; }
       finally { delete form.dataset.busy; fields.forEach(el => el.disabled = false); uploads--; progress(); }
     };
@@ -73,18 +79,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const message = finalForm.querySelector('[data-submit-status]');
     for (const form of forms) {
       if (!form.checkValidity()) {
-        if (message) message.textContent = '请为每道题选择成果文件，并检查填写内容。';
+        if (message) message.textContent = '请检查回答内容是否超过字数限制。';
         form.scrollIntoView({block:'center',behavior:'smooth'}); form.reportValidity(); return;
       }
     }
+    const blank = forms.filter(form => !form.elements.note.value.trim() && !form.elements.result_file.files.length && form.closest('.practical-question').dataset.uploaded !== '1').length;
+    if (!window.confirm(`确认提交本次实操吗？${blank ? `\n有 ${blank} 道题未填写回答且未附文件，仍可提交。` : ''}\n提交后不可修改。`)) return;
     submitting = true; progress(); let sent = false;
     // Lock all questions during batch submission so later edits cannot be missed.
     forms.forEach(form => form.querySelectorAll('input[type=file],textarea,button').forEach(el => el.inert = true));
     try {
       for (const [index, form] of forms.entries()) {
-        if (pending.has(form) || form.closest('.practical-question').dataset.uploaded !== '1') {
+        if (pending.has(form)) {
           button.textContent = `正在保存第 ${index + 1} 题…`;
-          if (message) message.textContent = '正在逐题上传并保存，全部成功后自动提交，请勿关闭页面。';
+          if (message) message.textContent = '正在保存回答及所选文件，全部成功后自动提交，请勿关闭页面。';
           if (!await savers.get(form)()) {
             if (message) message.textContent = `第 ${index + 1} 题保存失败，请查看该题提示后重试；其他已保存成果会保留。`;
             form.scrollIntoView({block:'center',behavior:'smooth'}); return;
