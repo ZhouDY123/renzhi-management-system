@@ -98,3 +98,40 @@
 .practical-public.is-answer .practical-question h2{font-size:18px;line-height:1.8;margin:0 0 22px}
 .practical-public.is-answer .practical-submit{box-shadow:none}
 @media(max-width:680px){.practical-public .practical-brand-hero{padding:24px 20px}.practical-answer-brand{gap:12px;margin-bottom:22px}.practical-answer-brand img{width:126px;height:36px}.practical-answer-brand>span{padding-left:12px;font-size:10px;letter-spacing:1px}.practical-answer-heading{flex-wrap:wrap;gap:16px}.practical-answer-heading>div{flex-basis:100%}.practical-public .practical-brand-hero h1{font-size:23px}.practical-public .practical-brand-hero p{font-size:11px}.practical-answer-summary{flex-wrap:wrap;font-size:11px}.practical-public.is-answer .practical-question{padding:20px}.practical-public.is-answer .practical-question h2{font-size:16px}}
+/* Markdown authoring and consistent question display. */
+.practical-editor-body #practical-stem{border-radius:0 0 10px 10px;font-family:Consolas,"Microsoft YaHei",monospace;font-size:14px;height:36vh;min-height:260px}
+.practical-editor-body [hidden]{display:none!important}
+#practical-image-status{font-size:12px;color:#526a90;line-height:1.7;margin-top:10px}
+.practical-markdown{font-size:15px;font-weight:400;line-height:1.85;white-space:normal;overflow-wrap:anywhere;color:#34435b;min-width:0;overflow-x:auto}
+.practical-question-stem{margin-bottom:24px}
+.practical-markdown p{margin:0 0 12px}.practical-markdown>:last-child{margin-bottom:0}
+.practical-markdown :is(h1,h2,h3,h4,h5,h6){color:#243f65;font-weight:600;line-height:1.6;margin:18px 0 10px;font-size:18px}
+.practical-markdown h1{font-size:23px}.practical-markdown h2{font-size:20px}.practical-markdown>:first-child{margin-top:0}
+.practical-markdown :is(ul,ol){padding-left:26px;margin:10px 0 16px}.practical-markdown li{margin:5px 0}
+.practical-markdown blockquote{border-left:3px solid #8aa7d4;margin:14px 0;padding:10px 16px;background:#f3f6fc;color:#5b6f8e}
+.practical-markdown pre{overflow:auto;padding:16px;background:#f3f5f9;border-radius:8px;white-space:pre}
+.practical-markdown code{font-family:Consolas,monospace;background:#f0f3f8;border-radius:4px;padding:2px 4px}
+.practical-markdown pre code{padding:0;background:transparent}
+.practical-markdown img{display:block;max-width:100%;height:auto;max-height:640px;object-fit:contain;margin:14px 0;border-radius:8px}
+.practical-markdown table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}.practical-markdown :is(th,td){border:1px solid #dce4ee;padding:10px 12px;text-align:left;white-space:normal}.practical-markdown th{background:#f3f6fb}
+.practical-markdown a{color:#2855c7;text-decoration:underline}.practical-markdown hr{border:0;border-top:1px solid #dce4ee;margin:20px 0}
+@media(max-width:680px){.practical-editor-body #practical-stem{min-height:220px}.practical-markdown{font-size:14px}.practical-public.is-answer .practical-markdown h2{font-size:18px}}
+/* Visual editing keeps uploaded images inline while storing Markdown. */
+#practical-rich-editor{min-width:0}
+#practical-rich-editor .toastui-editor-defaultUI{border:1px solid #cbd8ea;border-radius:10px;overflow:hidden;font-family:"Microsoft YaHei","Segoe UI",sans-serif}
+#practical-rich-editor .toastui-editor-defaultUI-toolbar{background:#f4f7fc;border-bottom-color:#dce5f2;padding:0 10px}
+#practical-rich-editor .toastui-editor-contents{font-family:inherit;font-size:15px;line-height:1.85;color:#34435b}
+#practical-rich-editor .toastui-editor-contents img{max-width:100%;max-height:480px;height:auto;object-fit:contain;border-radius:6px}
+#practical-rich-editor .toastui-editor-ww-container .toastui-editor-contents{padding:18px}
+#practical-rich-editor .toastui-editor-mode-switch{background:#f8fafc}
+#practical-rich-editor button{box-shadow:none;min-width:0}
+#practical-rich-editor .toastui-editor-popup{max-width:calc(100% - 16px);box-sizing:border-box}
+#practical-rich-editor .toastui-editor-popup input{box-sizing:border-box;max-width:100%}
+@media(max-width:680px){#practical-rich-editor .toastui-editor-defaultUI-toolbar{padding:0 4px}#practical-rich-editor .toastui-editor-toolbar-group{margin-left:0;margin-right:0}#practical-rich-editor .toastui-editor-ww-container .toastui-editor-contents{padding:14px}}
+.practical-editor-body #practical-rich-editor{position:relative}
+.practical-image-resize{position:absolute;box-sizing:border-box;border:2px solid #2855c7;pointer-events:none;z-index:25}
+.practical-image-resize .practical-image-size-label{position:absolute;bottom:100%;left:0;max-width:100%;box-sizing:border-box;background:#2855c7;color:white;font-size:11px;line-height:1.5;padding:3px 6px;border-radius:4px 4px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#practical-rich-editor .practical-image-resize button{position:absolute;width:14px;height:14px;min-height:0;padding:0;border:2px solid white;background:#2855c7;border-radius:3px;pointer-events:auto;touch-action:none}
+.practical-image-resize [data-resize=e]{right:-8px;top:calc(50% - 7px);cursor:ew-resize}
+.practical-image-resize [data-resize=s]{bottom:-8px;left:calc(50% - 7px);cursor:ns-resize}
+.practical-image-resize [data-resize=se]{right:-8px;bottom:-8px;cursor:nwse-resize}

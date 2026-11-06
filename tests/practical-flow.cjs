@@ -25,7 +25,7 @@ const assert=require('node:assert/strict');
   await admin.getByRole('button',{name:'查看岗位题目'}).click();await admin.waitForLoadState('networkidle');
   assert(admin.url().includes('post_id=1'));
   const editor=admin.locator('#practical-question-dialog');
-  async function createQuestion(text){await admin.locator('[data-practical-create]').click();await editor.locator('[name=stem]').fill(text);await editor.getByRole('button',{name:'保存题目'}).click();await admin.waitForLoadState('networkidle');}
+  async function createQuestion(text){await admin.locator('[data-practical-create]').click();await editor.locator('.toastui-editor-ww-container [contenteditable=true]').fill(text);await editor.getByRole('button',{name:'保存题目'}).click();await admin.waitForLoadState('networkidle');}
   await createQuestion('请制作一份客户接待流程文档，并上传成果。');
   await createQuestion('请制作一份数据汇总表，并上传成果。');
   assert.equal(await admin.locator('[data-practical-question]').count(),2);
@@ -37,8 +37,8 @@ const assert=require('node:assert/strict');
   await admin.locator('.confirm-dialog [data-confirm]').click();await admin.waitForLoadState('networkidle');
   assert.equal(await admin.locator('[data-practical-question]').count(),2);
   await admin.locator('[data-practical-edit]').first().click();
-  await editor.locator('[name=stem]').fill('未保存的内容');await editor.getByRole('button',{name:'取消',exact:true}).click();
-  await admin.locator('[data-practical-continue]').click();assert.equal(await editor.locator('[name=stem]').inputValue(),'未保存的内容');
+  await editor.locator('.toastui-editor-ww-container [contenteditable=true]').fill('未保存的内容');await editor.getByRole('button',{name:'取消',exact:true}).click();
+  await admin.locator('[data-practical-continue]').click();assert.equal(await editor.locator('.toastui-editor-ww-container [contenteditable=true]').innerText(),'未保存的内容');
   await editor.getByRole('button',{name:'取消',exact:true}).click();await admin.locator('[data-practical-discard]').click();
   fs.mkdirSync('output',{recursive:true});
   for(const width of [1440,1024,768,375]){
@@ -141,7 +141,7 @@ const assert=require('node:assert/strict');
   for(const width of [1440,768,375]){await page.setViewportSize({width,height:1000});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Public page overflow');}
   fs.mkdirSync('output',{recursive:true});await page.screenshot({path:'output/practical-mobile.png',fullPage:true});await page.setViewportSize({width:1280,height:1100});await page.screenshot({path:'output/practical-desktop.png',fullPage:true});
   await admin.reload();await admin.locator('[data-practical-edit]').first().click();
-  await editor.locator('[name=stem]').fill('更新后的岗位题目');await editor.getByRole('button',{name:'保存题目'}).click();await admin.waitForLoadState('networkidle');
+  await editor.locator('.toastui-editor-ww-container [contenteditable=true]').fill('更新后的岗位题目');await editor.getByRole('button',{name:'保存题目'}).click();await admin.waitForLoadState('networkidle');
   assert((await admin.locator('[data-practical-stem]').first().innerText()).includes('更新后的岗位题目'));
   await page.reload();assert((await page.locator('.practical-question').first().innerText()).includes('客户接待流程文档'),'Existing attempt must retain original question');
   await page.getByRole('button',{name:'确认提交全部成果'}).click();await page.getByRole('heading',{name:'成果已提交'}).waitFor();

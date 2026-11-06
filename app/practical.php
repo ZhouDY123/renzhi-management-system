@@ -176,3 +176,30 @@ function practical_download(array $file): never {
     header('Content-Type: application/octet-stream');header('X-Content-Type-Options: nosniff');header('Cache-Control: private, no-store');
     header("Content-Disposition: attachment; filename=\"practical-file\"; filename*=UTF-8''".rawurlencode($file['original_name']));header('Content-Length: '.filesize($path));readfile($path);exit;
 }
+
+function practical_question_image_upload(array $file): string {
+    if(($file['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK)throw new InvalidArgumentException('图片上传失败，请选择图片重试');
+    $tmp=(string)($file['tmp_name']??'');
+    if(!is_uploaded_file($tmp))throw new InvalidArgumentException('无效的上传文件');
+    if(filesize($tmp)>5*1048576)throw new InvalidArgumentException('每张图片不能超过 5 MB');
+    $info=@getimagesize($tmp);$types=[IMAGETYPE_PNG=>'png',IMAGETYPE_JPEG=>'jpg',IMAGETYPE_GIF=>'gif',IMAGETYPE_WEBP=>'webp'];
+    if(!$info||!isset($types[$info[2]])||$info[0]*$info[1]>40000000)throw new InvalidArgumentException('请上传 PNG、JPG、GIF 或 WebP 图片，像素不超过 4000 万');
+    $dir=ROOT_PATH.'/data/practical-question-images';
+    if(!is_dir($dir)&&!mkdir($dir,0700,true))throw new RuntimeException('Cannot create image directory');
+    $name=bin2hex(random_bytes(16)).'.'.$types[$info[2]];
+    if(!move_uploaded_file($tmp,$dir.'/'.$name))throw new RuntimeException('Cannot save image');
+    return '/practical.php?action=question_image&image='.$name;
+}
+function practical_question_image_serve(PDO $pdo,?array $auth): never {
+    $name=(string)($_GET['image']??'');$allowed=can('admin','hr','interviewer');
+    if(!$allowed&&$auth){
+        $st=$pdo->prepare('SELECT pa.questions FROM practical_attempt pa JOIN candidate c ON c.id=pa.candidate_id WHERE c.name=? AND c.mobile=?');
+        $st->execute([$auth['name'],$auth['mobile']]);
+        foreach($st as $row)if(str_contains($row['questions'],$name)){$allowed=true;break;}
+    }
+    if(!$allowed||!preg_match('/^[a-f0-9]{32}\.(png|jpg|gif|webp)$/D',$name)||!is_file(ROOT_PATH.'/data/practical-question-images/'.$name)){http_response_code(404);exit;}
+    $types=['png'=>'image/png','jpg'=>'image/jpeg','gif'=>'image/gif','webp'=>'image/webp'];
+    header('Content-Type: '.$types[pathinfo($name,PATHINFO_EXTENSION)]);header('X-Content-Type-Options: nosniff');header("Content-Security-Policy: default-src 'none'; sandbox");
+    header('Content-Length: '.filesize(ROOT_PATH.'/data/practical-question-images/'.$name));
+    readfile(ROOT_PATH.'/data/practical-question-images/'.$name);exit;
+}
